@@ -1,0 +1,13 @@
+name = "AlgebraicStockFlow"
+uuid = "58c4a0e8-2944-4d18-9fa2-e17726aee9e5"
+authors = ["Xiaoyan Li"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
