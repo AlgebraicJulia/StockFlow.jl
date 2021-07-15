@@ -61,6 +61,10 @@ function Graph(p::AbstractBoneStockFlow)
   return g
 end
 
-function Graph(op::Union{OpenBoneStockFlow, OpenLabelledBoneStockFlowUntyped, OpenStockFlow, OpenLabelledStockFlowUntyped})
+function Graph(op::Union{OpenBoneStockFlow_S, OpenLabelledBoneStockFlowUntyped_S, OpenStockFlow_S, OpenLabelledStockFlowUntyped_S})
+    Graph(apex(op))
+end
+
+function Graph(op::Union{OpenBoneStockFlow_F, OpenLabelledBoneStockFlowUntyped_F, OpenStockFlow_F, OpenLabelledStockFlowUntyped_F})
     Graph(apex(op))
 end

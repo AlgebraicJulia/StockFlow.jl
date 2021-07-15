@@ -1,14 +1,16 @@
 module AlgebraicStockFlow
 
-export TheoryBoneStockFlow, BoneStockFlow, OpenBoneStockFlowOb, AbstractBoneStockFlow, ns, nf, ni, no,
+export TheoryBoneStockFlow, BoneStockFlow, AbstractBoneStockFlow, ns, nf, ni, no,
   add_stock!, add_stocks!, add_flow!, add_flows!,
   add_inflow!, add_inflows!, add_outflow!, add_outflows!, inflows, outflows,
   TransitionMatrices, vectorfield,
   TheoryLabelledBoneStockFlow, LabelledBoneStockFlow, AbstractLabelledBoneStockFlow, sname, fname,
   TheoryStockFlow, StockFlow, AbstractStockFlow, initialValue, initialValues, funcFlow, funcFlows,
   TheoryLabelledStockFlow, LabelledStockFlow, AbstractLabelledStockFlow,
-  Open, OpenBoneStockFlow, OpenLabelledBoneStockFlow, OpenStockFlow, OpenLabelledStockFlow,
-  OpenBoneStockFlowOb, OpenLabelledBoneStockFlowOb, OpenStockFlowOb, OpenLabelledStockFlowOb
+  Open_S, OpenBoneStockFlow_S, OpenLabelledBoneStockFlow_S, OpenStockFlow_S, OpenLabelledStockFlow_S,
+  OpenBoneStockFlowOb_S, OpenLabelledBoneStockFlowOb_S, OpenStockFlowOb_S, OpenLabelledStockFlowOb_S, 
+  Open_F, OpenBoneStockFlow_F, OpenLabelledBoneStockFlow_F, OpenStockFlow_F, OpenLabelledStockFlow_F,
+  OpenBoneStockFlowOb_F, OpenLabelledBoneStockFlowOb_F, OpenStockFlowOb_F, OpenLabelledStockFlowOb_F
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -19,6 +21,7 @@ using LabelledArrays
 using LinearAlgebra: mul!
 import Base.+,Base.-
 
+# fake inflow or outflow names. Note, we need fake inflow or outflow if a stock do not have any inflow or outflow
 const FK_FLOW_NAME=:F_NONE
 const FK_FLOW_INDEX=0
 
@@ -49,31 +52,19 @@ end
 
 const AbstractBoneStockFlow = AbstractACSetType(TheoryBoneStockFlow)
 const BoneStockFlow = CSetType(TheoryBoneStockFlow,index=[:ifn,:is,:ofn,:os])
-const OpenBoneStockFlowOb, OpenBoneStockFlow = OpenCSetTypes(BoneStockFlow,:S) # :S indicates the foot are S, which means composed based on stocks?
 
-Open(p::AbstractBoneStockFlow) = OpenBoneStockFlow(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
-Open(p::AbstractBoneStockFlow, legs...) = OpenBoneStockFlow(p, map(l->FinFunction(l, ns(p)), legs)...)
-Open(n, p::AbstractBoneStockFlow, m) = Open(p, n, m)
+# support compose via stocks where the legs are stocks for the decorated cospan
+const OpenBoneStockFlowOb_S, OpenBoneStockFlow_S = OpenCSetTypes(BoneStockFlow,:S) # :S indicates the foot are S, which means composed based on stocks?
+Open_S(p::AbstractBoneStockFlow) = OpenBoneStockFlow_S(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
+Open_S(p::AbstractBoneStockFlow, legs...) = OpenBoneStockFlow_S(p, map(l->FinFunction(l, ns(p)), legs)...)
+Open_S(n, p::AbstractBoneStockFlow, m) = Open_S(p, n, m)
 
-# PetriNet([:S, :I, :R], :infection=>((1, 2), 3))
-# sir_petri = PetriNet(3, ((1, 2), (2, 2)), (2, 3))
-# sir_BoneStockFlow = BoneStockFlow(6, (1,(2,4)), (2,(3,5)),(3,6))
-# BoneStockFlow(number of flows, (inflow indexes for stock 1,outflow indexes for stock 1), (inflow indexes for stock 2,outflow indexes for stock 2)...(inflow indexes for stock n,outflow indexes for stock n))
-"""
-# function does not consider empty inlfows or outflows
-BoneStockFlow(n,ts...) = begin
-  p = BoneStockFlow()
-  add_flows!(p, n)
-  add_stocks!(p, length(ts))
-  for (i,(ins,outs)) in enumerate(ts)
-    ins = vectorify(ins)
-    outs = vectorify(outs)
-    add_inflows!(p, length(ins), repeat([i], length(ins)), collect(ins))
-    add_outflows!(p, length(outs), repeat([i], length(outs)), collect(outs))
-  end
-  p
-end
-"""
+# support compose via flows where the legs are flows for the decorated cospan
+const OpenBoneStockFlowOb_F, OpenBoneStockFlow_F = OpenCSetTypes(BoneStockFlow,:F)
+Open_F(p::AbstractBoneStockFlow) = OpenBoneStockFlow_F(p, map(x->FinFunction([x], nf(p)), 1:nf(p))...)
+Open_F(p::AbstractBoneStockFlow, legs...) = OpenBoneStockFlow_F(p, map(l->FinFunction(l, nf(p)), legs)...)
+Open_F(n, p::AbstractBoneStockFlow, m) = Open_F(p, n, m)
+
 
 # function does not consider empty inlfows or outflows
 BoneStockFlow(n,ts...) = begin
@@ -115,16 +106,14 @@ add_outflows!(p::AbstractBoneStockFlow,n,s,t;kw...) = add_parts!(p,:O,n;ofn=t,os
 sname(p::AbstractBoneStockFlow,s) = (1:ns(p))[s]
 fname(p::AbstractBoneStockFlow,f) = (1:nf(p))[f]
 
-# Note: although indexing makes this pretty fast, it is often faster to bulk-convert
-# the PetriNet net into a transition matrix, if you are working with all of the transitions
+# Note: although indexing makes this pretty fast, it is often faster to bulk-convert -- cite from the package of AlgebraicPetri
 
-#xiaoyan:
 #inflows return the index array of in_flows to a specific stock
 #outflows return the index array of out_flows to a specific stock
 inflows(p::AbstractBoneStockFlow,s) = subpart(p,incident(p,s,:is),:ifn) # subtpart return columns of :is, :ifn, :ofn, :os of the cset table, with the row of returned value of incident(p,s,:ofn)
 outflows(p::AbstractBoneStockFlow,s) = subpart(p,incident(p,s,:os),:ofn) # incident: return the incident (indexes) of the column :ofn when :ofn = s
 
-struct TransitionMatrices # row represent transition, column represent species; and element of matrix indicates whether there is a connection between the flow and stock
+struct TransitionMatrices # row represent flows, column represent stocks; and element of 1 of matrix indicates whether there is a connection between the flow and stock; 0 indicates no connection
   inflow::Matrix{Int}
   outflow::Matrix{Int}
   TransitionMatrices(p::AbstractBoneStockFlow) = begin
@@ -143,11 +132,9 @@ end
 valueat(x::Number, u, t) = x
 valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
 
-##########################################
-## it seems we need to incorporate the vectorfield to the solution!! to have common flows work
+
 vectorfield(pn::AbstractBoneStockFlow) = begin
   tm = TransitionMatrices(pn)
-#  dt = tm.inflow - tm.outflow
   flows = zeros(nf(pn),ns(pn))
   f(du,u,p,t) = begin
     u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
@@ -179,36 +166,26 @@ end
 const AbstractLabelledBoneStockFlow = AbstractACSetType(TheoryLabelledBoneStockFlow)
 const LabelledBoneStockFlowUntyped = ACSetType(TheoryLabelledBoneStockFlow, index=[:ifn,:is,:ofn,:os])
 const LabelledBoneStockFlow = LabelledBoneStockFlowUntyped{Symbol}
-const OpenLabelledBoneStockFlowObUntyped, OpenLabelledBoneStockFlowUntyped = OpenACSetTypes(LabelledBoneStockFlowUntyped,:S)
-const OpenLabelledBoneStockFlowOb, OpenLabelledBoneStockFlow = OpenLabelledBoneStockFlowObUntyped{Symbol}, OpenLabelledBoneStockFlowUntyped{Symbol}
 
-Open(p::AbstractLabelledBoneStockFlow) = OpenLabelledBoneStockFlow(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
-Open(p::AbstractLabelledBoneStockFlow, legs...) = begin
+# open with stocks
+const OpenLabelledBoneStockFlowObUntyped_S, OpenLabelledBoneStockFlowUntyped_S = OpenACSetTypes(LabelledBoneStockFlowUntyped,:S)
+const OpenLabelledBoneStockFlowOb_S, OpenLabelledBoneStockFlow_S = OpenLabelledBoneStockFlowObUntyped_S{Symbol}, OpenLabelledBoneStockFlowUntyped_S{Symbol}
+Open_S(p::AbstractLabelledBoneStockFlow) = OpenLabelledBoneStockFlow_S(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
+Open_S(p::AbstractLabelledBoneStockFlow, legs...) = begin
   s_idx = Dict(sname(p, s)=>s for s in 1:ns(p))
-  OpenLabelledBoneStockFlow(p, map(l->FinFunction(map(i->s_idx[i], l), ns(p)),legs)...)
+  OpenLabelledBoneStockFlow_S(p, map(l->FinFunction(map(i->s_idx[i], l), ns(p)),legs)...)
 end
-Open(n, p::AbstractLabelledBoneStockFlow, m) = Open(p, n, m)
+Open_S(n, p::AbstractLabelledBoneStockFlow, m) = Open_S(p, n, m)
 
-# sir_lpetri = LabelledPetriNet([:S, :I, :R], :inf=>((:S, :I), (:I, :I)), :rec=>(:I, :R))
-# sir_LabelledBoneStockFlow = LabelledBoneStockFlow([:birth, :inf, :rec, :deathS, :deathI, :deathR], :S=>(:birth,(:inf,:deathS)), :I=>(:inf,(:rec,:deathI)),:R=>(:rec,:deathR))
-
-"""
-# function does not consider empty inlfows or outflows
-LabelledBoneStockFlow(n,ts...) = begin
-  p = LabelledBoneStockFlow()
-  n = vectorify(n)
-  state_idx = state_dict(n)
-  add_flows!(p, length(n), fname=n)
-  for (name,(ins,outs)) in ts
-    i = add_stock!(p, sname=name)
-    ins = vectorify(ins)
-    outs = vectorify(outs)
-    add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->state_idx[x], collect(ins)))
-    add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->state_idx[x], collect(outs)))
-  end
-  p
+# open with flows
+const OpenLabelledBoneStockFlowObUntyped_F, OpenLabelledBoneStockFlowUntyped_F = OpenACSetTypes(LabelledBoneStockFlowUntyped,:F)
+const OpenLabelledBoneStockFlowOb_F, OpenLabelledBoneStockFlow_F = OpenLabelledBoneStockFlowObUntyped_F{Symbol}, OpenLabelledBoneStockFlowUntyped_F{Symbol}
+Open_F(p::AbstractLabelledBoneStockFlow) = OpenLabelledBoneStockFlow_F(p, map(x->FinFunction([x], nf(p)), 1:nf(p))...)
+Open_F(p::AbstractLabelledBoneStockFlow, legs...) = begin
+  f_idx = Dict(fname(p, f)=>f for f in 1:nf(p))
+  OpenLabelledBoneStockFlow_F(p, map(l->FinFunction(map(i->f_idx[i], l), nf(p)),legs)...)
 end
-"""
+Open_F(n, p::AbstractLabelledBoneStockFlow, m) = Open_F(p, n, m)
 
 # function consider empty inlfows or outflows
 LabelledBoneStockFlow(n,ts...) = begin
@@ -234,11 +211,7 @@ LabelledBoneStockFlow(n,ts...) = begin
 end
 
 
-# Stock and flow with attributes - including stocks and flows names, and related initial values (stocks), and functions for flows
-###############
-# sir_rxn = ReactionNet{Number, Int}([990, 10, 0], (.001, ((1, 2)=>(2,2))), (.25, (2=>3)))
-# sir_StockFlow = StockFlow{Function, Int}([f_birth, f_inf, f_rec, f_deathS, f_deathI, f_deathR], (990,(1 => (2,4))), (10,(2 => (3,5))),(0, (3 => 6)))
-# function: f(du, u, p): u=[S,I,R], p=[birthRate, c_beta, recoveryRare, deathRate]
+# Stock and flow diagram with attributes - including stocks and flows names, and related initial values (stocks), and functions for flows
 
 @present TheoryStockFlow <: TheoryBoneStockFlow begin
   FuncFlow::Data
@@ -250,27 +223,19 @@ end
 
 const AbstractStockFlow = AbstractACSetType(TheoryStockFlow)
 const StockFlow = ACSetType(TheoryStockFlow, index=[:ifn,:is,:ofn,:os])
-const OpenStockFlowOb, OpenStockFlow = OpenACSetTypes(StockFlow,:S)
 
-Open(p::AbstractStockFlow{FF,I}) where {FF,I} = OpenStockFlow{FF,I}(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
-Open(p::AbstractStockFlow{FF,I}, legs...) where {FF,I} = OpenStockFlow{FF,I}(p, map(l->FinFunction(l, ns(p)), legs)...)
-Open(n, p::AbstractStockFlow, m) = Open(p, n, m)
+# open with stocks
+const OpenStockFlowOb_S, OpenStockFlow_S = OpenACSetTypes(StockFlow,:S)
+Open_S(p::AbstractStockFlow{FF,I}) where {FF,I} = OpenStockFlow_S{FF,I}(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
+Open_S(p::AbstractStockFlow{FF,I}, legs...) where {FF,I} = OpenStockFlow_S{FF,I}(p, map(l->FinFunction(l, ns(p)), legs)...)
+Open_S(n, p::AbstractStockFlow, m) = Open_S(p, n, m)
 
-"""
-# function does not consider empty inlfows or outflows
-StockFlow{FF,I}(n,ts...) where {FF,I} = begin
-  p = StockFlow{FF,I}()
-  add_flows!(p, length(n), funcFlow=n)
-  for (i, (initialValue,(ins,outs))) in enumerate(ts)
-    i = add_stock!(p, initialValue=initialValue)
-    ins = vectorify(ins)
-    outs = vectorify(outs)
-    add_inflows!(p, length(ins), repeat([i], length(ins)), collect(ins))
-    add_outflows!(p, length(outs), repeat([i], length(outs)), collect(outs))
-  end
-  p
-end
-"""
+# open with flows
+const OpenStockFlowOb_F, OpenStockFlow_F = OpenACSetTypes(StockFlow,:F)
+Open_F(p::AbstractStockFlow{FF,I}) where {FF,I} = OpenStockFlow_F{FF,I}(p, map(x->FinFunction([x], nf(p)), 1:nf(p))...)
+Open_F(p::AbstractStockFlow{FF,I}, legs...) where {FF,I} = OpenStockFlow_F{FF,I}(p, map(l->FinFunction(l, nf(p)), legs)...)
+Open_F(n, p::AbstractStockFlow, m) = Open_F(p, n, m)
+
 
 # function does not consider empty inlfows or outflows
 StockFlow{FF,I}(n,ts...) where {FF,I} = begin
@@ -309,40 +274,30 @@ end
 const AbstractLabelledStockFlow = AbstractACSetType(TheoryLabelledStockFlow)
 const LabelledStockFlowUntyped = ACSetType(TheoryLabelledStockFlow, index=[:ifn,:is,:ofn,:os])
 const LabelledStockFlow{FF,I} = LabelledStockFlowUntyped{FF,I,Symbol}
-const OpenLabelledStockFlowObUntyped, OpenLabelledStockFlowUntyped = OpenACSetTypes(LabelledStockFlowUntyped,:S)
-const OpenLabelledStockFlowOb{FF,I} = OpenLabelledStockFlowObUntyped{FF,I,Symbol}
-const OpenLabelledStockFlow{FF,I} = OpenLabelledStockFlowUntyped{FF,I,Symbol}
 
-Open(p::AbstractLabelledStockFlow{FF,I}) where {FF,I} = OpenLabelledStockFlow{FF,I}(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
-Open(p::AbstractLabelledStockFlow{FF,I}, legs...) where {FF,I} = begin
+# open with stocks
+const OpenLabelledStockFlowObUntyped_S, OpenLabelledStockFlowUntyped_S = OpenACSetTypes(LabelledStockFlowUntyped,:S)
+const OpenLabelledStockFlowOb_S{FF,I} = OpenLabelledStockFlowObUntyped_S{FF,I,Symbol}
+const OpenLabelledStockFlow_S{FF,I} = OpenLabelledStockFlowUntyped_S{FF,I,Symbol}
+Open_S(p::AbstractLabelledStockFlow{FF,I}) where {FF,I} = OpenLabelledStockFlow_S{FF,I}(p, map(x->FinFunction([x], ns(p)), 1:ns(p))...)
+Open_S(p::AbstractLabelledStockFlow{FF,I}, legs...) where {FF,I} = begin
   s_idx = Dict(sname(p, s)=>s for s in 1:ns(p))
-  OpenLabelledStockFlow{FF,I}(p, map(l->FinFunction(map(i->s_idx[i], l), ns(p)), legs)...)
+  OpenLabelledStockFlow_S{FF,I}(p, map(l->FinFunction(map(i->s_idx[i], l), ns(p)), legs)...)
 end
-Open(n, p::AbstractLabelledStockFlow, m) = Open(p, n, m)
+Open_S(n, p::AbstractLabelledStockFlow, m) = Open_S(p, n, m)
 
-# Ex. LabelledReactionNet{Number, Int}((:S=>990, :I=>10, :R=>0), (:inf, .3/1000)=>((:S, :I)=>(:I,:I)), (:rec, .2)=>(:I=>:R))
-# LabelledStockFlow{Function, Int}((:birth=>p[1]*(u[1]+u[2]+u[3]), :inf=>p[2]*u[1]*u[2]/(u[1]+u[2]+u[3]), :rec=>p[3]*u[2], :deathS=>u[1]*p[4], :deathI=>u[2]*p[4], :deathR=>u[3]*p[4]), (:S, 990)=>(:birth => (:inf,:deathS)), (:I, 10)=>(:inf => (:rec,:deathI)),(:R, 0)=>(:rec=>:deathR))
-# [:birth, :inf, :rec, :deathS, :deathI, :deathR]
-# :S=>(:birth,(:inf,:deathS)), :I=>(:inf,(:rec,:deathI)),:R=>(:rec,:deathR))
-"""
-# function does not consider empty inlfows or outflows
-LabelledStockFlow{FF,I}(n,ts...) where {FF,I} = begin
-  p = LabelledStockFlow{FF,I}()
-  n = vectorify(n)
-  flows = map(first, collect(n))
-  funcFlows = map(last, collect(n))
-  state_idx = state_dict(flows)
-  add_flows!(p, length(flows), funcFlow=funcFlows, fname=flows)
-  for (i, ((name,initialValue),(ins,outs))) in enumerate(ts)
-    i = add_stock!(p,initialValue=initialValue, sname=name)
-    ins = vectorify(ins)
-    outs = vectorify(outs)
-    add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->state_idx[x], collect(ins)))
-    add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->state_idx[x], collect(outs)))
-  end
-  p
+
+# open with flows
+const OpenLabelledStockFlowObUntyped_F, OpenLabelledStockFlowUntyped_F = OpenACSetTypes(LabelledStockFlowUntyped,:F)
+const OpenLabelledStockFlowOb_F{FF,I} = OpenLabelledStockFlowObUntyped_F{FF,I,Symbol}
+const OpenLabelledStockFlow_F{FF,I} = OpenLabelledStockFlowUntyped_F{FF,I,Symbol}
+Open_F(p::AbstractLabelledStockFlow{FF,I}) where {FF,I} = OpenLabelledStockFlow_F{FF,I}(p, map(x->FinFunction([x], nf(p)), 1:nf(p))...)
+Open_F(p::AbstractLabelledStockFlow{FF,I}, legs...) where {FF,I} = begin
+  f_idx = Dict(fname(p, f)=>f for f in 1:nf(p))
+  OpenLabelledStockFlow_F{FF,I}(p, map(l->FinFunction(map(i->f_idx[i], l), nf(p)), legs)...)
 end
-"""
+Open_F(n, p::AbstractLabelledStockFlow, m) = Open_F(p, n, m)
+
 
 # function consider empty inlfows or outflows
 LabelledStockFlow{FF,I}(n,ts...) where {FF,I} = begin
