@@ -6,9 +6,9 @@ export TheoryBoneStockFlow, BoneStockFlow, AbstractBoneStockFlow, ns, nf, ni, no
   TransitionMatrices, vectorfield,
   TheoryLabelledBoneStockFlow, LabelledBoneStockFlow, AbstractLabelledBoneStockFlow, sname, fname,
   TheoryStockFlow, StockFlow, AbstractStockFlow, initialValue, initialValues, funcFlow, funcFlows,
-  TheoryLabelledStockFlow, LabelledStockFlow, AbstractLabelledStockFlow,
+  TheoryLabelledStockFlow, LabelledStockFlow, AbstractLabelledStockFlow, stockIndex,
   Open_S, OpenBoneStockFlow_S, OpenLabelledBoneStockFlow_S, OpenStockFlow_S, OpenLabelledStockFlow_S,
-  OpenBoneStockFlowOb_S, OpenLabelledBoneStockFlowOb_S, OpenStockFlowOb_S, OpenLabelledStockFlowOb_S, 
+  OpenBoneStockFlowOb_S, OpenLabelledBoneStockFlowOb_S, OpenStockFlowOb_S, OpenLabelledStockFlowOb_S,
   Open_F, OpenBoneStockFlow_F, OpenLabelledBoneStockFlow_F, OpenStockFlow_F, OpenLabelledStockFlow_F,
   OpenBoneStockFlowOb_F, OpenLabelledBoneStockFlowOb_F, OpenStockFlowOb_F, OpenLabelledStockFlowOb_F
 
@@ -21,7 +21,7 @@ using LabelledArrays
 using LinearAlgebra: mul!
 import Base.+,Base.-
 
-# fake inflow or outflow names. Note, we need fake inflow or outflow if a stock do not have any inflow or outflow
+# fake inflow or outflow names. Note, we need fake inflow or outflow if a stock does not have any inflow or outflow
 const FK_FLOW_NAME=:F_NONE
 const FK_FLOW_INDEX=0
 
@@ -86,76 +86,6 @@ BoneStockFlow(n,ts...) = begin
   p
 end
 
-ns(p::AbstractBoneStockFlow) = nparts(p,:S)
-nf(p::AbstractBoneStockFlow) = nparts(p,:F)
-ni(p::AbstractBoneStockFlow) = nparts(p,:I)
-no(p::AbstractBoneStockFlow) = nparts(p,:O)
-
-add_stock!(p::AbstractBoneStockFlow;kw...) = add_part!(p,:S;kw...) # before ; are positional arguments, and after ; are keyword arguments
-add_stocks!(p::AbstractBoneStockFlow,n;kw...) = add_parts!(p,:S,n;kw...)
-
-add_flow!(p::AbstractBoneStockFlow;kw...) = add_part!(p,:F;kw...)
-add_flows!(p::AbstractBoneStockFlow,n;kw...) = add_parts!(p,:F,n;kw...)
-
-add_inflow!(p::AbstractBoneStockFlow,s,t;kw...) = add_part!(p,:I;is=s,ifn=t,kw...)
-add_inflows!(p::AbstractBoneStockFlow,n,s,t;kw...) = add_parts!(p,:I,n;is=s,ifn=t,kw...)
-
-add_outflow!(p::AbstractBoneStockFlow,s,t;kw...) = add_part!(p,:O;os=s,ofn=t,kw...)
-add_outflows!(p::AbstractBoneStockFlow,n,s,t;kw...) = add_parts!(p,:O,n;ofn=t,os=s,kw...)
-
-sname(p::AbstractBoneStockFlow,s) = (1:ns(p))[s]
-fname(p::AbstractBoneStockFlow,f) = (1:nf(p))[f]
-
-# Note: although indexing makes this pretty fast, it is often faster to bulk-convert -- cite from the package of AlgebraicPetri
-
-#inflows return the index array of in_flows to a specific stock
-#outflows return the index array of out_flows to a specific stock
-inflows(p::AbstractBoneStockFlow,s) = subpart(p,incident(p,s,:is),:ifn) # subtpart return columns of :is, :ifn, :ofn, :os of the cset table, with the row of returned value of incident(p,s,:ofn)
-outflows(p::AbstractBoneStockFlow,s) = subpart(p,incident(p,s,:os),:ofn) # incident: return the incident (indexes) of the column :ofn when :ofn = s
-
-struct TransitionMatrices # row represent flows, column represent stocks; and element of 1 of matrix indicates whether there is a connection between the flow and stock; 0 indicates no connection
-  inflow::Matrix{Int}
-  outflow::Matrix{Int}
-  TransitionMatrices(p::AbstractBoneStockFlow) = begin
-    inflow, outflow = zeros(Int,(nf(p),ns(p))), zeros(Int,(nf(p),ns(p)))
-    for i in 1:ni(p)
-      inflow[subpart(p,i,:ifn),subpart(p,i,:is)] += 1
-    end
-    for o in 1:no(p)
-      outflow[subpart(p,o,:ofn),subpart(p,o,:os)] += 1
-    end
-    new(inflow,outflow)
-  end
-end
-
-
-valueat(x::Number, u, t) = x
-valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
-
-
-vectorfield(pn::AbstractBoneStockFlow) = begin
-  tm = TransitionMatrices(pn)
-  flows = zeros(nf(pn),ns(pn))
-  f(du,u,p,t) = begin
-    u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
-    p_m = [p[fname(pn, i)] for i in 1:nf(pn)]
-    for i in 1:ns(pn)
-      du[sname(pn, i)] = 0
-      for j in 1:nf(pn)
-        if tm.inflow[j,i] == 1
-          du[sname(pn, i)] = du[sname(pn, i)] + valueat(p_m[j],u,t)
-        end
-        if tm.outflow[j,i] == 1
-          du[sname(pn, i)] = du[sname(pn, i)] - valueat(p_m[j],u,t)
-        end
-      end
-    end
-    return du
-  end
-  return f
-end
-
-
 @present TheoryLabelledBoneStockFlow <: TheoryBoneStockFlow begin
   Name::Data
 
@@ -211,7 +141,7 @@ LabelledBoneStockFlow(n,ts...) = begin
 end
 
 
-# Stock and flow diagram with attributes - including stocks and flows names, and related initial values (stocks), and functions for flows
+# Stock and flow diagram with attributes - not including stocks and flows names, and related initial values (stocks), and functions for flows
 
 @present TheoryStockFlow <: TheoryBoneStockFlow begin
   FuncFlow::Data
@@ -324,11 +254,6 @@ LabelledStockFlow{FF,I}(n,ts...) where {FF,I} = begin
   p
 end
 
-
-sname(p::Union{AbstractLabelledBoneStockFlow, AbstractLabelledStockFlow},s) = subpart(p,s,:sname)
-fname(p::Union{AbstractLabelledBoneStockFlow, AbstractLabelledStockFlow},f) = subpart(p,f,:fname)
-
-
 initialValue(p::AbstractLabelledStockFlow,s) = subpart(p,s,:initialValue)
 funcFlow(p::AbstractLabelledStockFlow,f) = subpart(p,f,:funcFlow)
 
@@ -342,6 +267,10 @@ funcFlows(p::AbstractLabelledStockFlow) = begin
   LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
 end
 
+# return the stock index with name of s
+# stockIndex(sf::AbstractLabelledStockFlow,s::Symbol)=findfirst(isequal(s),sf.tables.S.sname)
+
+include("linkedStockAndFlowDiagram.jl")
 include("visualization.jl")
 
 end
