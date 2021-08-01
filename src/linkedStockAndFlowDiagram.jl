@@ -322,19 +322,6 @@ LabelledLinkedStockFlow{FF,I}(n,ts...) where {FF,I} = begin
   p
 end
 
-initialValue(p::AbstractLabelledLinkedStockFlow,s) = subpart(p,s,:initialValue)
-funcFlow(p::AbstractLabelledLinkedStockFlow,f) = subpart(p,f,:funcFlow)
-
-initialValues(p::AbstractLabelledLinkedStockFlow) = begin
-  snames = [sname(p, s) for s in 1:ns(p)]
-  LVector(;[(snames[s]=>initialValue(p, s)) for s in 1:ns(p)]...)
-end
-
-funcFlows(p::AbstractLabelledLinkedStockFlow) = begin
-  fnames = [fname(p, f) for f in 1:nf(p)]
-  LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
-end
-
 #############################################
 ## some tries to let the model can check the flow function constrains of stocks defined by links
 # LabelledLinkedStockFlowC{Function, Int}((:birth=>(f_birth,(:S,:I,:R)), :inf=>(f_inf,(:S,:I,:R)), :rec=>(f_rec,:I), :deathS=>(f_deathS,:S), :deathI=>(f_deathI,:I), :deathR=>(f_deathR,:R)), (:S, 990)=>(:birth,(:inf,:deathS),(:birth,:inf,:deathS)), (:I, 10)=>(:inf,(:rec,:deathI),(:birth,:inf,:rec,:deathI)),(:R, 0)=>(:rec,:deathR,(:birth,:inf,:deathR)))
@@ -386,6 +373,12 @@ lstock(p::Union{AbstractLabelledLinkedBoneStockFlow, AbstractLabelledLinkedStock
 #given flow name, return the linked stocks' name
 lflow(p::Union{AbstractLabelledLinkedBoneStockFlow, AbstractLabelledLinkedStockFlow, AbstractLabelledLinkedStockFlowC},f::Symbol) = lflow(p,findfirst(isequal(f), p.tables.F.fname))
 
+# function of check the assertion: each flow's dependant stocks of user defined in the function and in the Stock and Flow Diagram should be the same
+checkLinks(p::AbstractLabelledLinkedStockFlowC) = begin
+  for f in 1:nf(p)
+    @assert isequal(sort(lflow(p,subpart(p,f,:fname))),sort(subpart(p,f,:fls))) "For flow: $(subpart(p,f,:fname)), the user-defined function depend stocks $(sort(subpart(p,f,:fls))) is not equal to the link's depend stocks $(sort(lflow(p,subpart(p,f,:fname))))!"
+  end
+end
 
 # function consider empty inlfows or outflows
 LabelledLinkedStockFlowC{FF,I}(n,ts...) where {FF,I} = begin
@@ -417,8 +410,20 @@ LabelledLinkedStockFlowC{FF,I}(n,ts...) where {FF,I} = begin
     end
   end
   # assertion: each flow's dependant stocks of user defined in the function and in the Stock and Flow Diagram should be the same
-  for f in 1:nf(p)
-    @assert isequal(sort(lflow(p,subpart(p,f,:fname))),sort(subpart(p,f,:fls))) "For flow: $(subpart(p,f,:fname)), the user-defined function depend stocks $(sort(subpart(p,f,:fls))) is not equal to the link's depend stocks $(sort(lflow(p,subpart(p,f,:fname))))!"
-  end
+  checkLinks(p)
   p
+end
+
+
+initialValue(p::Union{AbstractLabelledLinkedStockFlow,AbstractLabelledLinkedStockFlowC},s) = subpart(p,s,:initialValue)
+funcFlow(p::Union{AbstractLabelledLinkedStockFlow,AbstractLabelledLinkedStockFlowC},f) = subpart(p,f,:funcFlow)
+
+initialValues(p::Union{AbstractLabelledLinkedStockFlow,AbstractLabelledLinkedStockFlowC}) = begin
+  snames = [sname(p, s) for s in 1:ns(p)]
+  LVector(;[(snames[s]=>initialValue(p, s)) for s in 1:ns(p)]...)
+end
+
+funcFlows(p::Union{AbstractLabelledLinkedStockFlow,AbstractLabelledLinkedStockFlowC}) = begin
+  fnames = [fname(p, f) for f in 1:nf(p)]
+  LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
 end
