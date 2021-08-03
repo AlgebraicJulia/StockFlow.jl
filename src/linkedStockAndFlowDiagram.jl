@@ -7,7 +7,7 @@ OpenLinkedStockFlowOb_S, OpenLinkedStockFlow_S, OpenLinkedStockFlowOb_F, OpenLin
 TheoryLabelledLinkedStockFlow, LabelledLinkedStockFlow, AbstractLabelledLinkedStockFlow,
 OpenLabelledLinkedStockFlowOb_S, OpenLabelledLinkedStockFlow_S, OpenLabelledLinkedStockFlowOb_F, OpenLabelledLinkedStockFlow_F,
 initialValue, funcFlow, initialValues, funcFlows,
-TheoryLabelledLinkedStockFlowC, LabelledLinkedStockFlowC, AbstractLabelledLinkedStockFlowC,
+TheoryLabelledLinkedStockFlowC, LabelledLinkedStockFlowC, AbstractLabelledLinkedStockFlowC, checkLinks,
 OpenLabelledLinkedStockFlowObC_S, OpenLabelledLinkedStockFlowC_S, OpenLabelledLinkedStockFlowObC_F, OpenLabelledLinkedStockFlowC_F
 
 
