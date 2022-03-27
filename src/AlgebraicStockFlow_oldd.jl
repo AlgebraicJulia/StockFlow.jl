@@ -1,4 +1,4 @@
-#module AlgebraicStockFlow
+module AlgebraicStockFlow
 
 export TheoryStockAndFlow0, TheoryStockAndFlow, AbstractStockAndFlow0, AbstractStockAndFlow, StockAndFlow0, StockAndFlow, 
 add_flow!, add_flows!, add_stock!, add_stocks!, add_variable!, add_variables!, add_svariable!, add_svariables!, 
@@ -6,7 +6,7 @@ add_inflow!, add_inflows!, add_outflow!, add_outflows!, add_Vlink!, add_Vlinks!,
 add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, vname, inflows, outflows, svStocks, 
 initialValue, initialValues, funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
-vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open
+vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -56,28 +56,7 @@ end
 # constrains the attributes data type to be: 
 # 1. InitialValue: Real
 # 2. Name: Symbol
-const StockAndFlow0 = StockAndFlowUntyped0{Symbol,Number} 
-
-StockAndFlow0(s,sv) = begin
-
-  p0 = StockAndFlow0()
-
-  s = vectorify(s)
-  sv = vectorify(sv)
-
-  sv_idx = state_dict(sv)
-  add_svariables!(p0, length(sv), svname=sv)
-
-  for (i, ((name, initialValue),svs)) in enumerate(s)
-    i = add_stock!(p0,initialValue=initialValue, sname=name)
-    svs = vectorify(svs)
-    svs = svs[svs .!= FK_SVARIABLE_NAME]
-    if length(svs)>0
-        add_Slinks!(p0, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
-    end
-  end
-  p0
-end
+const StockAndFlow0 = StockAndFlowUntyped0{Symbol,Number}  
 
 # define the schema of a general stock and flow diagram
 @present TheoryStockAndFlow <: TheoryStockAndFlow0 begin
@@ -118,12 +97,6 @@ end
 # Note: those three (or any subgroups) attributes' datatype can be defined by the users. See the example of the PetriNet which allows the Reactionrate and Concentration defined by the users
 const StockAndFlow = StockAndFlowUntyped{Symbol,Number,Function} 
 
-const OpenStockAndFlowObUntyped, OpenStockAndFlowUntyped = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
-const OpenStockAndFlowOb = OpenStockAndFlowObUntyped{Symbol,Number,Function} 
-const OpenStockAndFlow = OpenStockAndFlowUntyped{Symbol,Number,Function} 
-
-Open(p::StockAndFlow, legs...) = OpenStockAndFlow(p, legs...)
-
 # TODO: add composition
 
 # functions of adding components of the model schema
@@ -150,8 +123,8 @@ add_Vlink!(p::AbstractStockAndFlow,s,v;kw...) = add_part!(p,:LV;lvs=s,lvv=v,kw..
 add_Vlinks!(p::AbstractStockAndFlow,n,s,v;kw...) = add_parts!(p,:LV,n;lvs=s,lvv=v,kw...)
 
 # links from Stock to sum dynamic variable
-add_Slink!(p::AbstractStockAndFlow0,s,sv;kw...) = add_part!(p,:LS;lss=s,lssv=sv,kw...)
-add_Slinks!(p::AbstractStockAndFlow0,n,s,sv;kw...) = add_parts!(p,:LS,n;lss=s,lssv=sv,kw...)
+add_Slink!(p::AbstractStockAndFlow,s,sv;kw...) = add_part!(p,:LS;lss=s,lssv=sv,kw...)
+add_Slinks!(p::AbstractStockAndFlow,n,s,sv;kw...) = add_parts!(p,:LS,n;lss=s,lssv=sv,kw...)
 
 # links from sum dynamic variable to dynamic varibale
 add_SVlink!(p::AbstractStockAndFlow,sv,v;kw...) = add_part!(p,:LSV;lsvsv=sv,lsvv=v,kw...)
