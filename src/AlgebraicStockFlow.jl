@@ -6,7 +6,8 @@ add_inflow!, add_inflows!, add_outflow!, add_outflows!, add_Vlink!, add_Vlinks!,
 add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, vname, inflows, outflows, svStocks, 
 initialValue, initialValues, funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
-vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open
+vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
+object_shift_right, foot, leg, lsnames
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -58,12 +59,45 @@ end
 # 2. Name: Symbol
 const StockAndFlow0 = StockAndFlowUntyped0{Symbol,Number} 
 
-StockAndFlow0(s,sv) = begin
+
+# only have stocks
+StockAndFlow0(s, initialvalues) = begin
+
+  p0 = StockAndFlow0()
+  s = vectorify(s)
+  initialvalues = vectorify(initialvalues)
+  add_stocks!(p0, length(s), initialValue=initialvalues, sname=s)
+  p0
+
+end
+
+# have all the components of stocks, sum dynamical variables and linkages between them
+# Note: it is not possible that discrete sum-dynamical-variables exists in the C0
+StockAndFlow0(s, ssv, initialvalues) = begin
+
+  p0 = StockAndFlow0(s, initialvalues)
+
+  s = vectorify(s)
+  ssv = vectorify(ssv)
+
+  sv=unique(map(last, ssv))
+  add_svariables!(p0, length(sv), svname=sv)
+
+  sv_idx = state_dict(sv)
+  s_idx = state_dict(s)
+  add_Slinks!(p0, length(ssv), map(x->s_idx[x], map(first,ssv)), map(x->sv_idx[x], sv))
+  p0
+
+end
+
+
+"""
+StockAndFlow0(s,ssv) = begin
 
   p0 = StockAndFlow0()
 
   s = vectorify(s)
-  sv = vectorify(sv)
+  svs = vectorify(sv)
 
   sv_idx = state_dict(sv)
   add_svariables!(p0, length(sv), svname=sv)
@@ -78,6 +112,7 @@ StockAndFlow0(s,sv) = begin
   end
   p0
 end
+"""
 
 # define the schema of a general stock and flow diagram
 @present TheoryStockAndFlow <: TheoryStockAndFlow0 begin
@@ -117,14 +152,6 @@ end
 # 3. FuncDynam: Function
 # Note: those three (or any subgroups) attributes' datatype can be defined by the users. See the example of the PetriNet which allows the Reactionrate and Concentration defined by the users
 const StockAndFlow = StockAndFlowUntyped{Symbol,Number,Function} 
-
-const OpenStockAndFlowObUntyped, OpenStockAndFlowUntyped = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
-const OpenStockAndFlowOb = OpenStockAndFlowObUntyped{Symbol,Number,Function} 
-const OpenStockAndFlow = OpenStockAndFlowUntyped{Symbol,Number,Function} 
-
-Open(p::StockAndFlow, legs...) = OpenStockAndFlow(p, legs...)
-
-# TODO: add composition
 
 # functions of adding components of the model schema
 add_flow!(p::AbstractStockAndFlow,v;kw...) = add_part!(p,:F;fv=v,kw...)
@@ -241,6 +268,20 @@ fname(p::AbstractStockAndFlow,f) = subpart(p,f,:fname) # return the flows name w
 svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname) # return the sum dynamical variables name with index of sv
 vname(p::AbstractStockAndFlow,v) = subpart(p,v,:vname) # return the dynamical variables name with index of v
 
+snames(p::AbstractStockAndFlow0) = [sname(p, s) for s in 1:ns(p)]
+fnames(p::AbstractStockAndFlow) = [fname(p, f) for f in 1:nf(p)]
+svnames(p::AbstractStockAndFlow0) = [svname(p, sv) for sv in 1:nsv(p)]
+vnames(p::AbstractStockAndFlow) = [vname(p, v) for v in 1:nv(p)]
+
+# return the pair of names of (stock, sum-dynamical-variable) for all linkages between them
+lsnames(p::AbstractStockAndFlow0) = begin
+    s = map(x->subpart(p,x,:lss),collect(1:nls(p)))
+    sv = map(x->subpart(p,x,:lssv),collect(1:nls(p)))
+    sn = map(x->sname(p,x),s)
+    svn = map(x->svname(p,x),sv)
+    pssv = collect(zip(sn, svn))
+end
+
 # return inflows of stock index s
 inflows(p::AbstractStockAndFlow,s) = subpart(p,incident(p,s,:is),:ifn) 
 # return outflows of stock index s
@@ -281,8 +322,8 @@ outflowsAll(p::AbstractStockAndFlow) = [((outflows(p, s) for s in 1:ns(p))...)..
 initialValue(p::AbstractStockAndFlow0,s) = subpart(p,s,:initialValue)
 # return the LVector of pairs: sname => initialValues
 initialValues(p::AbstractStockAndFlow0) = begin
-  snames = [sname(p, s) for s in 1:ns(p)]
-  LVector(;[(snames[s]=>initialValue(p, s)) for s in 1:ns(p)]...)
+  sn = snames(p)
+  LVector(;[(sn[s]=>initialValue(p, s)) for s in 1:ns(p)]...)
 end
 # return the functions of variables give index v
 funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
@@ -326,6 +367,54 @@ funcSVs(p::AbstractStockAndFlow0) = begin
   svnames = [svname(p, sv) for sv in 1:nsv(p)]
   LVector(;[(svnames[sv]=>funcSV(p, sv)) for sv in 1:nsv(p)]...)
 end
+
+
+# given a stock and flow diagram in schema "StockAndFlow", return a stock and flow diagram in schema "StockAndFlow0"
+object_shift_right(p::StockAndFlow) = begin
+    s = snames(p)
+    initialvalues = map(x->initialValues(p)[x], s)
+    ssv = map(y->map(x->(sname(p,y),x),svname(p,svsstock(p,y))),collect(1:ns(p)))
+    ssv = vcat(ssv...)
+    StockAndFlow0(s,ssv,initialvalues)
+end
+
+# create open acset, as the structured cospan
+const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
+
+foot(x::StockAndFlow, s) = begin
+    s = vectorify(s)
+    initialvalues = map(i->initialValues(x)[i], s)
+    StockAndFlow0(s, initialvalues)
+end
+
+foot(x::StockAndFlow, s, ssv) = begin
+    s = vectorify(s)
+    ssv = vectorify(ssv)
+    initialvalues = map(i->initialValues(x)[i], s)
+    StockAndFlow0(s, ssv, initialvalues)
+end
+
+ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
+
+leg(a::A, x0::A) where {A <: Union{StockAndFlow0, StockAndFlow}} = begin
+    ϕs = ntcomponent(snames(a), snames(x0))
+    if nsv(a) > 0  # if have sum-dynamical-variable and links between stocks and sum-dynamical-variables
+      ϕsv = ntcomponent(svnames(a), svnames(x0))
+      ϕls = ntcomponent(lsnames(a), lsnames(x0))
+    else
+      ϕsv = Int[]
+      ϕls = Int[]
+    end
+    ACSetTransformation((S=ϕs, LS=ϕls, SV=ϕsv), a, x0)
+end
+
+const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
+
+Open(p::StockAndFlow, feet...) = begin
+  p0 = object_shift_right(p)
+  legs = map(x->leg(x, p0), feet)
+  OpenStockAndFlow(p, legs...)
+end 
 
 struct TransitionMatrices 
 # row represent flows, column represent stocks; and element of 1 of matrix indicates whether there is a connection between the flow and stock; 0 indicates no connection
