@@ -70,7 +70,7 @@ version = "0.5.1"
 
 [[Catlab]]
 deps = ["AutoHashEquals", "Compose", "DataStructures", "GeneralizedGenerated", "JSON", "LightXML", "LinearAlgebra", "Logging", "MLStyle", "Pkg", "PrettyTables", "Random", "Reexport", "Requires", "SparseArrays", "StaticArrays", "Statistics", "Tables"]
-path = "/Users/xiaoyanli/.julia/dev/Catlab"
+path = "/Users/xiaoyanli/.julia/dev/Catlab.jl"
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 version = "0.13.7"
 
