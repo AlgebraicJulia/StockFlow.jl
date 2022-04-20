@@ -91,29 +91,6 @@ StockAndFlow0(s, ssv, initialvalues) = begin
 end
 
 
-"""
-StockAndFlow0(s,ssv) = begin
-
-  p0 = StockAndFlow0()
-
-  s = vectorify(s)
-  svs = vectorify(sv)
-
-  sv_idx = state_dict(sv)
-  add_svariables!(p0, length(sv), svname=sv)
-
-  for (i, ((name, initialValue),svs)) in enumerate(s)
-    i = add_stock!(p0,initialValue=initialValue, sname=name)
-    svs = vectorify(svs)
-    svs = svs[svs .!= FK_SVARIABLE_NAME]
-    if length(svs)>0
-        add_Slinks!(p0, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
-    end
-  end
-  p0
-end
-"""
-
 # define the schema of a general stock and flow diagram
 @present TheoryStockAndFlow <: TheoryStockAndFlow0 begin
   F::Ob
@@ -434,8 +411,6 @@ end
 
 valueat(x::Number, u, t) = x
 functioneat(f::Number, u, uN, t) = x
-#valueat(f::Function, u, t) = try f(u,t) catch e f(t) end
-#functioneat(f::Function, u, uN, t)=try f(u,uN,t) catch e f(t) end
 valueat(f::Function, u, t) = f(u,t)
 functioneat(f::Function, u, uN, t)=f(u,uN,t)
 
@@ -463,6 +438,8 @@ vectorfield(pn::AbstractStockAndFlow) = begin
 end
 
 include("visualization.jl")
+# The implementations in this file is specific for the Premitive schema of stock and flow diagram in the ACT paper
+include("PreliminaryStockFlowInACTPaper.jl")
 
 end
 
