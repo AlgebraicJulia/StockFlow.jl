@@ -61,7 +61,7 @@ end
 # the type parameter is only used for schema C, which means if schema=C0, all the component will be plot out anyway, since C0 is quite simple
 # type: "SFVL": include all component
 #       "SF": only include stocks and flows
-#       "SFV": only include stocks, flows, variables (include both dynamical variables and sum dynamical variables)
+#       "SFV": only include stocks, flows, variables (include both auxiliary variables and sum auxiliary variables)
 
 function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL")
 

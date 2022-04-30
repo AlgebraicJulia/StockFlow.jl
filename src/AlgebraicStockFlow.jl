@@ -20,9 +20,9 @@ import Base.+,Base.-
 
 # fake names for missed part for declaring the components of stock and flow diagrams
 const FK_FLOW_NAME=:F_NONE #fake name of inflows or outflows. e.g., if a stock does not have any inflow or any outflow
-const FK_VARIABLE_NAME=:V_NONE #fake name of the dynamical variables. e.g., if a stock does not link to any (not sum) dynamical variable
-const FK_SVARIABLE_NAME=:SV_NONE #fake name of the sum dynamical variables. e.g., of a stock does not link to any sum dynamical variable
-const FK_SVVARIABLE_NAME=:SVV_NONE #fake name of the dynamical variables that links to sum dynamical variables. e.g., a sum dynamical variable does not link to any dynamical variable
+const FK_VARIABLE_NAME=:V_NONE #fake name of the auxiliary variables. e.g., if a stock does not link to any (not sum) auxiliary variable
+const FK_SVARIABLE_NAME=:SV_NONE #fake name of the sum auxiliary variables. e.g., of a stock does not link to any sum auxiliary variable
+const FK_SVVARIABLE_NAME=:SVV_NONE #fake name of the auxiliary variables that links to sum auxiliary variables. e.g., a sum auxiliary variable does not link to any auxiliary variable
 
 +(f::Function, g::Function) = (x...) -> f(x...) + g(x...)
 -(f::Function, g::Function) = (x...) -> f(x...) - g(x...)
@@ -34,7 +34,7 @@ vectorify(n) = [n]
 
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
 
-# define the sub-schema of c0, which includes the three objects: stocks(S), sum-dynamical-variables(SV), and the linkages between them (LS) to be composed
+# define the sub-schema of c0, which includes the three objects: stocks(S), sum-auxiliary-variables(SV), and the linkages between them (LS) to be composed
 @present TheoryStockAndFlow0(FreeSchema) begin
   S::Ob
   SV::Ob
@@ -71,8 +71,8 @@ StockAndFlow0(s, initialvalues) = begin
 
 end
 
-# have all the components of stocks, sum dynamical variables and linkages between them
-# Note: it is not possible that discrete sum-dynamical-variables exists in the C0
+# have all the components of stocks, sum auxiliary variables and linkages between them
+# Note: it is not possible that discrete sum-auxiliary-variables exists in the C0
 StockAndFlow0(s, ssv, initialvalues) = begin
 
   p0 = StockAndFlow0(s, initialvalues)
@@ -166,8 +166,8 @@ ns(p::AbstractStockAndFlow0) = nparts(p,:S) #stocks
 nf(p::AbstractStockAndFlow) = nparts(p,:F) #flows
 ni(p::AbstractStockAndFlow) = nparts(p,:I) #inflows
 no(p::AbstractStockAndFlow) = nparts(p,:O) #outflows
-nvb(p::AbstractStockAndFlow) = nparts(p,:V) #dynamical variables
-nsv(p::AbstractStockAndFlow0) = nparts(p,:SV) #sum dynamical variables
+nvb(p::AbstractStockAndFlow) = nparts(p,:V) #auxiliary variables
+nsv(p::AbstractStockAndFlow0) = nparts(p,:SV) #sum auxiliary variables
 nls(p::AbstractStockAndFlow0) = nparts(p,:LS) #links from Stock to sum dynamic variable
 nlv(p::AbstractStockAndFlow) = nparts(p,:LV) #links from Stock to dynamic variable
 nlsv(p::AbstractStockAndFlow) = nparts(p,:LSV) #links from sum dynamic variable to dynamic varibale
@@ -198,8 +198,8 @@ StockAndFlow(s,f,v,sv) = begin
     sv_idx = state_dict(svname)
 
     # adding the objects that do not have out-morphisms firstly
-    add_variables!(p, length(vname), vname=vname, funcDynam=map(last, v))    # add objects :V (dynamical variables)
-    add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum dynamical variables)
+    add_variables!(p, length(vname), vname=vname, funcDynam=map(last, v))    # add objects :V (auxiliary variables)
+    add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum auxiliary variables)
     add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
 
     # Parse the elements included in "s" -- stocks
@@ -207,8 +207,8 @@ StockAndFlow(s,f,v,sv) = begin
       i = add_stock!(p,initialValue=initialValue, sname=name) # add objects :S (stocks)
       ins=vectorify(ins) # inflows of each stock
       outs=vectorify(outs) # outflows of each stock
-      vs=vectorify(vs) # dynamical variables depends on the stock
-      svs=vectorify(svs) # sum dynamical variables depends on the stock
+      vs=vectorify(vs) # auxiliary variables depends on the stock
+      svs=vectorify(svs) # sum auxiliary variables depends on the stock
       # filter out the fake (empty) elements
       ins = ins[ins .!= FK_FLOW_NAME]
       outs = outs[outs .!= FK_FLOW_NAME]
@@ -228,7 +228,7 @@ StockAndFlow(s,f,v,sv) = begin
       end
     end
 
-    # Parse the elements included in "sv" -- sum dynamical vairables
+    # Parse the elements included in "sv" -- sum auxiliary vairables
     for (i, (svname,vs)) in enumerate(sv)
       vs=vectorify(vs)
       vs = vs[vs .!= FK_SVVARIABLE_NAME]
@@ -242,15 +242,15 @@ end
 
 sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname) # return the stocks name with index of s
 fname(p::AbstractStockAndFlow,f) = subpart(p,f,:fname) # return the flows name with index of f
-svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname) # return the sum dynamical variables name with index of sv
-vname(p::AbstractStockAndFlow,v) = subpart(p,v,:vname) # return the dynamical variables name with index of v
+svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname) # return the sum auxiliary variables name with index of sv
+vname(p::AbstractStockAndFlow,v) = subpart(p,v,:vname) # return the auxiliary variables name with index of v
 
 snames(p::AbstractStockAndFlow0) = [sname(p, s) for s in 1:ns(p)]
 fnames(p::AbstractStockAndFlow) = [fname(p, f) for f in 1:nf(p)]
 svnames(p::AbstractStockAndFlow0) = [svname(p, sv) for sv in 1:nsv(p)]
 vnames(p::AbstractStockAndFlow) = [vname(p, v) for v in 1:nv(p)]
 
-# return the pair of names of (stock, sum-dynamical-variable) for all linkages between them
+# return the pair of names of (stock, sum-auxiliary-variable) for all linkages between them
 lsnames(p::AbstractStockAndFlow0) = begin
     s = map(x->subpart(p,x,:lss),collect(1:nls(p)))
     sv = map(x->subpart(p,x,:lssv),collect(1:nls(p)))
@@ -271,23 +271,23 @@ instock(p::AbstractStockAndFlow,f) = subpart(p,incident(p,f,:ifn),:is)
 outstock(p::AbstractStockAndFlow,f) = subpart(p,incident(p,f,:ofn),:os) 
 # return stocks of sum variable index sv link to
 stockssv(p::AbstractStockAndFlow0,sv) = subpart(p,incident(p,sv,:lssv),:lss) 
-# return stocks of dynamical variable index v link to
+# return stocks of auxiliary variable index v link to
 stocksv(p::AbstractStockAndFlow,v) = subpart(p,incident(p,v,:lvv),:lvs) 
-# return sum variables of dynamical variable index v link to
+# return sum variables of auxiliary variable index v link to
 svsv(p::AbstractStockAndFlow,v) = subpart(p,incident(p,v,:lsvv),:lsvsv) 
-# return sum dynamical variables a stock s link 
+# return sum auxiliary variables a stock s link 
 svsstock(p::AbstractStockAndFlow,s) = subpart(p,incident(p,s,:lss),:lssv)
-# return dynamical variables a stock s link 
+# return auxiliary variables a stock s link 
 vsstock(p::AbstractStockAndFlow,s) = subpart(p,incident(p,s,:lvs),:lvv)
-# return dynamical variables a sum dynamical variable link 
+# return auxiliary variables a sum auxiliary variable link 
 vssv(p::AbstractStockAndFlow,sv) = subpart(p,incident(p,sv,:lsvsv),:lsvv)
 
 
-# return sum dynamical variables all stocks link (frequency)
+# return sum auxiliary variables all stocks link (frequency)
 svsstockAllF(p::AbstractStockAndFlow) = [((svsstock(p, s) for s in 1:ns(p))...)...]
-# return dynamical variables all stocks link (frequency)
+# return auxiliary variables all stocks link (frequency)
 vsstockAllF(p::AbstractStockAndFlow) = [((vsstock(p, s) for s in 1:ns(p))...)...]
-# return dynamical variables all sum dynamical variables link (frequency)
+# return auxiliary variables all sum auxiliary variables link (frequency)
 vssvAllF(p::AbstractStockAndFlow) = [((vssv(p, sv) for sv in 1:nsv(p))...)...]
 
 # return all inflows
@@ -304,7 +304,7 @@ initialValues(p::AbstractStockAndFlow0) = begin
 end
 # return the functions of variables give index v
 funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
-# return the dynamical variable's index that related to the flow with index of f
+# return the auxiliary variable's index that related to the flow with index of f
 flowVariableIndex(p::AbstractStockAndFlow,f) = subpart(p,f,:fv)
 # return the functions (not substitutes the function of sum variables yet) of flow index f
 funcFlowRaw(p::AbstractStockAndFlow,f)=funcDynam(p,flowVariableIndex(p,f))
@@ -328,7 +328,7 @@ funcFlows(p::AbstractStockAndFlow)=begin
 end
 
 
-# generate the function of a sum dynamical variable (index sv) with the sum of all stocks links to it
+# generate the function of a sum auxiliary variable (index sv) with the sum of all stocks links to it
 funcSV(p::AbstractStockAndFlow0,sv) = begin
     uN(u,t) = begin
         sumS = 0
@@ -375,7 +375,7 @@ ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
 
 leg(a::A, x0::A) where {A <: Union{StockAndFlow0, StockAndFlow}} = begin
     ϕs = ntcomponent(snames(a), snames(x0))
-    if nsv(a) > 0  # if have sum-dynamical-variable and links between stocks and sum-dynamical-variables
+    if nsv(a) > 0  # if have sum-auxiliary-variable and links between stocks and sum-auxiliary-variables
       ϕsv = ntcomponent(svnames(a), svnames(x0))
       ϕls = ntcomponent(lsnames(a), lsnames(x0))
     else
@@ -438,8 +438,8 @@ vectorfield(pn::AbstractStockAndFlow) = begin
 end
 
 include("visualization.jl")
-# The implementations in this file is specific for the Premitive schema of stock and flow diagram in the ACT paper
-include("PreliminaryStockFlowInACTPaper.jl")
+# The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
+include("PrimitiveStockFlowInACTPaper.jl")
 
 end
 

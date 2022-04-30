@@ -1,7 +1,7 @@
 export TheoryStockAndFlowp, AbstractStockAndFlowp, StockAndFlowp, OpenStockAndFlowpOb, OpenStockAndFlowp
 
 
-# define the preliminary schema (including attributes)
+# define the primitive schema (including attributes)
 @present TheoryStockAndFlowp(FreeSchema) begin
 
 # Objects:
@@ -96,11 +96,16 @@ vectorfield(ps::AbstractStockAndFlowp) = begin
   ϕ=funcFlows(ps)
   f(du,u,p,t) = begin
     for i in 1:ns(ps)
+#      println(i)
       du[sname(ps, i)] = 0
+#      println("in")
       for m in 1:length(inflows(ps,i))
+#        println(fname(ps,inflows(ps,i)[m]))
         du[sname(ps, i)] = du[sname(ps, i)] + valueat(ϕ[fname(ps,inflows(ps,i)[m])],u,p,t)
       end
+#      println("out")
       for n in 1:length(outflows(ps,i))
+#        println(fname(ps,outflows(ps,i)[n]))
         du[sname(ps, i)] = du[sname(ps, i)] - valueat(ϕ[fname(ps,outflows(ps,i)[n])],u,p,t)
       end      
     end
