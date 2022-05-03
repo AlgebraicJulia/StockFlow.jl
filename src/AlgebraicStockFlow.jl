@@ -439,7 +439,7 @@ end
 
 include("visualization.jl")
 # The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
-include("PrimitiveStockFlowInACTPaper.jl")
+include("PrimitiveStockFlowInPaper.jl")
 
 end
 
