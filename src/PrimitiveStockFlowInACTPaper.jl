@@ -1,6 +1,6 @@
-export TheoryStockAndFlowp, AbstractStockAndFlowp, StockAndFlowp, OpenStockAndFlowpOb, OpenStockAndFlowp
+export TheoryStockAndFlowp, AbstractStockAndFlowp, StockAndFlowp, OpenStockAndFlowpOb, OpenStockAndFlowp, checkfls
 
-
+using Combinatorics
 # define the primitive schema (including attributes)
 @present TheoryStockAndFlowp(FreeSchema) begin
 
@@ -87,12 +87,79 @@ inflows(p::AbstractStockAndFlowp,s) = incident(p,s,:d)
 # return outflows of stock index s
 outflows(p::AbstractStockAndFlowp,s) = incident(p,s,:u)
 
+# return stocks of flow f link to
+flinks(p::AbstractStockAndFlowp,f) = subpart(p,incident(p,f,:t),:s)
+
 valueat(x::Number, u, p, t) = x
 valueat(f::Function, u, p, t) = f(u,p,t)
+
+# test argumenterror -- stocks in function of flow "fn" are not linked!
+# TODO: find method to generate the exact wrong stocks' names and output in error message
+ftest(f::Function, u, p, fn) = 
+try
+  f(u,p,0)
+catch e
+  if isa(e, ArgumentError)
+    println(string("stocks used in the function of flow ", fn, " are not linked but used!"))
+    rethrow(e)
+  end
+end
+
+# if the function f runs to the end, then throw an ErrorException error!
+ferror(f::Function, u, p, fn, umissed) = begin
+  f(u,p,0)
+  throw(ErrorException(string("stocks ", umissed, " in the function of flow", fn, " are linked but not used!")))
+end
+
+# test stocks in function of flow "fn" are missed!
+fmisstest(f::Function, u, p, fn, umissed) = 
+try
+  ferror(f,u,p,fn, umissed)
+catch e
+  if isa(e, ErrorException)
+    rethrow(e)
+  end
+end
+
+# check the dependency of links of flow index f
+checkfl(ps::AbstractStockAndFlowp, u, p, f) = begin
+    s = flinks(ps,f)
+    uslabel = map(x->sname(ps,x),s)
+    usvalue = map(x->u[x],uslabel)
+    # generate the labelled array only includes the stocks the flow linked to
+    uf = @LArray usvalue tuple(uslabel...)
+
+    functionf = funcFlow(ps,f)
+    namef = fname(ps,f)
+    # check used but not linked stocks
+    ftest(functionf, uf, p, namef)
+    # check linked but not used stocks
+
+    # 1. check if a flow and stocks linked, but no stocks used in the function
+#    if length(uslabel)>0
+#      fmisstest(functionf, [], p, namef, uslabel)
+#    end
+    # 2. check at least 1 stock used in the flow function
+    sub_uslabels=setdiff(collect(combinations(uslabel)),[uslabel]) # generate the sub-arrays of uslabel except itself
+    for sub_uslabel in sub_uslabels
+      sub_usvalue = map(x->u[x],sub_uslabel)
+      sub_uf = @LArray sub_usvalue tuple(sub_uslabel...)
+      fmisstest(functionf, sub_uf, p, namef, setdiff(uslabel, sub_uslabel))
+    end
+end
+
+# check the dependency of links of all flows
+checkfls(ps::AbstractStockAndFlowp, u, p) = begin
+    for f in 1:nf(ps)
+      checkfl(ps, u, p, f)
+    end
+    "Great! Links dependency check passed!"
+end
 
 # take (F: stock and flow diagram with attributes) and return ODEs of the dynamical system
 # Note: ϕ: functions of flows are simply an attribute in F
 vectorfield(ps::AbstractStockAndFlowp) = begin
+  # return ODEs
   ϕ=funcFlows(ps)
   f(du,u,p,t) = begin
     for i in 1:ns(ps)

@@ -62,12 +62,6 @@ git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
 uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 version = "0.5.1"
 
-#[[Catlab]]
-#deps = ["AutoHashEquals", "Compose", "DataStructures", "FunctionWrappers", "GeneralizedGenerated", "JSON", "LightXML", "LinearAlgebra", "Logging", "MLStyle", "Pkg", "PrettyTables", "Random", "Reexport", "Requires", "SparseArrays", "StaticArrays", "Statistics", "Tables", "TypedTables"]
-#git-tree-sha1 = "5cecdb1d4c344bebde4e9314a7f930d380256d1a"
-#uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
-#version = "0.13.1"
-
 [[Catlab]]
 deps = ["AutoHashEquals", "Compose", "DataStructures", "GeneralizedGenerated", "JSON", "LightXML", "LinearAlgebra", "Logging", "MLStyle", "Pkg", "PrettyTables", "Random", "Reexport", "Requires", "SparseArrays", "StaticArrays", "Statistics", "Tables"]
 path = "/Users/xiaoyanli/.julia/dev/Catlab.jl"
@@ -114,6 +108,11 @@ deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
 git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
+
+[[Combinatorics]]
+git-tree-sha1 = "08c8b6831dc00bfea825826be0bc8336fc369860"
+uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+version = "1.0.2"
 
 [[CommonSolve]]
 git-tree-sha1 = "68a0743f578349ada8bc911a5cbd5a2ef6ed6d1f"
@@ -194,12 +193,6 @@ deps = ["InverseFunctions", "Test"]
 git-tree-sha1 = "80c3e8639e3353e5d2912fb3a1916b8455e2494b"
 uuid = "b429d917-457f-4dbc-8f4c-0cc954292b1d"
 version = "0.4.0"
-
-[[Dictionaries]]
-deps = ["Indexing", "Random"]
-git-tree-sha1 = "63004a55faf43a5f7be7f5eca36ce355e9a75b2c"
-uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
-version = "0.3.18"
 
 [[DiffEqBase]]
 deps = ["ArrayInterface", "ChainRulesCore", "DEDataArrays", "DataStructures", "Distributions", "DocStringExtensions", "FastBroadcast", "ForwardDiff", "FunctionWrappers", "IterativeSolvers", "LabelledArrays", "LinearAlgebra", "Logging", "MuladdMacro", "NonlinearSolve", "Parameters", "PreallocationTools", "Printf", "RecursiveArrayTools", "RecursiveFactorization", "Reexport", "Requires", "SciMLBase", "Setfield", "SparseArrays", "StaticArrays", "Statistics", "SuiteSparse", "ZygoteRules"]
@@ -448,11 +441,6 @@ version = "0.3.8"
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
-
-[[Indexing]]
-git-tree-sha1 = "ce1566720fd6b19ff3411404d4b977acd4814f9f"
-uuid = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
-version = "1.1.1"
 
 [[Inflate]]
 git-tree-sha1 = "f5fc07d4e706b84f72d54eedcc1c13d92fb0871c"
@@ -868,9 +856,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
+git-tree-sha1 = "c6c0f690d0cc7caddb74cef7aa847b824a16b256"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
-version = "5.15.3+0"
+version = "5.15.3+1"
 
 [[QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
@@ -1009,12 +997,6 @@ git-tree-sha1 = "5ba658aeecaaf96923dce0da9e703bd1fe7666f9"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.1.4"
 
-[[SplitApplyCombine]]
-deps = ["Dictionaries", "Indexing"]
-git-tree-sha1 = "35efd62f6f8d9142052d9c7a84e35cd1f9d2db29"
-uuid = "03a91e81-4c3e-53e1-a0a4-9c0c8f19dd66"
-version = "1.2.1"
-
 [[Static]]
 deps = ["IfElse"]
 git-tree-sha1 = "2740ea27b66a41f9d213561a04573da5d3823d4b"
@@ -1106,12 +1088,6 @@ deps = ["CloseOpenIntervals", "IfElse", "LinearAlgebra", "LoopVectorization", "P
 git-tree-sha1 = "cb80cf5e0dfb1aedd4c6dbca09b5faaa9a300c62"
 uuid = "d5829a12-d9aa-46ab-831f-fb7c9ab06edf"
 version = "0.1.3"
-
-[[TypedTables]]
-deps = ["Adapt", "Dictionaries", "Indexing", "SplitApplyCombine", "Tables", "Unicode"]
-git-tree-sha1 = "f91a10d0132310a31bc4f8d0d29ce052536bd7d7"
-uuid = "9d95f2ec-7b3d-5a63-8d20-e2491e220bb9"
-version = "1.4.0"
 
 [[URIs]]
 git-tree-sha1 = "97bbe755a53fe859669cd907f2d96aee8d2c1355"
