@@ -9,3 +9,6 @@ examples/.ipynb_checkpoints/
 examples/primitive schema examples/.ipynb_checkpoints/
 
 examples/primitive_schema_examples/.ipynb_checkpoints/
+
+# ignore upload the general schema examples temporarily after the Catlab.jl could support the C0 schema
+examples/general_schema_examples/
