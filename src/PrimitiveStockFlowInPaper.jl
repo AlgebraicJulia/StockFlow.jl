@@ -1,4 +1,5 @@
-export TheoryStockAndFlowp, AbstractStockAndFlowp, StockAndFlowp, OpenStockAndFlowpOb, OpenStockAndFlowp, checkfls
+export TheoryStockAndFlowp, AbstractStockAndFlowp, StockAndFlowp, OpenStockAndFlowpOb, OpenStockAndFlowp, checkfls,
+upstock, downstock, linkstock, linkflow
 
 using Combinatorics
 # define the primitive schema (including attributes)
@@ -87,6 +88,17 @@ inflows(p::AbstractStockAndFlowp,s) = incident(p,s,:d)
 # return outflows of stock index s
 outflows(p::AbstractStockAndFlowp,s) = incident(p,s,:u)
 
+# return stock of flow f out from (upstream)
+upstock(p::AbstractStockAndFlowp,f) = subpart(p,f,:u)
+# return stock of flow f stream in (downstream)
+downstock(p::AbstractStockAndFlowp,f) = subpart(p,f,:d)
+
+# return the source of a link l, which is a stock
+linkstock(p::AbstractStockAndFlowp,l) = subpart(p,l,:s)
+# return the target of a link l, which is a flow
+linkflow(p::AbstractStockAndFlowp,l) = subpart(p,l,:t)
+
+
 # return stocks of flow f link to
 flinks(p::AbstractStockAndFlowp,f) = subpart(p,incident(p,f,:t),:s)
 
@@ -135,6 +147,7 @@ checkfl(ps::AbstractStockAndFlowp, u, p, f) = begin
     ftest(functionf, uf, p, namef)
     # check linked but not used stocks
 
+    #TODO: what about the situation: the flow function simply return a value, but the flow has stocks linked to??
     # 1. check if a flow and stocks linked, but no stocks used in the function
 #    if length(uslabel)>0
 #      fmisstest(functionf, [], p, namef, uslabel)
@@ -179,6 +192,37 @@ vectorfield(ps::AbstractStockAndFlowp) = begin
     return du
   end
   return f
+end
+
+Graph(p::AbstractStockAndFlowp, rd::String="LR") = begin
+  stockNodes = [Node(string("$(sname(p, s))"), Attributes(:shape=>"square", :color=>"black", :style=>"filled", :fillcolor=>"#9ACEEB")) for s in 1:ns(p)]
+  flowNodes = [Node(string("fn_$(fname(p, f))"), Attributes(:shape=>"invtriangle", :color=>"#9ACEEB", :style=>"filled", :label=>"", :width=>"0.1", :height=>"0.2")) for f in 1:nf(p)]
+
+  # edges of flow
+  edges_flows = map(1:nf(p)) do k
+    flow_name=fname(p,k)
+    stock_index_outfrom = upstock(p,k)
+    stock_index_into = downstock(p,k)
+    [Edge(["$(sname(p,stock_index_outfrom))", "fn_$flow_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
+     Edge(["fn_$flow_name", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
+  end |> flatten |> collect
+
+  # edges of links
+  edges_links=map(1:nl(p)) do k
+    flow_index=linkflow(p,k)
+    stock_index=linkstock(p,k)
+    [Edge(["$(sname(p, stock_index))", "fn_$(fname(p,flow_index))"])]
+  end |> flatten |> collect
+
+  stmts_nodes = vcat(stockNodes, flowNodes)
+  stmts_edges = vcat(edges_flows,edges_links)
+  stmts = vcat(stmts_nodes, stmts_edges)
+
+  graph_attrs = Attributes(:rankdir=>rd)
+  edge_attrs  = Attributes(:splines=>"ortho")
+
+  g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, edge_attrs=edge_attrs)
+  return g
 end
 
 
