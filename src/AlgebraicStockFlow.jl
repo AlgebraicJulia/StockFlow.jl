@@ -385,7 +385,8 @@ leg(a::A, x0::A) where {A <: Union{StockAndFlow0, StockAndFlow}} = begin
     ACSetTransformation((S=ϕs, LS=ϕls, SV=ϕsv), a, x0)
 end
 
-const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
+#TODO: temporarily ignore the OpenACSetTypes waiting for the Catlab update for supporting open for C0
+#const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
 
 Open(p::StockAndFlow, feet...) = begin
   p0 = object_shift_right(p)
