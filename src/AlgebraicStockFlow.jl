@@ -356,7 +356,7 @@ object_shift_right(p::StockAndFlow) = begin
 end
 
 # create open acset, as the structured cospan
-const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
+#const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
 
 foot(x::StockAndFlow, s) = begin
     s = vectorify(s)
