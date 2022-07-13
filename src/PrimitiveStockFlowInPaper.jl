@@ -102,36 +102,6 @@ linkflow(p::AbstractStockAndFlowp,l) = subpart(p,l,:t)
 # return stocks of flow f link to
 flinks(p::AbstractStockAndFlowp,f) = subpart(p,incident(p,f,:t),:s)
 
-valueat(x::Number, u, p, t) = x
-valueat(f::Function, u, p, t) = f(u,p,t)
-
-# test argumenterror -- stocks in function of flow "fn" are not linked!
-# TODO: find method to generate the exact wrong stocks' names and output in error message
-ftest(f::Function, u, p, fn) = 
-try
-  f(u,p,0)
-catch e
-  if isa(e, ArgumentError)
-    println(string("stocks used in the function of flow ", fn, " are not linked but used!"))
-    rethrow(e)
-  end
-end
-
-# if the function f runs to the end, then throw an ErrorException error!
-ferror(f::Function, u, p, fn, umissed) = begin
-  f(u,p,0)
-  throw(ErrorException(string("stocks ", umissed, " in the function of flow", fn, " are linked but not used!")))
-end
-
-# test stocks in function of flow "fn" are missed!
-fmisstest(f::Function, u, p, fn, umissed) = 
-try
-  ferror(f,u,p,fn, umissed)
-catch e
-  if isa(e, ErrorException)
-    rethrow(e)
-  end
-end
 
 # check the dependency of links of flow index f
 checkfl(ps::AbstractStockAndFlowp, u, p, f) = begin
@@ -168,6 +138,8 @@ checkfls(ps::AbstractStockAndFlowp, u, p) = begin
     end
     "Great! Links dependency check passed!"
 end
+
+
 
 # take (F: stock and flow diagram with attributes) and return ODEs of the dynamical system
 # Note: ϕ: functions of flows are simply an attribute in F
