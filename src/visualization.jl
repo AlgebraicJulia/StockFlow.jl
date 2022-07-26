@@ -63,7 +63,7 @@ end
 #       "SF": only include stocks and flows
 #       "SFV": only include stocks, flows, variables (include both auxiliary variables and sum auxiliary variables)
 
-function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL")
+function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL", rd::String="LR")
 
 # only full schema C has Flows
   if schema == "C" begin
@@ -75,7 +75,7 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
     end
   end
 
-  stockNodes = [Node(string("$(sname(p, s))"), Attributes(:shape=>"square", :color=>"black")) for s in 1:ns(p)]
+  stockNodes = [Node(string("$(sname(p, s))"), Attributes(:shape=>"square", :color=>"black", :style=>"filled", :fillcolor=>"#9ACEEB")) for s in 1:ns(p)]
 
   if occursin("V", type)
     if schema == "C"
@@ -202,7 +202,7 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
              end
           end
 
-  graph_attrs = Attributes(:rankdir=>"LR")
+  graph_attrs = Attributes(:rankdir=>rd)
 #  node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
   edge_attrs  = Attributes(:splines=>"splines")
 

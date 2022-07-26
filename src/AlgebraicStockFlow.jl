@@ -3,8 +3,8 @@ module AlgebraicStockFlow
 export TheoryStockAndFlow0, TheoryStockAndFlow, AbstractStockAndFlow0, AbstractStockAndFlow, StockAndFlow0, StockAndFlow, 
 add_flow!, add_flows!, add_stock!, add_stocks!, add_variable!, add_variables!, add_svariable!, add_svariables!, 
 add_inflow!, add_inflows!, add_outflow!, add_outflows!, add_Vlink!, add_Vlinks!, add_Slink!, add_Slinks!, add_SVlink!, 
-add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, vname, inflows, outflows, svStocks, 
-initialValue, initialValues, funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
+add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, svnames, vname, inflows, outflows, svStocks, 
+funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames
@@ -45,9 +45,7 @@ state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
 
 # Attributes:
   Name::AttrType
-  InitialValue::AttrType
   
-  initialValue::Attr(S, InitialValue)
   sname::Attr(S, Name)
   svname::Attr(SV, Name)
 end
@@ -55,27 +53,25 @@ end
 @abstract_acset_type AbstractStockAndFlow0
 @acset_type StockAndFlowUntyped0(TheoryStockAndFlow0, index=[:lss,:lssv]) <: AbstractStockAndFlow0
 # constrains the attributes data type to be: 
-# 1. InitialValue: Real
 # 2. Name: Symbol
-const StockAndFlow0 = StockAndFlowUntyped0{Symbol,Number} 
+const StockAndFlow0 = StockAndFlowUntyped0{Symbol} 
 
-
+#=
 # only have stocks
-StockAndFlow0(s, initialvalues) = begin
+StockAndFlow0(s) = begin
 
   p0 = StockAndFlow0()
   s = vectorify(s)
-  initialvalues = vectorify(initialvalues)
-  add_stocks!(p0, length(s), initialValue=initialvalues, sname=s)
+  add_stocks!(p0, length(s), sname=s)
   p0
 
 end
 
 # have all the components of stocks, sum auxiliary variables and linkages between them
 # Note: it is not possible that discrete sum-auxiliary-variables exists in the C0
-StockAndFlow0(s, ssv, initialvalues) = begin
+StockAndFlow0(s, ssv) = begin
 
-  p0 = StockAndFlow0(s, initialvalues)
+  p0 = StockAndFlow0(s)
 
   s = vectorify(s)
   ssv = vectorify(ssv)
@@ -88,6 +84,33 @@ StockAndFlow0(s, ssv, initialvalues) = begin
   add_Slinks!(p0, length(ssv), map(x->s_idx[x], map(first,ssv)), map(x->sv_idx[x], sv))
   p0
 
+end
+=#
+
+# for an instance of the sub-schema, the program supports only have stocks, or only have sum auxiliary variables, or both stocks
+# and sum auxiliary variables, or have both 
+StockAndFlow0(s,sv,ssv) = begin
+  p0 = StockAndFlow0()
+  s = vectorify(s)
+  sv = vectorify(sv)
+  ssv = vectorify(ssv)
+
+  if length(s)>0    
+    s_idx=state_dict(s)
+    add_stocks!(p0, length(s), sname=s)
+  end
+
+  if length(sv)>0   
+    sv_idx=state_dict(sv) 
+    add_svariables!(p0, length(sv), svname=sv)
+  end
+
+  if length(ssv)>0
+    svl=map(last, ssv)
+    sl=map(first, ssv)
+    add_Slinks!(p0, length(ssv), map(x->s_idx[x], sl), map(x->sv_idx[x], svl))
+  end
+  p0
 end
 
 
@@ -128,7 +151,7 @@ end
 # 2. Name: Symbol
 # 3. FuncDynam: Function
 # Note: those three (or any subgroups) attributes' datatype can be defined by the users. See the example of the PetriNet which allows the Reactionrate and Concentration defined by the users
-const StockAndFlow = StockAndFlowUntyped{Symbol,Number,Function} 
+const StockAndFlow = StockAndFlowUntyped{Symbol,Function} 
 
 # functions of adding components of the model schema
 add_flow!(p::AbstractStockAndFlow,v;kw...) = add_part!(p,:F;fv=v,kw...)
@@ -188,7 +211,7 @@ StockAndFlow(s,f,v,sv) = begin
     v = vectorify(v)
     sv = vectorify(sv)
 
-    sname = map(first,map(first,s))
+    sname = map(first,s)
     fname = map(first, f)
     vname = map(first, v)
     svname = map(first, sv)
@@ -203,8 +226,8 @@ StockAndFlow(s,f,v,sv) = begin
     add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
 
     # Parse the elements included in "s" -- stocks
-    for (i, ((name, initialValue),(ins,outs,vs,svs))) in enumerate(s)
-      i = add_stock!(p,initialValue=initialValue, sname=name) # add objects :S (stocks)
+    for (i, (name,(ins,outs,vs,svs))) in enumerate(s)
+      i = add_stock!(p,sname=name) # add objects :S (stocks)
       ins=vectorify(ins) # inflows of each stock
       outs=vectorify(outs) # outflows of each stock
       vs=vectorify(vs) # auxiliary variables depends on the stock
@@ -295,13 +318,15 @@ inflowsAll(p::AbstractStockAndFlow) = [((inflows(p, s) for s in 1:ns(p))...)...]
 # return all outflows
 outflowsAll(p::AbstractStockAndFlow) = [((outflows(p, s) for s in 1:ns(p))...)...]
 
-# return the initial value given an index s
+
+#= return the initial value given an index s
 initialValue(p::AbstractStockAndFlow0,s) = subpart(p,s,:initialValue)
 # return the LVector of pairs: sname => initialValues
 initialValues(p::AbstractStockAndFlow0) = begin
   sn = snames(p)
   LVector(;[(sn[s]=>initialValue(p, s)) for s in 1:ns(p)]...)
 end
+=#
 # return the functions of variables give index v
 funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
 # return the auxiliary variable's index that related to the flow with index of f
@@ -314,11 +339,11 @@ funcFlowsRaw(p::AbstractStockAndFlow) = begin
   LVector(;[(fnames[f]=>funcFlowRaw(p, f)) for f in 1:nf(p)]...)
 end
 # generate the function substituting sum variables in with flow index fn
-funcFlow(p::AbstractStockAndFlow, fn) = begin
-    func=funcFlowRaw(p,fn)
-    f(u,t) = begin
-        uN=funcSVs(p)
-        return functioneat(func,u,uN,t)
+funcFlow(pn::AbstractStockAndFlow, fn) = begin
+    func=funcFlowRaw(pn,fn)
+    f(u,p,t) = begin
+        uN=funcSVs(pn)
+        return valueat(func,u,uN,p,t)
     end
 end
 # return the LVector of pairs: fname => function (with function of sum variables substitue in)
@@ -349,44 +374,58 @@ end
 # given a stock and flow diagram in schema "StockAndFlow", return a stock and flow diagram in schema "StockAndFlow0"
 object_shift_right(p::StockAndFlow) = begin
     s = snames(p)
-    initialvalues = map(x->initialValues(p)[x], s)
+    sv = svnames(p)
     ssv = map(y->map(x->(sname(p,y),x),svname(p,svsstock(p,y))),collect(1:ns(p)))
     ssv = vcat(ssv...)
-    StockAndFlow0(s,ssv,initialvalues)
+    StockAndFlow0(s,sv,ssv)
 end
 
 # create open acset, as the structured cospan
-#const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
-
+const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
+#=
 foot(x::StockAndFlow, s) = begin
     s = vectorify(s)
-    initialvalues = map(i->initialValues(x)[i], s)
-    StockAndFlow0(s, initialvalues)
+    StockAndFlow0(s)
 end
 
 foot(x::StockAndFlow, s, ssv) = begin
     s = vectorify(s)
     ssv = vectorify(ssv)
-    initialvalues = map(i->initialValues(x)[i], s)
-    StockAndFlow0(s, ssv, initialvalues)
+    StockAndFlow0(s, ssv)
 end
+=#
+
+foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 
 ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
 
 leg(a::A, x0::A) where {A <: Union{StockAndFlow0, StockAndFlow}} = begin
-    ϕs = ntcomponent(snames(a), snames(x0))
-    if nsv(a) > 0  # if have sum-auxiliary-variable and links between stocks and sum-auxiliary-variables
+    if ns(a)>0 # if have stocks
+      ϕs = ntcomponent(snames(a), snames(x0))
+    else
+      ϕs = Int[]
+    end
+
+    if nsv(a) > 0  # if have sum-auxiliary-variable
       ϕsv = ntcomponent(svnames(a), svnames(x0))
-      ϕls = ntcomponent(lsnames(a), lsnames(x0))
     else
       ϕsv = Int[]
+    end
+
+    if nls(a)>0 # if have links between stocks and sum-auxiliary-variables
+      ϕls = ntcomponent(lsnames(a), lsnames(x0))
+    else
       ϕls = Int[]
     end
-    ACSetTransformation((S=ϕs, LS=ϕls, SV=ϕsv), a, x0)
+
+    result = ACSetTransformation((S=ϕs, LS=ϕls, SV=ϕsv), a, x0)
+    @assert is_natural(result) "The natural transformation is not natural!"
+
+    result
 end
 
 #TODO: temporarily ignore the OpenACSetTypes waiting for the Catlab update for supporting open for C0
-#const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
+const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
 
 Open(p::StockAndFlow, feet...) = begin
   p0 = object_shift_right(p)
@@ -410,26 +449,55 @@ struct TransitionMatrices
   end
 end
 
-valueat(x::Number, u, t) = x
-functioneat(f::Number, u, uN, t) = x
-valueat(f::Function, u, t) = f(u,t)
-functioneat(f::Function, u, uN, t)=f(u,uN,t)
+valueat(x::Number, u, p, t) = x
+valueat(f::Number, u, uN, p, t) = x
+valueat(f::Function, u, p, t) = f(u,p,t)
+valueat(f::Function, u, uN, p, t)=f(u,uN,p,t)
 
 
-# generate the function of ODEs with the correct format used in package "OrdinaryDiffEq"
+# test argumenterror -- stocks in function of flow "fn" are not linked!
+# TODO: find method to generate the exact wrong stocks' names and output in error message
+ftest(f::Function, u, p, fn) = 
+try
+  f(u,p,0)
+catch e
+  if isa(e, ArgumentError)
+    println(string("Stocks used in the function of flow ", fn, " are not linked but used!"))
+    rethrow(e)
+  end
+end
+
+# if the function f runs to the end, then throw an ErrorException error!
+ferror(f::Function, u, p, fn, umissed) = begin
+  f(u,p,0)
+  throw(ErrorException(string("stocks ", umissed, " in the function of flow", fn, " are linked but not used!")))
+end
+
+# test stocks in function of flow "fn" are missed!
+fmisstest(f::Function, u, p, fn, umissed) = 
+try
+  ferror(f,u,p,fn, umissed)
+catch e
+  if isa(e, ErrorException)
+    rethrow(e)
+  end
+end
+
+
 vectorfield(pn::AbstractStockAndFlow) = begin
+  ϕ=funcFlows(pn)
   tm = TransitionMatrices(pn)
   f(du,u,p,t) = begin
     u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
-    p_m = [p[fname(pn, i)] for i in 1:nf(pn)]
+    ϕ_m = [ϕ[fname(pn, i)] for i in 1:nf(pn)]
     for i in 1:ns(pn)
       du[sname(pn, i)] = 0
       for j in 1:nf(pn)
         if tm.inflow[j,i] == 1
-          du[sname(pn, i)] = du[sname(pn, i)] + valueat(p_m[j],u,t)
+          du[sname(pn, i)] = du[sname(pn, i)] + valueat(ϕ_m[j],u,p,t)
         end
         if tm.outflow[j,i] == 1
-          du[sname(pn, i)] = du[sname(pn, i)] - valueat(p_m[j],u,t)
+          du[sname(pn, i)] = du[sname(pn, i)] - valueat(ϕ_m[j],u,p,t)
         end
       end
     end
