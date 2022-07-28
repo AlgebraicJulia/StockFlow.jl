@@ -7,7 +7,7 @@ add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, sv
 funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
-object_shift_right, foot, leg, lsnames
+object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -55,37 +55,6 @@ end
 # constrains the attributes data type to be: 
 # 2. Name: Symbol
 const StockAndFlow0 = StockAndFlowUntyped0{Symbol} 
-
-#=
-# only have stocks
-StockAndFlow0(s) = begin
-
-  p0 = StockAndFlow0()
-  s = vectorify(s)
-  add_stocks!(p0, length(s), sname=s)
-  p0
-
-end
-
-# have all the components of stocks, sum auxiliary variables and linkages between them
-# Note: it is not possible that discrete sum-auxiliary-variables exists in the C0
-StockAndFlow0(s, ssv) = begin
-
-  p0 = StockAndFlow0(s)
-
-  s = vectorify(s)
-  ssv = vectorify(ssv)
-
-  sv=unique(map(last, ssv))
-  add_svariables!(p0, length(sv), svname=sv)
-
-  sv_idx = state_dict(sv)
-  s_idx = state_dict(s)
-  add_Slinks!(p0, length(ssv), map(x->s_idx[x], map(first,ssv)), map(x->sv_idx[x], sv))
-  p0
-
-end
-=#
 
 # for an instance of the sub-schema, the program supports only have stocks, or only have sum auxiliary variables, or both stocks
 # and sum auxiliary variables, or have both 
@@ -319,14 +288,6 @@ inflowsAll(p::AbstractStockAndFlow) = [((inflows(p, s) for s in 1:ns(p))...)...]
 outflowsAll(p::AbstractStockAndFlow) = [((outflows(p, s) for s in 1:ns(p))...)...]
 
 
-#= return the initial value given an index s
-initialValue(p::AbstractStockAndFlow0,s) = subpart(p,s,:initialValue)
-# return the LVector of pairs: sname => initialValues
-initialValues(p::AbstractStockAndFlow0) = begin
-  sn = snames(p)
-  LVector(;[(sn[s]=>initialValue(p, s)) for s in 1:ns(p)]...)
-end
-=#
 # return the functions of variables give index v
 funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
 # return the auxiliary variable's index that related to the flow with index of f
@@ -381,56 +342,40 @@ object_shift_right(p::StockAndFlow) = begin
 end
 
 # create open acset, as the structured cospan
-const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
-#=
-foot(x::StockAndFlow, s) = begin
-    s = vectorify(s)
-    StockAndFlow0(s)
-end
+const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
 
-foot(x::StockAndFlow, s, ssv) = begin
-    s = vectorify(s)
-    ssv = vectorify(ssv)
-    StockAndFlow0(s, ssv)
-end
-=#
 
 foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 
 ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
 
-leg(a::A, x0::A) where {A <: Union{StockAndFlow0, StockAndFlow}} = begin
+leg(a::StockAndFlow0, x::StockAndFlow) = begin
     if ns(a)>0 # if have stocks
-      ϕs = ntcomponent(snames(a), snames(x0))
+      ϕs = ntcomponent(snames(a), snames(x))
     else
       ϕs = Int[]
     end
 
     if nsv(a) > 0  # if have sum-auxiliary-variable
-      ϕsv = ntcomponent(svnames(a), svnames(x0))
+      ϕsv = ntcomponent(svnames(a), svnames(x))
     else
       ϕsv = Int[]
     end
 
     if nls(a)>0 # if have links between stocks and sum-auxiliary-variables
-      ϕls = ntcomponent(lsnames(a), lsnames(x0))
+      ϕls = ntcomponent(lsnames(a), lsnames(x))
     else
       ϕls = Int[]
     end
 
-    result = ACSetTransformation((S=ϕs, LS=ϕls, SV=ϕsv), a, x0)
-    @assert is_natural(result) "The natural transformation is not natural!"
+    result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv)
 
     result
 end
 
-#TODO: temporarily ignore the OpenACSetTypes waiting for the Catlab update for supporting open for C0
-const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlow,StockAndFlow0)
-
 Open(p::StockAndFlow, feet...) = begin
-  p0 = object_shift_right(p)
-  legs = map(x->leg(x, p0), feet)
-  OpenStockAndFlow(p, legs...)
+  legs = map(x->leg(x, p), feet)
+  OpenStockAndFlow{Symbol,Function}(p, legs...)
 end 
 
 struct TransitionMatrices 
