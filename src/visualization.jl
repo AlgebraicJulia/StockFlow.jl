@@ -3,6 +3,7 @@ using Catlab.Graphics.Graphviz
 import Catlab.Graphics.Graphviz: Graph, Subgraph
 import Base.Iterators: flatten
 using StatsBase
+using Catlab.Graphics
 
 export Graph, display_uwd
 
