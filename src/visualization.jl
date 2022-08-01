@@ -4,7 +4,7 @@ import Catlab.Graphics.Graphviz: Graph, Subgraph
 import Base.Iterators: flatten
 using StatsBase
 
-export Graph
+export Graph, display_uwd
 
 #= old function only plot out stocks and flows
 
@@ -212,6 +212,4 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
 end
 
 
-#function Graph(op::Union{OpenBoneStockFlow_S, OpenLabelledBoneStockFlowUntyped_S, OpenStockFlow_S, OpenLabelledStockFlowUntyped_S, OpenBoneStockFlow_F, OpenLabelledBoneStockFlowUntyped_F, OpenStockFlow_F, OpenLabelledStockFlowUntyped_F})
-#    Graph(apex(op))
-#end
+display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))

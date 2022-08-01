@@ -1,0 +1,2934 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+*************************************************
+	         AnyLogic Project File 
+*************************************************	         
+-->
+<AnyLogicWorkspace WorkspaceVersion="1.9" AnyLogicVersion="8.7.10.202202091712" AlpVersion="8.7.3">
+<Model>
+	<Id>1658887506849</Id>
+	<Name><![CDATA[diabetes]]></Name>
+	<EngineVersion>6</EngineVersion>
+	<JavaPackageName><![CDATA[diabetes]]></JavaPackageName>
+	<ModelTimeUnit><![CDATA[Day]]></ModelTimeUnit>
+	<ActiveObjectClasses>
+		<!--   =========   Active Object Class   ========  -->
+		<ActiveObjectClass>
+			<Id>1658887506855</Id>
+			<Name><![CDATA[Main]]></Name>
+			<ClientAreaTopLeft><X>0</X><Y>0</Y></ClientAreaTopLeft>
+			<Generic>false</Generic>
+			<GenericParameter>
+				<Id>1658887506853</Id>
+				<Name><![CDATA[1658887506853]]></Name>
+				<GenericParameterValue Class="CodeValue">
+					<Code><![CDATA[T extends Agent]]></Code>
+				</GenericParameterValue>
+				<GenericParameterLabel><![CDATA[Generic parameter:]]></GenericParameterLabel>
+			</GenericParameter>
+			<FlowChartsUsage>ENTITY</FlowChartsUsage>
+			<SamplesToKeep>100</SamplesToKeep>
+			<LimitNumberOfArrayElements>false</LimitNumberOfArrayElements>
+			<ElementsLimitValue>100</ElementsLimitValue>
+			<MakeDefaultViewArea>true</MakeDefaultViewArea>
+			<SceneGridColor/>
+			<SceneBackgroundColor/>
+			<SceneSkybox>null</SceneSkybox>
+			<AgentProperties>
+	 			<SpaceType>CONTINUOUS</SpaceType>			
+				<EnvironmentDefinesInitialLocation>true</EnvironmentDefinesInitialLocation>
+				<RotateAnimationTowardsMovement>true</RotateAnimationTowardsMovement>
+				<RotateAnimationVertically>false</RotateAnimationVertically>
+				<VelocityCode Class="CodeUnitValue">
+					<Code><![CDATA[10]]></Code>
+					<Unit Class="SpeedUnits"><![CDATA[MPS]]></Unit>
+				</VelocityCode>
+				<PhysicalLength Class="CodeUnitValue">
+					<Code><![CDATA[1]]></Code>
+					<Unit Class="LengthUnits"><![CDATA[METER]]></Unit>
+				</PhysicalLength>
+				<PhysicalWidth Class="CodeUnitValue">
+					<Code><![CDATA[1]]></Code>
+					<Unit Class="LengthUnits"><![CDATA[METER]]></Unit>
+				</PhysicalWidth>
+				<PhysicalHeight Class="CodeUnitValue">
+					<Code><![CDATA[1]]></Code>
+					<Unit Class="LengthUnits"><![CDATA[METER]]></Unit>
+				</PhysicalHeight>
+			</AgentProperties>
+			<EnvironmentProperties>
+					<EnableSteps>false</EnableSteps>
+					<StepDurationCode Class="CodeUnitValue">
+						<Code><![CDATA[1.0]]></Code>
+						<Unit Class="TimeUnits"><![CDATA[SECOND]]></Unit>
+					</StepDurationCode>
+					<SpaceType>CONTINUOUS</SpaceType>
+					<WidthCode><![CDATA[500]]></WidthCode>
+					<HeightCode><![CDATA[500]]></HeightCode>
+					<ZHeightCode><![CDATA[0]]></ZHeightCode>
+					<ColumnsCountCode><![CDATA[100]]></ColumnsCountCode>
+					<RowsCountCode><![CDATA[100]]></RowsCountCode>
+					<NeigborhoodType>MOORE</NeigborhoodType>
+					<LayoutType>USER_DEF</LayoutType>
+					<LayoutTypeApplyOnStartup>true</LayoutTypeApplyOnStartup>
+					<NetworkType>USER_DEF</NetworkType>
+					<NetworkTypeApplyOnStartup>true</NetworkTypeApplyOnStartup>
+					<ConnectionsPerAgentCode><![CDATA[2]]></ConnectionsPerAgentCode>
+					<ConnectionsRangeCode><![CDATA[50]]></ConnectionsRangeCode>
+					<NeighborLinkFractionCode><![CDATA[0.95]]></NeighborLinkFractionCode>
+					<MCode><![CDATA[10]]></MCode>
+			</EnvironmentProperties>
+			<DatasetsCreationProperties>
+				<AutoCreate>true</AutoCreate>
+					<OccurrenceAtTime>true</OccurrenceAtTime>
+					<OccurrenceDate>1658908800000</OccurrenceDate>
+					<OccurrenceTime Class="CodeUnitValue">
+						<Code><![CDATA[0]]></Code>
+						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+					</OccurrenceTime>
+					<RecurrenceCode Class="CodeUnitValue">
+						<Code><![CDATA[1]]></Code>
+						<Unit Class="TimeUnits"><![CDATA[DAY]]></Unit>
+					</RecurrenceCode>
+			</DatasetsCreationProperties>
+			<ScaleRuler>
+				<Id>1658887506851</Id>
+				<Name><![CDATA[scale]]></Name>
+				<X>0</X><Y>-150</Y>
+				<PublicFlag>false</PublicFlag>
+				<PresentationFlag>false</PresentationFlag>
+				<ShowLabel>false</ShowLabel>
+				<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+				<Length>100</Length>
+				<Rotation>0</Rotation>
+				<ScaleType>BASED_ON_LENGTH</ScaleType>
+				<ModelLength>10</ModelLength>
+				<LengthUnits>METER</LengthUnits>
+				<Scale>10</Scale>
+				<InheritedFromParentAgentType>true</InheritedFromParentAgentType>
+			</ScaleRuler>
+			<CurrentLevel>1658887506854</CurrentLevel>
+			<ConnectionsId>1658887506850</ConnectionsId>
+			<Variables>
+				<Variable Class="AuxVariable">
+					<Id>1658902447593</Id>
+					<Name><![CDATA[N]]></Name>
+					<X>-140</X><Y>430</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Normal_W +
+Over_W +
+Obese +
+Undx_Prediabetic +
+Dx_Prediabetic +
+Undx_Diabetic_wt_Complication +
+Dx_Diabetic_wt_Complication +
+Undx_Diabetic_Early +
+Dx_Diabetic_Early +
+Undx_Diabetic_Late +
+Dx_Diabetic_Late]]></Formula>
+						<Value><![CDATA[0]]></Value>
+						<Color/>
+					</Properties>
+
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888569613</Id>
+					<Name><![CDATA[Normal_W]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>-30</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>80</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[95811]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888602503</Id>
+					<Name><![CDATA[Over_W]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>-30</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>80</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[27709]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888635067</Id>
+					<Name><![CDATA[Obese]]></Name>
+					<X>130</X><Y>390</Y>
+					<Label><X>-30</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>80</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[30770]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888743812</Id>
+					<Name><![CDATA[Undx_Prediabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>-50</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>100</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[13615.0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888778267</Id>
+					<Name><![CDATA[Dx_Prediabetic]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>-45</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>100</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[2000.0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888863517</Id>
+					<Name><![CDATA[Undx_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>-85</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>180</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[6396.0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888911235</Id>
+					<Name><![CDATA[Dx_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>620</Y>
+					<Label><X>-85</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>180</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[3000.0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888945813</Id>
+					<Name><![CDATA[Undx_Diabetic_Early]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>-55</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>120</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658888986712</Id>
+					<Name><![CDATA[Dx_Diabetic_Early]]></Name>
+					<X>780</X><Y>620</Y>
+					<Label><X>-55</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>120</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[1200.0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658889015574</Id>
+					<Name><![CDATA[Undx_Diabetic_Late]]></Name>
+					<X>1060</X><Y>490</Y>
+					<Label><X>-55</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>120</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="StockVariable">
+					<Id>1658889038840</Id>
+					<Name><![CDATA[Dx_Diabetic_Late]]></Name>
+					<X>1060</X><Y>620</Y>
+					<Label><X>-55</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties Array="false">
+					<EquationStyle>classic</EquationStyle>
+					<Width>120</Width>
+					<Height>40</Height>
+						<InitialValue><![CDATA[800.0]]></InitialValue>
+						<Color/>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658888657468</Id>
+					<Name><![CDATA[BecomingOverWeight]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>-95</X><Y>-15</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888569613" TargetId="1658888602503" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Normal_W*Incidence_of_overweight_rate]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>50</Y></Point>
+							<Point><X>0</X><Y>110</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658888711681</Id>
+					<Name><![CDATA[BecomingObese]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>-90</X><Y>-15</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888602503" TargetId="1658888635067" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[incidence_of_obesity_rate*Over_W]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>60</Y></Point>
+							<Point><X>0</X><Y>120</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658888823973</Id>
+					<Name><![CDATA[Developing_Prediabetic_from_Obese]]></Name>
+					<X>130</X><Y>390</Y>
+					<Label><X>-90</X><Y>-35</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888635067" TargetId="1658888743812" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Obese
+* prediabetes_incidence_base_rate_normal_weight
+* Prediabetes_onset_obese_multiplier]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>100</Y></Point>
+							<Point><X>110</X><Y>100</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658888839960</Id>
+					<Name><![CDATA[Developing_Prediabetic_from_OverW]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>-45</X><Y>-25</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888602503" TargetId="1658888743812" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Over_W
+* prediabetes_incidence_base_rate_normal_weight
+* Prediabetes_onset_overweight_multiplier]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>70</X><Y>20</Y></Point>
+							<Point><X>110</X><Y>220</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889074001</Id>
+					<Name><![CDATA[Developing_undx_diabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>-60</X><Y>-35</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888743812" TargetId="1658888863517" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Prediabetic/𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_undx]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>100</X><Y>0</Y></Point>
+							<Point><X>240</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889080669</Id>
+					<Name><![CDATA[Developing_undx_Early]]></Name>
+					<X>550</X><Y>490</Y>
+					<Label><X>-60</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888863517" TargetId="1658888945813" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Diabetic_wt_Complication/𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>-70</X><Y>0</Y></Point>
+							<Point><X>100</X><Y>0</Y></Point>
+							<Point><X>230</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889085389</Id>
+					<Name><![CDATA[Developing_undx_Late]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>-50</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888945813" TargetId="1658889015574" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Diabetic_Early*ratedevelopingLateStage]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>140</X><Y>0</Y></Point>
+							<Point><X>280</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889092433</Id>
+					<Name><![CDATA[Developing_dx_diabetic]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>-50</X><Y>-30</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888778267" TargetId="1658888911235" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Prediabetic/𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_dx]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>100</X><Y>0</Y></Point>
+							<Point><X>240</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889099830</Id>
+					<Name><![CDATA[Developing_dx_Early]]></Name>
+					<X>540</X><Y>620</Y>
+					<Label><X>-45</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888911235" TargetId="1658888986712" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Diabetic_wt_Complication/𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>-60</X><Y>0</Y></Point>
+							<Point><X>100</X><Y>0</Y></Point>
+							<Point><X>240</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889105167</Id>
+					<Name><![CDATA[Developing_dx_Late]]></Name>
+					<X>820</X><Y>620</Y>
+					<Label><X>-50</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888986712" TargetId="1658889038840" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Diabetic_Early*ratedevelopingLateStage]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>-40</X><Y>0</Y></Point>
+							<Point><X>100</X><Y>0</Y></Point>
+							<Point><X>240</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889110201</Id>
+					<Name><![CDATA[Diagnose_Prediabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888743812" TargetId="1658888778267" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[diagnosis_rate_prediabetes*Undx_Prediabetic]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>65</Y></Point>
+							<Point><X>0</X><Y>130</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889118450</Id>
+					<Name><![CDATA[Diagnose_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888863517" TargetId="1658888911235" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[diagnosis_rate_diabetes_wt_compliation*
+Undx_Diabetic_wt_Complication]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>65</Y></Point>
+							<Point><X>0</X><Y>130</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889142670</Id>
+					<Name><![CDATA[Diagnose_Diabetic_Early]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888945813" TargetId="1658888986712" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Diabetic_Early*diagnosis_rate_diabetes_early]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>65</Y></Point>
+							<Point><X>0</X><Y>130</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658889153949</Id>
+					<Name><![CDATA[Diagnose_Diabetic_Late]]></Name>
+					<X>1060</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658889015574" TargetId="1658889038840" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Diabetic_Late*diagnosis_rate_diabetes_late]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>65</Y></Point>
+							<Point><X>0</X><Y>130</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658891216087</Id>
+					<Name><![CDATA[Developing_Prediabetic_from_Normal_Weight]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>-45</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888569613" TargetId="1658888743812" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[prediabetes_incidence_base_rate_normal_weight*Normal_W]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>110</X><Y>0</Y></Point>
+							<Point><X>110</X><Y>330</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658891436285</Id>
+					<Name><![CDATA[recoveryToOverWeight]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888743812" TargetId="1658888602503" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[prediabetes_recovery_rate * Undx_Prediabetic]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-50</X><Y>-160</Y></Point>
+							<Point><X>-110</X><Y>-220</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658897290634</Id>
+					<Name><![CDATA[recoveryToOverWeightDx]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888778267" TargetId="1658888602503" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Prediabetic*prediabetes_recovery_rate]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-220</X><Y>0</Y></Point>
+							<Point><X>-220</X><Y>-270</Y></Point>
+							<Point><X>-110</X><Y>-350</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658902270970</Id>
+					<Name><![CDATA[death_Normal_Weight]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888569613" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Normal_W*mortaliltyRate_Normal_OverW]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-80</X><Y>0</Y></Point>
+							<Point><X>-120</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658902312467</Id>
+					<Name><![CDATA[new_born]]></Name>
+					<X>130</X><Y>50</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties TargetId="1658888569613" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[birth_rate * N]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>50</Y></Point>
+							<Point><X>0</X><Y>110</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658902373968</Id>
+					<Name><![CDATA[death_Over_Weight]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888602503" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Over_W*mortaliltyRate_Normal_OverW]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-100</X><Y>0</Y></Point>
+							<Point><X>-150</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658904120367</Id>
+					<Name><![CDATA[death_Obese]]></Name>
+					<X>130</X><Y>390</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888635067" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Obese*mortality_obese_prediabetic]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-70</X><Y>0</Y></Point>
+							<Point><X>-100</X><Y>0</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658905565064</Id>
+					<Name><![CDATA[death_Dx_Prediabetic]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888778267" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[mortality_obese_prediabetic*Dx_Prediabetic]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>60</Y></Point>
+							<Point><X>0</X><Y>100</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658905576854</Id>
+					<Name><![CDATA[death_Undx_Prediabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>-135</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888743812" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[mortality_obese_prediabetic*Undx_Prediabetic]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-60</X><Y>40</Y></Point>
+							<Point><X>-90</X><Y>60</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658906846310</Id>
+					<Name><![CDATA[death_Undx_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888863517" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛 *
+Undx_Diabetic_wt_Complication]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>-80</Y></Point>
+							<Point><X>0</X><Y>-140</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658906881210</Id>
+					<Name><![CDATA[death_Dx_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888911235" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛 *
+Dx_Diabetic_wt_Complication]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>60</Y></Point>
+							<Point><X>0</X><Y>120</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658907566493</Id>
+					<Name><![CDATA[death_Undx_Diabetic_Early]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888945813" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Diabetic_Early *
+mortality_undx_diabetic_with_early_stage]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>-60</Y></Point>
+							<Point><X>0</X><Y>-120</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658907581370</Id>
+					<Name><![CDATA[death_Dx_Diabetic_Early]]></Name>
+					<X>780</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888986712" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Diabetic_Early *
+mortality_dx_diabetic_with_early_stage]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>60</Y></Point>
+							<Point><X>0</X><Y>120</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658907593600</Id>
+					<Name><![CDATA[death_Undx_Diabetic_Late]]></Name>
+					<X>1060</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658889015574" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Undx_Diabetic_Late *
+mortality_diabetic_with_late_stage_comp]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>-60</Y></Point>
+							<Point><X>0</X><Y>-110</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658907605871</Id>
+					<Name><![CDATA[death_Dx_Diabetic_Late]]></Name>
+					<X>1060</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658889038840" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Diabetic_Late *
+mortality_diabetic_with_late_stage_comp]]></Formula>
+						<Color/>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>0</X><Y>65</Y></Point>
+							<Point><X>0</X><Y>130</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658969332733</Id>
+					<Name><![CDATA[recovery_from_undx_to_normalW]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888743812" TargetId="1658888569613" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[prediabetes_recovery_rate * Undx_Prediabetic]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-40</X><Y>-290</Y></Point>
+							<Point><X>-110</X><Y>-330</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658969472617</Id>
+					<Name><![CDATA[recovery_from_undx_to_Obese]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888743812" TargetId="1658888635067" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[prediabetes_recovery_rate * Undx_Prediabetic]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-55</X><Y>-50</Y></Point>
+							<Point><X>-110</X><Y>-100</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658969544382</Id>
+					<Name><![CDATA[recovery_from_dx_to_normalW]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888778267" TargetId="1658888569613" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Prediabetic*prediabetes_recovery_rate]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>2</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-70</X><Y>40</Y></Point>
+							<Point><X>-270</X><Y>40</Y></Point>
+							<Point><X>-270</X><Y>-550</Y></Point>
+							<Point><X>-150</X><Y>-550</Y></Point>
+							<Point><X>-110</X><Y>-460</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Flow">
+					<Id>1658969669278</Id>
+					<Name><![CDATA[recovery_from_dx_to_obese]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>0</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SourceId="1658888778267" TargetId="1658888635067" External="false" Constant="false" Array="false">
+						<Formula><![CDATA[Dx_Prediabetic*prediabetes_recovery_rate]]></Formula>
+						<Color>-6632142</Color>
+						<ValveIndex>1</ValveIndex>
+						<Points>
+							<Point><X>0</X><Y>0</Y></Point>
+							<Point><X>-170</X><Y>-50</Y></Point>
+							<Point><X>-170</X><Y>-190</Y></Point>
+							<Point><X>-110</X><Y>-230</Y></Point>
+						</Points>
+					</Properties>
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658891647986</Id>
+					<Name><![CDATA[prediabetes_recovery_rate]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.03]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658891647984</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658891800140</Id>
+					<Name><![CDATA[prediabetes_incidence_base_rate_normal_weight]]></Name>
+					<X>420</X><Y>90</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.01]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658891800138</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658891841141</Id>
+					<Name><![CDATA[Prediabetes_onset_obese_multiplier]]></Name>
+					<X>350</X><Y>280</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[2.6]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658891841139</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658895408605</Id>
+					<Name><![CDATA[Prediabetes_onset_overweight_multiplier]]></Name>
+					<X>310</X><Y>180</Y>
+					<Label><X>-25</X><Y>-20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[1.7]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658895408603</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658896945293</Id>
+					<Name><![CDATA[Incidence_of_overweight_rate]]></Name>
+					<X>10</X><Y>230</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.03]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658896945291</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658902295882</Id>
+					<Name><![CDATA[mortaliltyRate_Normal_OverW]]></Name>
+					<X>-20</X><Y>100</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[4.0/1000]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658902295880</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658902340219</Id>
+					<Name><![CDATA[birth_rate]]></Name>
+					<X>180</X><Y>50</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[12.5/1000]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658902340217</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658904161318</Id>
+					<Name><![CDATA[mortality_obese_prediabetic]]></Name>
+					<X>-120</X><Y>530</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[13.0/1000]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658904161316</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658904696272</Id>
+					<Name><![CDATA[incidence_of_obesity_rate]]></Name>
+					<X>-30</X><Y>300</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.06]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658904696270</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658905429609</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_undx]]></Name>
+					<X>390</X><Y>420</Y>
+					<Label><X>-75</X><Y>20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[10.0]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658905429607</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658906611297</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠]]></Name>
+					<X>520</X><Y>440</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[10.0]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658906611295</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658906693040</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠]]></Name>
+					<X>540</X><Y>690</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[15.0]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658906693038</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658907029902</Id>
+					<Name><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛]]></Name>
+					<X>530</X><Y>820</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.027]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658907029900</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658907255265</Id>
+					<Name><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛]]></Name>
+					<X>560</X><Y>310</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.03]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658907255263</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658907437823</Id>
+					<Name><![CDATA[mortality_undx_diabetic_with_early_stage]]></Name>
+					<X>820</X><Y>370</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.04+0.02]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658907437821</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658907540549</Id>
+					<Name><![CDATA[mortality_dx_diabetic_with_early_stage]]></Name>
+					<X>730</X><Y>720</Y>
+					<Label><X>-95</X><Y>-10</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.036+0.02]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658907540547</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658907686932</Id>
+					<Name><![CDATA[mortality_diabetic_with_late_stage_comp]]></Name>
+					<X>1180</X><Y>660</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.04]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658907686930</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658914656301</Id>
+					<Name><![CDATA[diagnosis_rate_diabetes_early]]></Name>
+					<X>820</X><Y>840</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.4]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658914656299</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658914696966</Id>
+					<Name><![CDATA[diagnosis_rate_diabetes_late]]></Name>
+					<X>1140</X><Y>830</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.6]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658914696964</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658914823576</Id>
+					<Name><![CDATA[diagnosis_rate_prediabetes]]></Name>
+					<X>470</X><Y>910</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.1]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658914823574</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658914905115</Id>
+					<Name><![CDATA[diagnosis_rate_diabetes_wt_compliation]]></Name>
+					<X>610</X><Y>870</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.24]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658914905113</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1658917673857</Id>
+					<Name><![CDATA[ratedevelopingLateStage]]></Name>
+					<X>950</X><Y>310</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[0.9]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1658917673855</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+				<Variable Class="Parameter">
+					<Id>1659089243374</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_dx]]></Name>
+					<X>370</X><Y>680</Y>
+					<Label><X>-75</X><Y>20</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<Properties SaveInSnapshot="true" ModificatorType="STATIC">
+						<Type><![CDATA[double]]></Type>
+						<UnitType><![CDATA[NONE]]></UnitType>
+						<SdArray>false</SdArray>
+						<DefaultValue Class="CodeValue">
+							<Code><![CDATA[15.0]]></Code>
+						</DefaultValue>
+						<ParameterEditor>
+							<Id>1659089243372</Id>
+							<EditorContolType>TEXT_BOX</EditorContolType>
+							<MinSliderValue><![CDATA[0]]></MinSliderValue>
+							<MaxSliderValue><![CDATA[100]]></MaxSliderValue>
+							<DelimeterType>NO_DELIMETER</DelimeterType>
+						</ParameterEditor>
+					</Properties>                 
+				</Variable>
+			</Variables>
+			<Dependences>
+				<Link SourceId="1658891647986" TargetId="1658891436285" Polarity="null">
+					<Height>-28.202</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-120</X><Y>-40</Y></Direction>
+					<Id>1658891630492</Id>
+					<Name><![CDATA[prediabetes_recovery_rate - recoveryToOverWeight]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658891436285" Polarity="null">
+					<Height>17.063</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-50</X><Y>-160</Y></Direction>
+					<Id>1658891676813</Id>
+					<Name><![CDATA[Undx_Prediabetic - recoveryToOverWeight]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891800140" TargetId="1658891216087" Polarity="null">
+					<Height>-46.46</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-180</X><Y>70</Y></Direction>
+					<Id>1658891834112</Id>
+					<Name><![CDATA[prediabetes_incidence_base_rate_normal_weight - Developing_Prediabetic_from_Normal_Weight]]></Name>
+					<X>420</X><Y>90</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891841141" TargetId="1658888823973" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-220</X><Y>210</Y></Direction>
+					<Id>1658891876177</Id>
+					<Name><![CDATA[Prediabetes_onset_obese_multiplier - Developing_Prediabetic_from_Obese]]></Name>
+					<X>350</X><Y>280</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891800140" TargetId="1658888823973" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-290</X><Y>400</Y></Direction>
+					<Id>1658891883286</Id>
+					<Name><![CDATA[prediabetes_incidence_base_rate_normal_weight - Developing_Prediabetic_from_Obese]]></Name>
+					<X>420</X><Y>90</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888635067" TargetId="1658888823973" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>100</Y></Direction>
+					<Id>1658891889026</Id>
+					<Name><![CDATA[Obese - Developing_Prediabetic_from_Obese]]></Name>
+					<X>130</X><Y>390</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888569613" TargetId="1658891216087" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>110</X><Y>0</Y></Direction>
+					<Id>1658895473754</Id>
+					<Name><![CDATA[Normal_W - Developing_Prediabetic_from_Normal_Weight]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658895408605" TargetId="1658888839960" Polarity="null">
+					<Height>-31.41</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-110</X><Y>110</Y></Direction>
+					<Id>1658895564737</Id>
+					<Name><![CDATA[Prediabetes_onset_overweight_multiplier - Developing_Prediabetic_from_OverW]]></Name>
+					<X>310</X><Y>180</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888602503" TargetId="1658888839960" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>70</X><Y>20</Y></Direction>
+					<Id>1658895584392</Id>
+					<Name><![CDATA[Over_W - Developing_Prediabetic_from_OverW]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891800140" TargetId="1658888839960" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-220</X><Y>200</Y></Direction>
+					<Id>1658895697430</Id>
+					<Name><![CDATA[prediabetes_incidence_base_rate_normal_weight - Developing_Prediabetic_from_OverW]]></Name>
+					<X>420</X><Y>90</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658896945293" TargetId="1658888657468" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>120</X><Y>-20</Y></Direction>
+					<Id>1658896978847</Id>
+					<Name><![CDATA[Incidence_of_overweight_rate - BecomingOverWeight]]></Name>
+					<X>10</X><Y>230</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888569613" TargetId="1658888657468" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>50</Y></Direction>
+					<Id>1658896986301</Id>
+					<Name><![CDATA[Normal_W - BecomingOverWeight]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888778267" TargetId="1658897290634" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-220</X><Y>0</Y></Direction>
+					<Id>1658897626378</Id>
+					<Name><![CDATA[Dx_Prediabetic - recoveryToOverWeightDx]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891647986" TargetId="1658897290634" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-290</X><Y>250</Y></Direction>
+					<Id>1658897636399</Id>
+					<Name><![CDATA[prediabetes_recovery_rate - recoveryToOverWeightDx]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658902340219" TargetId="1658902312467" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-50</X><Y>50</Y></Direction>
+					<Id>1658902351027</Id>
+					<Name><![CDATA[birth_rate - new_born]]></Name>
+					<X>180</X><Y>50</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888569613" TargetId="1658902270970" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-80</X><Y>0</Y></Direction>
+					<Id>1658902386030</Id>
+					<Name><![CDATA[Normal_W - death_Normal_Weight]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658902295882" TargetId="1658902270970" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>70</X><Y>60</Y></Direction>
+					<Id>1658902391997</Id>
+					<Name><![CDATA[mortaliltyRate_Normal_OverW - death_Normal_Weight]]></Name>
+					<X>-20</X><Y>100</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888569613" TargetId="1658902447593" Polarity="null">
+					<Height>-112.331</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-270</X><Y>270</Y></Direction>
+					<Id>1658902431510</Id>
+					<Name><![CDATA[Normal_W - N]]></Name>
+					<X>130</X><Y>160</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888602503" TargetId="1658902447593" Polarity="null">
+					<Height>-101.014</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-270</X><Y>160</Y></Direction>
+					<Id>1658902467357</Id>
+					<Name><![CDATA[Over_W - N]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888635067" TargetId="1658902447593" Polarity="null">
+					<Height>-85.033</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-270</X><Y>40</Y></Direction>
+					<Id>1658902482054</Id>
+					<Name><![CDATA[Obese - N]]></Name>
+					<X>130</X><Y>390</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658902447593" Polarity="null">
+					<Height>-32.184</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-380</X><Y>-60</Y></Direction>
+					<Id>1658902504013</Id>
+					<Name><![CDATA[Undx_Prediabetic - N]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888778267" TargetId="1658902447593" Polarity="null">
+					<Height>-25.979</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-380</X><Y>-190</Y></Direction>
+					<Id>1658902512113</Id>
+					<Name><![CDATA[Dx_Prediabetic - N]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888863517" TargetId="1658902447593" Polarity="null">
+					<Height>-53.763</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-620</X><Y>-60</Y></Direction>
+					<Id>1658902525325</Id>
+					<Name><![CDATA[Undx_Diabetic_wt_Complication - N]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888911235" TargetId="1658902447593" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-620</X><Y>-190</Y></Direction>
+					<Id>1658902537159</Id>
+					<Name><![CDATA[Dx_Diabetic_wt_Complication - N]]></Name>
+					<X>480</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888945813" TargetId="1658902447593" Polarity="null">
+					<Height>0.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-920</X><Y>-60</Y></Direction>
+					<Id>1658902550247</Id>
+					<Name><![CDATA[Undx_Diabetic_Early - N]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888986712" TargetId="1658902447593" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-920</X><Y>-190</Y></Direction>
+					<Id>1658902570831</Id>
+					<Name><![CDATA[Dx_Diabetic_Early - N]]></Name>
+					<X>780</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658889015574" TargetId="1658902447593" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-1200</X><Y>-60</Y></Direction>
+					<Id>1658902595417</Id>
+					<Name><![CDATA[Undx_Diabetic_Late - N]]></Name>
+					<X>1060</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658889038840" TargetId="1658902447593" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-1200</X><Y>-190</Y></Direction>
+					<Id>1658902606846</Id>
+					<Name><![CDATA[Dx_Diabetic_Late - N]]></Name>
+					<X>1060</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658902447593" TargetId="1658902312467" Polarity="null">
+					<Height>198.086</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>270</X><Y>-330</Y></Direction>
+					<Id>1658903355323</Id>
+					<Name><![CDATA[N - new_born]]></Name>
+					<X>-140</X><Y>430</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888602503" TargetId="1658902373968" Polarity="null">
+					<Height>18.102</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-100</X><Y>0</Y></Direction>
+					<Id>1658903653841</Id>
+					<Name><![CDATA[Over_W - death_Over_Weight]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658902295882" TargetId="1658902373968" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>50</X><Y>170</Y></Direction>
+					<Id>1658904055402</Id>
+					<Name><![CDATA[mortaliltyRate_Normal_OverW - death_Over_Weight]]></Name>
+					<X>-20</X><Y>100</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888635067" TargetId="1658904120367" Polarity="null">
+					<Height>-24.1</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-80</X><Y>0</Y></Direction>
+					<Id>1658904133599</Id>
+					<Name><![CDATA[Obese - death_Obese]]></Name>
+					<X>130</X><Y>390</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658904161318" TargetId="1658904120367" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>180</X><Y>-140</Y></Direction>
+					<Id>1658904201434</Id>
+					<Name><![CDATA[mortality_obese_prediabetic - death_Obese]]></Name>
+					<X>-120</X><Y>530</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658904696272" TargetId="1658888711681" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>160</X><Y>30</Y></Direction>
+					<Id>1658904736736</Id>
+					<Name><![CDATA[incidence_of_obesity_rate - BecomingObese]]></Name>
+					<X>-30</X><Y>300</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888602503" TargetId="1658888711681" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>60</Y></Direction>
+					<Id>1658904743216</Id>
+					<Name><![CDATA[Over_W - BecomingObese]]></Name>
+					<X>130</X><Y>270</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1659089243374" TargetId="1658889092433" Polarity="null">
+					<Height>-11.259</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-30</X><Y>-60</Y></Direction>
+					<Id>1658905481271</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_dx - Developing_dx_diabetic]]></Name>
+					<X>370</X><Y>680</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658905429609" TargetId="1658889074001" Polarity="null">
+					<Height>-33.013</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-50</X><Y>70</Y></Direction>
+					<Id>1658905490740</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_undx - Developing_undx_diabetic]]></Name>
+					<X>390</X><Y>420</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658889074001" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>100</X><Y>0</Y></Direction>
+					<Id>1658905501288</Id>
+					<Name><![CDATA[Undx_Prediabetic - Developing_undx_diabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888778267" TargetId="1658889092433" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>100</X><Y>0</Y></Direction>
+					<Id>1658905508386</Id>
+					<Name><![CDATA[Dx_Prediabetic - Developing_dx_diabetic]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658905576854" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-60</X><Y>40</Y></Direction>
+					<Id>1658905648458</Id>
+					<Name><![CDATA[Undx_Prediabetic - death_Undx_Prediabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888778267" TargetId="1658905565064" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>60</Y></Direction>
+					<Id>1658905657432</Id>
+					<Name><![CDATA[Dx_Prediabetic - death_Dx_Prediabetic]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658904161318" TargetId="1658905576854" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>300</X><Y>0</Y></Direction>
+					<Id>1658905679406</Id>
+					<Name><![CDATA[mortality_obese_prediabetic - death_Undx_Prediabetic]]></Name>
+					<X>-120</X><Y>530</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658904161318" TargetId="1658905565064" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>360</X><Y>150</Y></Direction>
+					<Id>1658905686855</Id>
+					<Name><![CDATA[mortality_obese_prediabetic - death_Dx_Prediabetic]]></Name>
+					<X>-120</X><Y>530</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658906611297" TargetId="1658889080669" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>130</X><Y>50</Y></Direction>
+					<Id>1658906709059</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠 - Developing_undx_Early]]></Name>
+					<X>520</X><Y>440</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888863517" TargetId="1658889080669" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>170</X><Y>0</Y></Direction>
+					<Id>1658906715294</Id>
+					<Name><![CDATA[Undx_Diabetic_wt_Complication - Developing_undx_Early]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658906693040" TargetId="1658889099830" Polarity="null">
+					<Height>-18.107</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>100</X><Y>-70</Y></Direction>
+					<Id>1658906808097</Id>
+					<Name><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠 - Developing_dx_Early]]></Name>
+					<X>540</X><Y>690</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888911235" TargetId="1658889099830" Polarity="null">
+					<Height>-38.312</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>160</X><Y>0</Y></Direction>
+					<Id>1658906826814</Id>
+					<Name><![CDATA[Dx_Diabetic_wt_Complication - Developing_dx_Early]]></Name>
+					<X>480</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888863517" TargetId="1658906846310" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>-80</Y></Direction>
+					<Id>1658906913416</Id>
+					<Name><![CDATA[Undx_Diabetic_wt_Complication - death_Undx_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888911235" TargetId="1658906881210" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>60</Y></Direction>
+					<Id>1658906919198</Id>
+					<Name><![CDATA[Dx_Diabetic_wt_Complication - death_Dx_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658907255265" TargetId="1658906846310" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-80</X><Y>100</Y></Direction>
+					<Id>1658907269396</Id>
+					<Name><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛 - death_Undx_Diabetic_wt_Complication]]></Name>
+					<X>560</X><Y>310</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658907029902" TargetId="1658906881210" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-50</X><Y>-140</Y></Direction>
+					<Id>1658907276581</Id>
+					<Name><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛 - death_Dx_Diabetic_wt_Complication]]></Name>
+					<X>530</X><Y>820</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658907437823" TargetId="1658907566493" Polarity="null">
+					<Height>5.707</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-40</X><Y>60</Y></Direction>
+					<Id>1658910959805</Id>
+					<Name><![CDATA[mortality_undx_diabetic_with_early_stage - death_Undx_Diabetic_Early]]></Name>
+					<X>820</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888945813" TargetId="1658907566493" Polarity="null">
+					<Height>-37.262</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>-60</Y></Direction>
+					<Id>1658910968805</Id>
+					<Name><![CDATA[Undx_Diabetic_Early - death_Undx_Diabetic_Early]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658889015574" TargetId="1658907593600" Polarity="null">
+					<Height>-28.996</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>-60</Y></Direction>
+					<Id>1658910985483</Id>
+					<Name><![CDATA[Undx_Diabetic_Late - death_Undx_Diabetic_Late]]></Name>
+					<X>1060</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658907686932" TargetId="1658907605871" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-120</X><Y>25</Y></Direction>
+					<Id>1658910998872</Id>
+					<Name><![CDATA[mortality_diabetic_with_late_stage_comp - death_Dx_Diabetic_Late]]></Name>
+					<X>1180</X><Y>660</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658889038840" TargetId="1658907605871" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>65</Y></Direction>
+					<Id>1658911004969</Id>
+					<Name><![CDATA[Dx_Diabetic_Late - death_Dx_Diabetic_Late]]></Name>
+					<X>1060</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658907540549" TargetId="1658907581370" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>50</X><Y>-40</Y></Direction>
+					<Id>1658911014416</Id>
+					<Name><![CDATA[mortality_dx_diabetic_with_early_stage - death_Dx_Diabetic_Early]]></Name>
+					<X>730</X><Y>720</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888986712" TargetId="1658907581370" Polarity="null">
+					<Height>-28.008</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>60</Y></Direction>
+					<Id>1658911022770</Id>
+					<Name><![CDATA[Dx_Diabetic_Early - death_Dx_Diabetic_Early]]></Name>
+					<X>780</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658914696966" TargetId="1658889153949" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-80</X><Y>-275</Y></Direction>
+					<Id>1658914733003</Id>
+					<Name><![CDATA[diagnosis_rate_diabetes_late - Diagnose_Diabetic_Late]]></Name>
+					<X>1140</X><Y>830</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658889015574" TargetId="1658889153949" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>65</Y></Direction>
+					<Id>1658914738819</Id>
+					<Name><![CDATA[Undx_Diabetic_Late - Diagnose_Diabetic_Late]]></Name>
+					<X>1060</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888945813" TargetId="1658889142670" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>65</Y></Direction>
+					<Id>1658914764014</Id>
+					<Name><![CDATA[Undx_Diabetic_Early - Diagnose_Diabetic_Early]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658914656301" TargetId="1658889142670" Polarity="null">
+					<Height>-106.576</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-40</X><Y>-285</Y></Direction>
+					<Id>1658914793889</Id>
+					<Name><![CDATA[diagnosis_rate_diabetes_early - Diagnose_Diabetic_Early]]></Name>
+					<X>820</X><Y>840</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658914823576" TargetId="1658889110201" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-230</X><Y>-355</Y></Direction>
+					<Id>1658914856617</Id>
+					<Name><![CDATA[diagnosis_rate_prediabetes - Diagnose_Prediabetic]]></Name>
+					<X>470</X><Y>910</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658914905115" TargetId="1658889118450" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-130</X><Y>-315</Y></Direction>
+					<Id>1658914930323</Id>
+					<Name><![CDATA[diagnosis_rate_diabetes_wt_compliation - Diagnose_Diabetic_wt_Complication]]></Name>
+					<X>610</X><Y>870</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888863517" TargetId="1658889118450" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>65</Y></Direction>
+					<Id>1658914936037</Id>
+					<Name><![CDATA[Undx_Diabetic_wt_Complication - Diagnose_Diabetic_wt_Complication]]></Name>
+					<X>480</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658889110201" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>0</X><Y>65</Y></Direction>
+					<Id>1658914976556</Id>
+					<Name><![CDATA[Undx_Prediabetic - Diagnose_Prediabetic]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658917673857" TargetId="1658889085389" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-30</X><Y>180</Y></Direction>
+					<Id>1658917725607</Id>
+					<Name><![CDATA[ratedevelopingLateStage - Developing_undx_Late]]></Name>
+					<X>950</X><Y>310</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658917673857" TargetId="1658889105167" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-30</X><Y>310</Y></Direction>
+					<Id>1658917734025</Id>
+					<Name><![CDATA[ratedevelopingLateStage - Developing_dx_Late]]></Name>
+					<X>950</X><Y>310</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888945813" TargetId="1658889085389" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>140</X><Y>0</Y></Direction>
+					<Id>1658917743300</Id>
+					<Name><![CDATA[Undx_Diabetic_Early - Developing_undx_Late]]></Name>
+					<X>780</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888986712" TargetId="1658889105167" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>140</X><Y>0</Y></Direction>
+					<Id>1658917751122</Id>
+					<Name><![CDATA[Dx_Diabetic_Early - Developing_dx_Late]]></Name>
+					<X>780</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658907686932" TargetId="1658907593600" Polarity="null">
+					<Height>-80.706</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-120</X><Y>-230</Y></Direction>
+					<Id>1658950645115</Id>
+					<Name><![CDATA[mortality_diabetic_with_late_stage_comp - death_Undx_Diabetic_Late]]></Name>
+					<X>1180</X><Y>660</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658969332733" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-40</X><Y>-290</Y></Direction>
+					<Id>1658969368102</Id>
+					<Name><![CDATA[Undx_Prediabetic - recovery_from_undx_to_normalW]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891647986" TargetId="1658969332733" Polarity="null">
+					<Height>-16.637</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-110</X><Y>-170</Y></Direction>
+					<Id>1658969374949</Id>
+					<Name><![CDATA[prediabetes_recovery_rate - recovery_from_undx_to_normalW]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891647986" TargetId="1658969472617" Polarity="null">
+					<Height>-26.566</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-125</X><Y>70</Y></Direction>
+					<Id>1658969505931</Id>
+					<Name><![CDATA[prediabetes_recovery_rate - recovery_from_undx_to_Obese]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658969472617" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-55</X><Y>-50</Y></Direction>
+					<Id>1658969516549</Id>
+					<Name><![CDATA[Undx_Prediabetic - recovery_from_undx_to_Obese]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888778267" TargetId="1658969544382" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-270</X><Y>40</Y></Direction>
+					<Id>1658969604329</Id>
+					<Name><![CDATA[Dx_Prediabetic - recovery_from_dx_to_normalW]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891647986" TargetId="1658969544382" Polarity="null">
+					<Height>-28.744</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-340</X><Y>290</Y></Direction>
+					<Id>1658969612495</Id>
+					<Name><![CDATA[prediabetes_recovery_rate - recovery_from_dx_to_normalW]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888778267" TargetId="1658969669278" Polarity="null">
+					<Height>-14.28</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-170</X><Y>-50</Y></Direction>
+					<Id>1658969709481</Id>
+					<Name><![CDATA[Dx_Prediabetic - recovery_from_dx_to_obese]]></Name>
+					<X>240</X><Y>620</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658891647986" TargetId="1658969669278" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-240</X><Y>200</Y></Direction>
+					<Id>1658969719970</Id>
+					<Name><![CDATA[prediabetes_recovery_rate - recovery_from_dx_to_obese]]></Name>
+					<X>310</X><Y>370</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+				<Link SourceId="1658888743812" TargetId="1658969472617" Polarity="null">
+					<Height>20.0</Height>
+					<PolarityPosition>0.95</PolarityPosition>
+					<Direction><X>-55</X><Y>-50</Y></Direction>
+					<Id>1658969746039</Id>
+					<Name><![CDATA[Undx_Prediabetic - recovery_from_undx_to_Obese]]></Name>
+					<X>240</X><Y>490</Y>
+					<Label><X>40</X><Y>-50</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<Color/>
+					<LineWidth>1</LineWidth>
+					<Delay>false</Delay>
+				</Link>
+			</Dependences>
+			<AgentLinks>
+				<AgentLink>
+					<Id>1658887506850</Id>
+					<Name><![CDATA[connections]]></Name>
+					<X>50</X><Y>-50</Y>
+					<Label><X>15</X><Y>0</Y></Label>
+					<PublicFlag>false</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>true</ShowLabel>
+					<HandleReceiveInConnections>false</HandleReceiveInConnections>
+					<AgentLinkType>COLLECTION_OF_LINKS</AgentLinkType>
+					<AgentLinkBidirectional>true</AgentLinkBidirectional>
+					<MessageType><![CDATA[Object]]></MessageType>
+					<LineStyle>SOLID</LineStyle>
+					<LineWidth>1</LineWidth>
+					<LineColor>-16777216</LineColor>
+					<LineZOrder>UNDER_AGENTS</LineZOrder>
+					<LineArrow>NONE</LineArrow>
+					<LineArrowPosition>END</LineArrowPosition>
+				</AgentLink>
+			</AgentLinks>
+
+
+			<Presentation>
+				<Level>
+					<Id>1658887506854</Id>
+					<Name><![CDATA[level]]></Name>
+					<X>0</X><Y>0</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+					<Z>0</Z>
+					<LevelVisibility>DIM_NON_CURRENT</LevelVisibility>
+
+
+				</Level>
+			</Presentation>
+
+		</ActiveObjectClass>
+	</ActiveObjectClasses>	
+	<DifferentialEquationsMethod>EULER</DifferentialEquationsMethod>
+	<MixedEquationsMethod>RK45_NEWTON</MixedEquationsMethod>
+	<AlgebraicEquationsMethod>MODIFIED_NEWTON</AlgebraicEquationsMethod>
+	<AbsoluteAccuracy>1.0E-5</AbsoluteAccuracy>
+	<FixedTimeStep>0.001</FixedTimeStep>
+	<RelativeAccuracy>1.0E-5</RelativeAccuracy>
+	<TimeAccuracy>1.0E-5</TimeAccuracy>
+	<Frame>
+		<Width>1000</Width>
+		<Height>600</Height>
+	</Frame>
+	<Database>
+		<Logging>false</Logging>
+		<AutoExport>false</AutoExport>
+		<ShutdownCompact>false</ShutdownCompact>
+		<ImportSettings>
+		</ImportSettings>
+		<ExportSettings>
+		</ExportSettings>
+	</Database>
+	
+	<RunConfiguration ActiveObjectClassId="1658887506855">
+		<Id>1658887506859</Id>
+		<Name><![CDATA[RunConfiguration]]></Name>
+		<MaximumMemory>512</MaximumMemory>
+		<ModelTimeProperties>
+			<StopOption><![CDATA[Stop at specified time]]></StopOption>
+			<InitialDate><![CDATA[1658880000000]]></InitialDate>	
+			<InitialTime><![CDATA[0.0]]></InitialTime>	
+			<FinalDate><![CDATA[1661558400000]]></FinalDate>	
+			<FinalTime><![CDATA[100.0]]></FinalTime>	
+		</ModelTimeProperties>
+		<AnimationProperties>
+			<StopNever>true</StopNever>
+			<ExecutionMode>realTimeScaled</ExecutionMode>
+			<RealTimeScale>1.0</RealTimeScale>
+			<EnableZoomAndPanning>true</EnableZoomAndPanning>
+			<EnableDeveloperPanel>false</EnableDeveloperPanel>
+			<ShowDeveloperPanelOnStart>false</ShowDeveloperPanelOnStart>
+		</AnimationProperties>
+		<Inputs>		
+		</Inputs>
+		<Outputs>
+		</Outputs>
+	</RunConfiguration>
+	<Experiments>	
+		<!--   =========   Simulation Experiment   ========  -->
+		<SimulationExperiment ActiveObjectClassId="1658887506855">
+			<Id>1658887506857</Id>
+			<Name><![CDATA[Simulation]]></Name>
+			<ClientAreaTopLeft><X>0</X><Y>0</Y></ClientAreaTopLeft>
+			<CommandLineArguments><![CDATA[]]></CommandLineArguments>
+			<MaximumMemory>512</MaximumMemory>
+			<RandomNumberGenerationType>fixedSeed</RandomNumberGenerationType>
+			<CustomGeneratorCode>new Random()</CustomGeneratorCode>
+			<SeedValue>1</SeedValue>
+			<SelectionModeForSimultaneousEvents>LIFO</SelectionModeForSimultaneousEvents>
+			<VmArgs><![CDATA[]]></VmArgs>
+			<LoadRootFromSnapshot>false</LoadRootFromSnapshot>
+
+			<Presentation>
+				<Text>
+					<Id>1658887506858</Id>
+					<Name><![CDATA[text]]></Name>
+					<X>50</X><Y>30</Y>
+					<Label><X>10</X><Y>0</Y></Label>
+					<PublicFlag>true</PublicFlag>
+					<PresentationFlag>true</PresentationFlag>
+					<ShowLabel>false</ShowLabel>
+					<DrawMode>SHAPE_DRAW_2D3D</DrawMode>
+					<EmbeddedIcon>false</EmbeddedIcon>
+					<Z>0</Z>
+					<Rotation>0.0</Rotation>
+					<Color>-12490271</Color>
+					<Text><![CDATA[diabetes]]></Text>
+					<Font>
+						<Name>SansSerif</Name>
+						<Size>24</Size>
+						<Style>0</Style>
+					</Font>
+					<Alignment>LEFT</Alignment>
+				</Text>
+			</Presentation>
+
+			<Parameters>			
+				<Parameter>
+					<ParameterName><![CDATA[prediabetes_recovery_rate]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[prediabetes_incidence_base_rate_normal_weight]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[Prediabetes_onset_obese_multiplier]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[Prediabetes_onset_overweight_multiplier]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[Incidence_of_overweight_rate]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[mortaliltyRate_Normal_OverW]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[birth_rate]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[mortality_obese_prediabetic]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[incidence_of_obesity_rate]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_undx]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑒𝑎𝑟𝑙𝑦_𝑠𝑡𝑎𝑔𝑒_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛_𝑓𝑟𝑜𝑚_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[𝑚𝑜𝑟𝑡𝑎𝑙𝑖𝑡𝑦_un𝑑𝑥_𝑑𝑖𝑎𝑏𝑒𝑡𝑖𝑐_𝑤𝑖𝑡ℎ𝑜𝑢𝑡_𝑐𝑜𝑚𝑝𝑙𝑖𝑐𝑎𝑡𝑖𝑜𝑛]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[mortality_undx_diabetic_with_early_stage]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[mortality_dx_diabetic_with_early_stage]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[mortality_diabetic_with_late_stage_comp]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[diagnosis_rate_diabetes_early]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[diagnosis_rate_diabetes_late]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[diagnosis_rate_prediabetes]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[diagnosis_rate_diabetes_wt_compliation]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[ratedevelopingLateStage]]></ParameterName>
+				</Parameter>
+				<Parameter>
+					<ParameterName><![CDATA[𝑎𝑣𝑔_𝑦𝑒𝑎𝑟𝑠_𝑡𝑜_𝑑𝑒𝑣𝑒𝑙𝑜𝑝_𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_𝑓𝑟𝑜𝑚_𝑝𝑟𝑒𝑑𝑖𝑎𝑏𝑒𝑡𝑒𝑠_dx]]></ParameterName>
+				</Parameter>
+			</Parameters>			
+			<PresentationProperties>
+				<EnableZoomAndPanning>true</EnableZoomAndPanning>
+				<ExecutionMode><![CDATA[realTimeScaled]]></ExecutionMode>
+				<Title><![CDATA[diabetes : Simulation]]></Title>	
+				<EnableDeveloperPanel>true</EnableDeveloperPanel>
+				<ShowDeveloperPanelOnStart>false</ShowDeveloperPanelOnStart>
+				<RealTimeScale>1.0</RealTimeScale>
+			</PresentationProperties>
+			<ModelTimeProperties>
+				<StopOption><![CDATA[Stop at specified time]]></StopOption>
+				<InitialDate><![CDATA[1658880000000]]></InitialDate>	
+				<InitialTime><![CDATA[0.0]]></InitialTime>	
+				<FinalDate><![CDATA[1667520000000]]></FinalDate>	
+				<FinalTime><![CDATA[100.0]]></FinalTime>	
+			</ModelTimeProperties>
+			<BypassInitialScreen>true</BypassInitialScreen>
+		</SimulationExperiment>	
+	</Experiments>
+    <RequiredLibraryReference>
+		<LibraryName><![CDATA[com.anylogic.libraries.modules.markup_descriptors]]></LibraryName>
+		<VersionMajor>1</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>0</VersionBuild>
+    </RequiredLibraryReference>
+</Model>
+</AnyLogicWorkspace>
