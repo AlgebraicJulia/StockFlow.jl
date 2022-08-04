@@ -49,6 +49,7 @@ StockAndFlowp(s,f) = begin
     add_stocks!(d,length(s),sname=s)
 
     s_idx = state_dict(s)
+    f = vectorify(f)
     for (i, ((fattr,uds),ls)) in enumerate(f)
       fn = first(fattr)
       ff = last(fattr)
