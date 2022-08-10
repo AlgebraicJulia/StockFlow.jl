@@ -7,56 +7,6 @@ using Catlab.Graphics
 
 export Graph, display_uwd
 
-#= old function only plot out stocks and flows
-
-# only plot stocks and flows, not plot links
-function SGraph(p::AbstractStockAndFlow)
-  inflows=inflowsAll(p)
-  outflows=outflowsAll(p)
-  innerFlows=intersect(inflows,outflows)
-  edgeInFlows=symdiff(inflows,innerFlows)
-  edgeOutFlows=symdiff(outflows,innerFlows)
-
-  stockNodes = [Node(string("$(sname(p, s))"), Attributes(:shape=>"square", :color=>"black")) for s in 1:ns(p)]
-  boundInFlowNodes = [Node(string("fs_$(edgeInFlows[s])"),Attributes(:shape=>"point", :color=>"white")) for s in 1:length(edgeInFlows)]
-  boundOutFlowNodes = [Node(string("fs_$(edgeOutFlows[s])"),Attributes(:shape=>"point", :color=>"white")) for s in 1:length(edgeOutFlows)]
-
-  stmts_nodes = vcat(stockNodes, boundInFlowNodes, boundOutFlowNodes)
-
-  edges_inner=map(1:length(innerFlows)) do k
-    flow_index=innerFlows[k]
-    flow_name=fname(p,flow_index)
-    stock_index_outfrom = first(outstock(p,flow_index))
-    stock_index_into = first(instock(p,flow_index))
-    [Edge(["$(sname(p,stock_index_outfrom))", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
-  end |> flatten |> collect
-
-  edges_inflow=map(1:length(edgeInFlows)) do k
-    flow_index=edgeInFlows[k]
-    flow_name=fname(p,flow_index)
-    stock_index_into = first(instock(p,flow_index))
-    [Edge(["fs_$flow_index", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
-  end |> flatten |> collect
-
-  edges_outflow=map(1:length(edgeOutFlows)) do k
-    flow_index=edgeOutFlows[k]
-    flow_name=fname(p,flow_index)
-    stock_index_outfrom = first(outstock(p,flow_index))
-    [Edge(["$(sname(p,stock_index_outfrom))", "fs_$flow_index"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
-  end |> flatten |> collect
-
-  stmts_edges = vcat(edges_inner,edges_inflow,edges_outflow)
-  stmts = vcat(stmts_nodes, stmts_edges)
-
-  graph_attrs = Attributes(:rankdir=>"LR")
-#  node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
-  edge_attrs  = Attributes(:splines=>"splines")
-
-  g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, edge_attrs=edge_attrs)
-  return g
-end
-=#
-
 # schema: "c":  the full schema
 #         "c0": the simple schema
 # the type parameter is only used for schema C, which means if schema=C0, all the component will be plot out anyway, since C0 is quite simple
@@ -76,18 +26,19 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
     end
   end
 
-  stockNodes = [Node(string("$(sname(p, s))"), Attributes(:shape=>"square", :color=>"black", :style=>"filled", :fillcolor=>"#9ACEEB")) for s in 1:ns(p)]
+#  stockNodes = [Node(string("$(sname(p, s))"), Attributes(:shape=>"square", :color=>"black", :style=>"filled", :fillcolor=>"#9ACEEB")) for s in 1:ns(p)]
+  stockNodes = [Node("s$s", Attributes(:label=>"$(sname(p, s))",:shape=>"square", :color=>"black", :style=>"filled", :fillcolor=>"#9ACEEB")) for s in 1:ns(p)]
 
   if occursin("V", type)
     if schema == "C"
-      vNodes = [Node(string("$(vname(p, v))"), Attributes(:shape=>"plaintext", :color=>"black")) for v in 1:nvb(p)]
+      vNodes = [Node("v$v", Attributes(:label=>"$(vname(p, v))",:shape=>"plaintext", :color=>"black")) for v in 1:nvb(p)]
     end
-    svNodes = [Node(string("$(svname(p, sv))"), Attributes(:shape=>"circle", :color=>"black",:fillcolor=>"cornflowerblue", :style=>"filled")) for sv in 1:nsv(p)]
+    svNodes = [Node("sv$sv", Attributes(:label=>"$(svname(p, sv))",:shape=>"circle", :color=>"black",:fillcolor=>"cornflowerblue", :style=>"filled")) for sv in 1:nsv(p)]
   end
   
   if schema == "C" begin
-      boundInFlowNodes = [Node(string("fs_$(edgeInFlows[s])"),Attributes(:shape=>"point", :color=>"white")) for s in 1:length(edgeInFlows)]
-      boundOutFlowNodes = [Node(string("fs_$(edgeOutFlows[s])"),Attributes(:shape=>"point", :color=>"white")) for s in 1:length(edgeOutFlows)]
+      boundInFlowNodes = [Node(string("fs_$(edgeInFlows[s])"),Attributes(:label=>"",:shape=>"point", :color=>"white")) for s in 1:length(edgeInFlows)]
+      boundOutFlowNodes = [Node(string("fs_$(edgeOutFlows[s])"),Attributes(:label=>"",:shape=>"point", :color=>"white")) for s in 1:length(edgeOutFlows)]
     end
   end
   stmts_nodes = if schema == "C"
@@ -105,40 +56,40 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
     edges_inner=map(1:length(innerFlows)) do k
       flow_index=innerFlows[k]
       flow_name=fname(p,flow_index)
-      fv_name=vname(p,flowVariableIndex(p,flow_index))
+      fv_name=flowVariableIndex(p,flow_index)
       stock_index_outfrom = first(outstock(p,flow_index))
       stock_index_into = first(instock(p,flow_index))
       if occursin("V", type)
-        [Edge(["$(sname(p,stock_index_outfrom))", "$fv_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
-         Edge(["$fv_name", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
+        [Edge(["s$stock_index_outfrom", "v$fv_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
+         Edge(["v$fv_name", "s$stock_index_into"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
       else
-        [Edge(["$(sname(p,stock_index_outfrom))", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
+        [Edge(["s$stock_index_outfrom", "s$stock_index_into"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
       end
     end |> flatten |> collect
 
     edges_inflow=map(1:length(edgeInFlows)) do k
       flow_index=edgeInFlows[k]
       flow_name=fname(p,flow_index)
-      fv_name=vname(p,flowVariableIndex(p,flow_index))
+      fv_name=flowVariableIndex(p,flow_index)
       stock_index_into = first(instock(p,flow_index))
       if occursin("V", type)
-        [Edge(["fs_$flow_index", "$fv_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
-         Edge(["$fv_name", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
+        [Edge(["fs_$flow_index", "v$fv_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
+         Edge(["v$fv_name", "s$stock_index_into"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
       else
-        [Edge(["fs_$flow_index", "$(sname(p,stock_index_into))"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
+        [Edge(["fs_$flow_index", "s$stock_index_into"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
       end
     end |> flatten |> collect
 
     edges_outflow=map(1:length(edgeOutFlows)) do k
       flow_index=edgeOutFlows[k]
       flow_name=fname(p,flow_index)
-      fv_name=vname(p,flowVariableIndex(p,flow_index))
+      fv_name=flowVariableIndex(p,flow_index)
       stock_index_outfrom = first(outstock(p,flow_index))
       if occursin("V", type)
-        [Edge(["$(sname(p,stock_index_outfrom))", "$fv_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
-         Edge(["$fv_name", "fs_$flow_index"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
+        [Edge(["s$stock_index_outfrom", "v$fv_name"],Attributes(:label=>"", :labelfontsize=>"6", :color=>"black:invis:black", :arrowhead=>"none", :splines=>"ortho")),
+         Edge(["v$fv_name", "fs_$flow_index"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black", :splines=>"ortho"))]
       else
-        [Edge(["$(sname(p,stock_index_outfrom))", "fs_$flow_index"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
+        [Edge(["s$stock_index_outfrom", "fs_$flow_index"],Attributes(:label=>"$flow_name", :labelfontsize=>"6", :color=>"black:invis:black"))]
       end
     end |> flatten |> collect
 
@@ -153,7 +104,7 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
     subEdges = Vector{Edge}[]  
     for k in 1:nsv(p)
         subEdges = vcat(map(stockssv(p,k)) do m
-                [Edge(["$(sname(p, m))", "$(svname(p,k))"])]
+                [Edge(["s$m", "sv$k"])]
                 end, subEdges)
     end
     return subEdges |> flatten |> collect
@@ -166,7 +117,7 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
       subEdges = Vector{Edge}[]  
       for k in 1:nvb(p)
         subEdges = vcat(map(stocksv(p,k)) do m
-                [Edge(["$(sname(p, m))", "$(vname(p,k))"])]
+                [Edge(["s$m", "v$k"])]
                 end, subEdges)
       end
       return subEdges |> flatten |> collect
@@ -177,7 +128,7 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
       subEdges = Vector{Edge}[]  
       for k in 1:nvb(p)
         subEdges = vcat(map(svsv(p,k)) do m
-                [Edge(["$(svname(p, m))", "$(vname(p,k))"])]
+                [Edge(["sv$m", "v$k"])]
                 end, subEdges)
       end
       return subEdges |> flatten |> collect
@@ -204,7 +155,6 @@ function Graph(p::AbstractStockAndFlow0; schema::String="C", type::String="SFVL"
           end
 
   graph_attrs = Attributes(:rankdir=>rd)
-#  node_attrs  = Attributes(:shape=>"plain", :style=>"filled", :color=>"white")
   edge_attrs  = Attributes(:splines=>"splines")
 
   g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, edge_attrs=edge_attrs)
