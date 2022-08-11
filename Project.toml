@@ -1,7 +1,7 @@
-name = "AlgebraicStockFlow"
+name = "StockFlow"
 uuid = "58c4a0e8-2944-4d18-9fa2-e17726aee9e5"
 license = "MIT"
-authors = ["Xiaoyan Li"]
+authors = ["Xiaoyan Li <xiaoyan.lyu.li@gmail.com>"]
 version = "0.1.0"
 
 [deps]
