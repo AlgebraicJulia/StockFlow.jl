@@ -7,7 +7,7 @@ add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, sv
 funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
-object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb
+object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -317,7 +317,10 @@ vname(p::AbstractStockAndFlowStructure,v) = subpart(p,v,:vname) # return the aux
 snames(p::AbstractStockAndFlow0) = [sname(p, s) for s in 1:ns(p)]
 fnames(p::AbstractStockAndFlowStructure) = [fname(p, f) for f in 1:nf(p)]
 svnames(p::AbstractStockAndFlow0) = [svname(p, sv) for sv in 1:nsv(p)]
-vnames(p::AbstractStockAndFlowStructure) = [vname(p, v) for v in 1:nv(p)]
+vnames(p::AbstractStockAndFlowStructure) = [vname(p, v) for v in 1:nvb(p)]
+
+fv(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
+fvs(p::AbstractStockAndFlowStructure)=[fv(p,f) for f in 1:nf(p)]
 
 # return the pair of names of (stock, sum-auxiliary-variable) for all linkages between them
 lsnames(p::AbstractStockAndFlow0) = begin
@@ -561,7 +564,7 @@ vectorfield(pn::AbstractStockAndFlow) = begin
   return f
 end
 
-#include("CausalLoop.jl")
+include("CausalLoop.jl")
 
 include("visualization.jl")
 # The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper

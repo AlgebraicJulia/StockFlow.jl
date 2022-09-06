@@ -7,6 +7,8 @@ using Catlab.Graphics
 
 export Graph, display_uwd
 
+display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
+
 def_stock(p, s) = ("s$s", Attributes(:label=>"$(sname(p, s))",
                                      :shape=>"square", 
                                      :color=>"black", 
@@ -211,5 +213,17 @@ function Graph(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_au
 
 end
 
+function Graph(c::CausalLoop)
 
-display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
+  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+
+  Edges=map(1:ne(c)) do k
+    [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
+  end |> flatten |> collect
+
+  stmts=vcat(NNodes,Edges)
+
+  g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
+  return g
+
+end
