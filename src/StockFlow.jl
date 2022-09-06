@@ -126,7 +126,7 @@ const StockAndFlowStructure = StockAndFlowStructureUntyped{Symbol}
   funcDynam::Attr(V, FuncDynam)
 end
 
-@abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlow0
+@abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlowStructure
 @acset_type StockAndFlowUntyped(TheoryStockAndFlow, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlow
 # constrains the attributes data type to be: 
 # 1. InitialValue: Real
@@ -560,6 +560,8 @@ vectorfield(pn::AbstractStockAndFlow) = begin
   end
   return f
 end
+
+#include("CausalLoop.jl")
 
 include("visualization.jl")
 # The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
