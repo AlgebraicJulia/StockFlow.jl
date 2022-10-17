@@ -30,6 +30,7 @@ const FK_SVVARIABLE_NAME=:SVV_NONE #fake name of the auxiliary variables that li
 
 vectorify(n::Vector) = collect(n)
 vectorify(n::Tuple) = length(n) == 1 ? [n] : collect(n)
+vectorify(n::SubArray) = collect(n)
 vectorify(n) = [n]
 
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
@@ -216,6 +217,7 @@ StockAndFlowStructure(s,f,sv) = begin
       outs = outs[outs .!= FK_FLOW_NAME]
       vs = vs[vs .!= FK_VARIABLE_NAME]
       svs = svs[svs .!= FK_SVARIABLE_NAME]
+
       if length(ins)>0
         add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
       end
@@ -366,6 +368,7 @@ vssvAllF(p::AbstractStockAndFlowStructure) = [((vssv(p, sv) for sv in 1:nsv(p)).
 inflowsAll(p::AbstractStockAndFlowStructure) = [((inflows(p, s) for s in 1:ns(p))...)...]
 # return all outflows
 outflowsAll(p::AbstractStockAndFlowStructure) = [((outflows(p, s) for s in 1:ns(p))...)...]
+
 
 
 # return the functions of variables give index v
@@ -520,26 +523,26 @@ catch e
 end
 
 # the parameters are the labelled vector of the functions of flows
-vectorfield(pn::AbstractStockAndFlowStructure) = begin
-  tm = TransitionMatrices(pn)
-  f(du,u,p,t) = begin
-    u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
-    ϕ_m = [p[fname(pn, i)] for i in 1:nf(pn)]
-    for i in 1:ns(pn)
-      du[sname(pn, i)] = 0
-      for j in 1:nf(pn)
-        if tm.inflow[j,i] == 1
-          du[sname(pn, i)] = du[sname(pn, i)] + valueat(ϕ_m[j],u,p,t)
-        end
-        if tm.outflow[j,i] == 1
-          du[sname(pn, i)] = du[sname(pn, i)] - valueat(ϕ_m[j],u,p,t)
-        end
-      end
-    end
-    return du
-  end
-  return f
-end
+#vectorfield(pn::AbstractStockAndFlowStructure) = begin
+#  tm = TransitionMatrices(pn)
+#  f(du,u,p,t) = begin
+#    u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
+#    ϕ_m = [p[fname(pn, i)] for i in 1:nf(pn)]
+#    for i in 1:ns(pn)
+#      du[sname(pn, i)] = 0
+#      for j in 1:nf(pn)
+#        if tm.inflow[j,i] == 1
+#          du[sname(pn, i)] = du[sname(pn, i)] + valueat(ϕ_m[j],u,p,t)
+#        end
+#        if tm.outflow[j,i] == 1
+#          du[sname(pn, i)] = du[sname(pn, i)] - valueat(ϕ_m[j],u,p,t)
+#        end
+#      end
+#    end
+#    return du
+#  end
+#  return f
+#end
 
 
 vectorfield(pn::AbstractStockAndFlow) = begin
@@ -565,6 +568,7 @@ vectorfield(pn::AbstractStockAndFlow) = begin
 end
 
 include("CausalLoop.jl")
+include("SystemStructure.jl")
 
 include("visualization.jl")
 # The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
