@@ -1,6 +1,47 @@
 module Syntax
 
 using StockFlow
+using MLStyle
+
+test_infix_expr = :(a + b * c - d - e - h * j + k + l + m * n * o * p / q / r + s - t - u * v - w / x * y + z)
+function infix_expression_to_binops(expression)
+    syms = []
+    function loop(e)
+        @match e begin
+            ::Symbol => begin
+                e
+            end
+            Expr(:call, f, a, b) => begin
+                asym = loop(a)
+                bsym = loop(b)
+                varname = gensym("")
+                push!(syms, :($varname = $f($asym, $bsym)))
+                varname
+            end
+            Expr(:call, f, args...) => begin
+                argsyms = map(loop, args)
+                lastsym = gensym("")
+                a = popfirst!(argsyms)
+                b = popfirst!(argsyms)
+                symexpr = :($lastsym = $f($a, $b))
+                push!(syms, symexpr)
+                for argsym in argsyms
+                    currsym = gensym("")
+                    push!(syms, :($currsym = $f($lastsym, $argsym)))
+                    lastsym = currsym
+                end
+                lastsym
+            end
+            Expr(en, _, _, _) => begin
+                throw("Unhandled expression " * String(en))
+            end
+            Expr(en, _, _) => begin
+                throw("Unhandled expression " * String(en))
+            end
+        end
+    end
+    syms, loop(expression)
+end
 
 struct StockAndFlowSyntax
     stocks::Array{Tuple{Symbol,Tuple{Symbol,Symbol,Symbol}}}
@@ -72,8 +113,8 @@ macro stock_and_flow(block)
     stocks = Tuple(stock_name => outputs for (stock_name, outputs) in syntax.stocks)
     params = syntax.params
     dyvars = Tuple(dyvar_name => ((dyvar_param1, dyvar_param2) => dyvar_func) for (dyvar_name, (dyvar_func, dyvar_param1, dyvar_param2)) in syntax.dyvars)
-    flows  = Tuple(f for f in syntax.flows)
-    sums   = syntax.sums
+    flows = Tuple(f for f in syntax.flows)
+    sums = syntax.sums
     return StockAndFlowF(stocks, params, dyvars, flows, sums)
 end
 
