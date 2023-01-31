@@ -3,13 +3,22 @@ module Syntax
 using StockFlow
 using MLStyle
 
-test_infix_expr = :(a + b * c - d - e - h * j + k + l + m * n * o * p / q / r + s - t - u * v - w / x * y + z)
+test_infix_expr = quote
+    a + b * c - d - e - f(g) + h(j, k) + l + m * n * o * p / q / r + s - t - u * v - w / x * y + z
+end
+Base.remove_linenums!(test_infix_expr)
 function infix_expression_to_binops(expression)
     syms = []
     function loop(e)
         @match e begin
             ::Symbol => begin
                 e
+            end
+            Expr(:call, f, a) => begin
+                asym = loop(a)
+                varname = gensym("")
+                push!(syms, :($varname = $f($asym)))
+                varname
             end
             Expr(:call, f, a, b) => begin
                 asym = loop(a)
