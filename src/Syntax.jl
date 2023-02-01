@@ -7,8 +7,25 @@ test_infix_expr = quote
     a + b * c - d - e - f(g) + h(j, k) + l + m * n * o * p / q / r + s - t - u * v - w / x * y + z
 end
 Base.remove_linenums!(test_infix_expr)
-function infix_expression_to_binops(expression)
-    syms = []
+
+function replace_in_last(exprs, symtoreplace, targetsym)
+    idx = lastindex(exprs)
+    expr = last(exprs)
+    try
+        updatedexpr = @match expr begin
+            Expr(:(=), sym, expr) => begin
+                if sym == symtoreplace
+                    :($targetsym = $expr)
+                end
+            end
+        end
+        exprs[idx] = updatedexpr
+    catch _
+    end
+end
+
+function infix_expression_to_binops(expression, finalsym=nothing)
+    exprs = []
     function loop(e)
         @match e begin
             ::Symbol => begin
@@ -17,14 +34,14 @@ function infix_expression_to_binops(expression)
             Expr(:call, f, a) => begin
                 asym = loop(a)
                 varname = gensym("")
-                push!(syms, :($varname = $f($asym)))
+                push!(exprs, :($varname = $f($asym)))
                 varname
             end
             Expr(:call, f, a, b) => begin
                 asym = loop(a)
                 bsym = loop(b)
                 varname = gensym("")
-                push!(syms, :($varname = $f($asym, $bsym)))
+                push!(exprs, :($varname = $f($asym, $bsym)))
                 varname
             end
             Expr(:call, f, args...) => begin
@@ -33,23 +50,25 @@ function infix_expression_to_binops(expression)
                 a = popfirst!(argsyms)
                 b = popfirst!(argsyms)
                 symexpr = :($lastsym = $f($a, $b))
-                push!(syms, symexpr)
+                push!(exprs, symexpr)
                 for argsym in argsyms
                     currsym = gensym("")
-                    push!(syms, :($currsym = $f($lastsym, $argsym)))
+                    push!(exprs, :($currsym = $f($lastsym, $argsym)))
                     lastsym = currsym
                 end
                 lastsym
             end
-            Expr(en, _, _, _) => begin
-                throw("Unhandled expression " * String(en))
-            end
-            Expr(en, _, _) => begin
+            Expr(en, _, _, _) || Expr(en, _, _) => begin
                 throw("Unhandled expression " * String(en))
             end
         end
     end
-    syms, loop(expression)
+    lastsym = loop(expression)
+    if finalsym !== nothing
+        replace_in_last(exprs, lastsym, finalsym)
+        lastsym = finalsym
+    end
+    exprs, lastsym
 end
 
 struct StockAndFlowSyntax
