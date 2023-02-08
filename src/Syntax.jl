@@ -4,12 +4,22 @@ using StockFlow
 using MLStyle
 
 """
-Contains the five parameters required to instantiate a StockAndFlowF data type, representing a Stock and Flow model.
+Contains the five parameters required to instantiate a StockAndFlowF data type,
+representing a Stock and Flow model.
 
 This can be used to directly instantiate StockAndFlowF.
 """
 struct StockAndFlowArguments
-    stocks::Vector{Pair{Symbol,Tuple{Union{Symbol,Vector{Symbol}},Union{Symbol,Vector{Symbol}},Union{Symbol,Vector{Symbol}}}}}
+    stocks::Vector{
+        Pair{
+            Symbol,
+            Tuple{
+                Union{Symbol,Vector{Symbol}},
+                Union{Symbol,Vector{Symbol}},
+                Union{Symbol,Vector{Symbol}},
+            },
+        },
+    }
     params::Vector{Symbol}
     dyvars::Vector{Pair{Symbol,Pair{Tuple{Symbol,Symbol},Symbol}}}
     flows::Vector{Pair{Symbol,Symbol}}
@@ -17,18 +27,21 @@ struct StockAndFlowArguments
 end
 
 """
-    StockAndFlowSyntax
+    StockAndFlowBlock
 
 Contains the elements that make up the Stock and Flow block syntax.
 
 ### Fields
 - `stocks` -- Each stock is defined by a single valid Julia variable name on a line.
 - `params` -- Each parameter is defined by a single valid Julia variable name on a line.
-- `dyvars` -- Each dynamic variable is defined by a valid Julia assignment statement of the form `dyvar = expr`
-- `flows`  -- Each flow is defined by a valid Julia pair expression of the form `variable_name => flow_name(flow_expression) => variable_name`
-- `sums`   -- Each sum is defined by a valid Julia assignment statement of the form `sum_name = [a, b, c, ...]`
+- `dyvars` -- Each dynamic variable is defined by a valid Julia assignment statement of the
+              form `dyvar = expr`
+- `flows`  -- Each flow is defined by a valid Julia pair expression of the form
+              `variable_name => flow_name(flow_expression) => variable_name`
+- `sums`   -- Each sum is defined by a valid Julia assignment statement of the form
+              `sum_name = [a, b, c, ...]`
 """
-struct StockAndFlowSyntax
+struct StockAndFlowBlock
     stocks::Vector{Symbol}
     params::Vector{Symbol}
     dyvars::Vector{Tuple{Symbol,Expr}}
@@ -39,19 +52,26 @@ end
 """
     set_finaL_binop_varname!(exprs::Vector{Tuple{Symbol, Expr}}, targetsym::Symbol)
 
-Given an expression that is in the form of a series of binary operations (e.g. from infix_expression_to_binops), replace the final generated symbol with a given one.
+Given an expression that is in the form of a series of binary operations
+(e.g. from infix_expression_to_binops), replace the final generated symbol with a given one.
 
 ### Input
-- `exprs` -- A vector of tuples of variable name symbols and their corresponding expression definitions.
+- `exprs` -- A vector of tuples of variable name symbols and their corresponding expression
+             definitions.
 - `varname` -- The final variable name to set.
 
 ### Output
-The original collection, with the last element updated to have a new variable name in its tuple.
+The original collection, with the last element updated to have a new variable name
+in its tuple.
 
 ### Examples
 ```julia-repl
 julia> (binops, _final_sym_name) = Syntax.infix_expression_to_binops(:(a + b + c))
-(Tuple{Symbol, Expr}[(Symbol("###1415"), :(a + b)), (Symbol("###1416"), :(var"###1415" + c))], Symbol("###1416"))
+( Tuple{Symbol, Expr}[ (Symbol("###1415"), :(a + b))
+                     , (Symbol("###1416"), :(var"###1415" + c))
+                     ]
+, Symbol("###1416")
+)
 
 julia> binops
 2-element Vector{Tuple{Symbol, Expr}}:
@@ -102,23 +122,33 @@ function is_binop(e::Expr)
     end
 end
 """
-   infix_expression_to_binops(expression :: Expr; gensymbase :: String = "", finalsym :: Union{Nothing, Symbol} = nothing)
+   infix_expression_to_binops( expression :: Expr; gensymbase :: String = ""
+                             , finalsym :: Union{Nothing, Symbol} = nothing)
 
-Convert a nested expression of the form (a * b + c - d / e ...) into a series of binary operations with named values (sym1 = a * b; sym2 = sym1 + c; ...; symn = symn-1 + somevar). If finalsym is given, symn is replaced with the one given.
+Convert a nested expression of the form (a * b + c - d / e ...) into a series of binary
+operations with named values (sym1 = a * b; sym2 = sym1 + c; ...; symn = symn-1 + somevar).
+If finalsym is given, symn is replaced with the one given.
 
 ### Input
 - `expression` -- a single expression containing nested function calls.
 - `gensymbase` -- the base name of the generated interim symbols for each binop
-- `sym`   -- (optional, default: `nothing`) a name for the final result to replace one of the generated symbols. If not given, it will be of the form `Symbol("###<NUMBER>")` e.g. `Symbol("###418")`.
+- `sym`   -- (optional, default: `nothing`) a name for the final result to replace
+             one of the generated symbols. If not given, it will be of the form
+             `Symbol("###<NUMBER>")` e.g. `Symbol("###418")`.
 
 ### Output
-A vector of tuples of variable definitions as symbols and the corresponding Julia expression that calculates the variable.
+A vector of tuples of variable definitions as symbols and the corresponding
+Julia expression that calculates the variable.
 
 ### Examples
 ```julia-repl
 julia> infix_expression_to_binops(:(a + b + c))
 julia> Syntax.infix_expression_to_binops(:(a + b + c))
-(Tuple{Symbol, Expr}[(Symbol("###495"), :(a + b)), (Symbol("###496"), :(var"###495" + c))], Symbol("###496"))
+( Tuple{Symbol, Expr}[ (Symbol("###495"), :(a + b))
+                     , (Symbol("###496"), :(var"###495" + c))
+                     ]
+, Symbol("###496")
+)
 ```
 That is, this converts the expression `a + b + c` into two expressions:
 ```julia
@@ -127,8 +157,13 @@ That is, this converts the expression `a + b + c` into two expressions:
 ```
 
 ```
-julia> Syntax.infix_expression_to_binops(:(a + b + c), gensymbase="generated_variable", lastsym=:infectionRate)
-(Tuple{Symbol, Expr}[(Symbol("##generated_variable#1045"), :(a + b)), (:infectionRate, :(var"##generated_variable#1045" + c))], :infectionRate)
+julia> Syntax.infix_expression_to_binops( :(a + b + c)
+                                        , gensymbase="generated_variable"
+                                        , lastsym=:infectionRate)
+( Tuple{Symbol, Expr}[ (Symbol("##generated_variable#1045"), :(a + b))
+                     , (:infectionRate, :(var"##generated_variable#1045" + c))
+                     ]
+, :infectionRate)
 ```
 That is, this converts the expression `a + b + c` into the expressions:
 ```julia
@@ -137,12 +172,15 @@ infectionRate = generatedVariable#1045 + c
 ```
 This would be used in the case the original expression was `infectionRate = a + b + c`.
 """
-function infix_expression_to_binops(expression::Expr; gensymbase::String="", finalsym::Union{Nothing,Symbol}=nothing)
+function infix_expression_to_binops(
+    expression::Expr;
+    gensymbase::String = "",
+    finalsym::Union{Nothing,Symbol} = nothing,
+)
     exprs::Vector{Tuple{Symbol,Expr}} = []
     function loop(e)
         @match e begin
-            ::Symbol =>
-                e
+            ::Symbol => e
             Expr(:call, f, a, b) => begin
                 asym = loop(a)
                 bsym = loop(b)
@@ -165,7 +203,10 @@ function infix_expression_to_binops(expression::Expr; gensymbase::String="", fin
                 lastsym
             end
             Expr(en, _, _, _) || Expr(en, _, _) => begin
-                throw("Unhandled expression cannot be converted into form f(a, b) " * String(en))
+                throw(
+                    "Unhandled expression cannot be converted into form f(a, b) " *
+                    String(en),
+                )
             end
         end
     end
@@ -181,7 +222,8 @@ end
 """
   extract_function_name_and_args_expr(flow::Expr)
 
-Given a Julia expression of the form f(a), return the symbol :f and the expression, a, the function is being called with.
+Given a Julia expression of the form f(a), return the symbol :f and the expression, a,
+the function is being called with.
 
 ### Input
 - `flow` -- a julia expression of the form f(a)
@@ -197,10 +239,8 @@ julia> Syntax.extract_flow_name_and_equation(:(infectionRate(a + b + c)))
 """
 function extract_function_name_and_args_expr(flow_equation::Expr)
     @match flow_equation begin
-        :($flow_name($expr)) =>
-            (flow_name, expr)
-        :($flow_name($expr, name=$_)) =>
-            (flow_name, expr)
+        :($flow_name($expr)) => (flow_name, expr)
+        :($flow_name($expr, name = $_)) => (flow_name, expr)
         Expr(en, _, _, _) || Expr(en, _, _) =>
             throw("Unhandled expression in flow name definition " * String(en))
     end
@@ -209,13 +249,19 @@ end
 """
     parse_flow_io(flow_definition :: Expr)
 
-Given a flow definition of the form `SYMBOL => flow_name(flow_equation) => SYMBOL`, return a 3-tuple of its constituent parts: the start symbol, the end symbol, and the flow equations's definition as an expression.
+Given a flow definition of the form `SYMBOL => flow_name(flow_equation) => SYMBOL`,
+return a 3-tuple of its constituent parts: the start symbol, the end symbol,
+and the flow equations's definition as an expression.
 
 ### Input
-- `flow_definition` -- A flow definition of the form `SYMBOL => flow_name(flow_equation) => SYMBOL`, where SYMBOL can be an arbitrary name or special cases of ☁ or TODO, which corresponds to a flow from nowhere.
+- `flow_definition` -- A flow definition of the form
+                       `SYMBOL => flow_name(flow_equation) => SYMBOL`,
+                       where SYMBOL can be an arbitrary name or special cases of ☁ or TODO,
+                       which corresponds to a flow from nowhere.
 
 ### Output
-A 3-tuple (input, expression, output) of a an input and output symbol (either of which may be :F_NONE for a flow from nowhere) and the flow equation as a julia expression.
+A 3-tuple (input, expression, output) of a an input and output symbol (either of which
+may be :F_NONE for a flow from nowhere) and the flow equation as a julia expression.
 
 ### Examples
 ```julia-repl
@@ -229,8 +275,7 @@ function parse_flow_io(flow_definition::Expr)
             (:F_NONE, flow, stock_out)
         :($stock_in => $flow => TODO) || :($stock_in => $flow => ☁) =>
             (stock_in, flow, :F_NONE)
-        :($stock_in => $flow => $stock_out) =>
-            (stock_in, flow, stock_out)
+        :($stock_in => $flow => $stock_out) => (stock_in, flow, stock_out)
         Expr(en, _, _, _) || Expr(en, _, _) =>
             throw("Unhandled expression in flow definition " * String(en))
     end
@@ -241,7 +286,8 @@ end
 
 Add a stock to the list of stocks.
 
-Stocks in the Stock and Flow syntax are just a single symbol on a line, so no work is currently done by this function.
+Stocks in the Stock and Flow syntax are just a single symbol on a line, so no work
+is currently done by this function.
 
 ### Input
 - `stocks` -- A list of stocks already parsed from the block
@@ -259,7 +305,8 @@ end
 
 Add a param to the list of params.
 
-Params in the Stock and Flow syntax are just a single symbol on a line, so no work is currently done by this function.
+Params in the Stock and Flow syntax are just a single symbol on a line,
+so no work is currently done by this function.
 
 ### Input
 - `params` -- A list of params already parsed from the block
@@ -275,10 +322,12 @@ end
 """
     parse_dyvar!(dyvars :: Vector{Tuple{Symbol, Expr}}, dyvar :: Expr)
 
-Extract the dynamic variable name and defining expression from a Julia expression of form `dyvar = a + b * c ...`, and add it to the vector of already parsed dynamic variables.
+Extract the dynamic variable name and defining expression from a Julia expression of form
+`dyvar = a + b * c ...`, and add it to the vector of already parsed dynamic variables.
 
 ### Input
-- `dyvars` -- A list of dynamic variables and their defining Julia expressions already parsed from the block
+- `dyvars` -- A list of dynamic variables and their defining Julia expressions
+              already parsed from the block
 - `dyvar` -- A dynamic variable definition of the form `dyvar = defining_expression`
 
 ### Output
@@ -286,8 +335,7 @@ None. This mutates the given dyvars vector.
 """
 function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
     @match dyvar begin
-        :($dyvar_name = $dyvar_def) =>
-            push!(dyvars, (dyvar_name, dyvar_def))
+        :($dyvar_name = $dyvar_def) => push!(dyvars, (dyvar_name, dyvar_def))
         Expr(c, _, _) || Expr(c, _, _, _) =>
             throw("Unhandled expression in dynamic variable definition " * String(c))
     end
@@ -296,7 +344,9 @@ end
 """
     parse_flow!(flows :: Vector{Tuple{Symbol, Expr, Symbol}}, flow :: Expr)
 
-Extract the flow input, output, and defining expression from a Julia expression of form `IN_SYMBOL => FLOW_NAME(FLOW_EQUATION) => OUT_SYMBOL`, and add it to the vector of already parsed flows.
+Extract the flow input, output, and defining expression from a Julia expression of
+the form `IN_SYMBOL => FLOW_NAME(FLOW_EQUATION) => OUT_SYMBOL`,
+and add it to the vector of already parsed flows.
 
 ### Input
 - `flows` -- A list of parsed flows
@@ -313,19 +363,20 @@ end
 """
     parse_sum!(sums :: Vector{Tuple{Symbol, Vector{Symbol}}}, sum :: Expr)
 
-Extract the sum name and the stocks that flow into it from a stock expression of the form `SUM_NAME = [STOCK_1, STOCK_2, STOCK_3, ...]`
+Extract the sum name and the stocks that flow into it from a stock expression of the form
+`SUM_NAME = [STOCK_1, STOCK_2, STOCK_3, ...]`
 
 ### Input
 - `sums` -- A list of parsed sum names and their incoming stocks
-- `sum`  -- A sum definition as a Julia expression of the form `sum_name = [stock_1, stock_2, stock_3, ...]`
+- `sum`  -- A sum definition as a Julia expression of the form
+            `sum_name = [stock_1, stock_2, stock_3, ...]`
 
 ### Output
 None. This mutates the given sums vector.
 """
 function parse_sum!(sums::Vector{Tuple{Symbol,Vector{Symbol}}}, sum::Expr)
     @match sum begin
-        :($sum_name = $equation) =>
-            push!(sums, (sum_name, equation.args))
+        :($sum_name = $equation) => push!(sums, (sum_name, equation.args))
         Expr(c, _, _) || Expr(c, _, _, _) =>
             throw("Unhandled expression in sum defintion " * String(c))
     end
@@ -334,13 +385,16 @@ end
 """
     parse_stock_and_flow_syntax(statements :: Vector{Any})
 
-Given a vector of Julia expressions, attempt to interpret them using the block syntax defined for Stock and Flow diagrams.
+Given a vector of Julia expressions, attempt to interpret them using the block syntax
+defined for Stock and Flow diagrams.
 
 ### Input
-- `statements` -- A series of Julia expressions, each a line of code in a block of statements.
+- `statements` -- A series of Julia expressions, each a line of code in
+                  a block of statements.
 
 ### Output
-A StockAndFlowSyntax data type which contains the syntax pieces required to define a Stock and Flow model: stocks, parameters, dynamic variables, flows, and sums.
+A StockAndFlowSyntax data type which contains the syntax pieces required to define
+a Stock and Flow model: stocks, parameters, dynamic variables, flows, and sums.
 """
 function parse_stock_and_flow_syntax(statements::Vector{Any})
     stocks::Vector{Symbol} = []
@@ -368,19 +422,20 @@ function parse_stock_and_flow_syntax(statements::Vector{Any})
             end
             QuoteNode(kw) =>
                 throw("Unknown block type for Stock and Flow syntax: " * String(kw))
-            _ =>
-                current_phase(statement)
+            _ => current_phase(statement)
         end
     end
 
-    s = StockAndFlowSyntax(stocks, params, dyvars, flows, sums)
+    s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
     return s
 end
 
 """
     fnone_or_tuple(arrows :: Vector{Symbol})
 
-Given a vector of arrow names, modify it into suitable input for a StockAndFlowF data type: :F_NONE for an empty vector, the value alone for a singleton vector, and the vector itself if there are multiple arrows given.
+Given a vector of arrow names, modify it into suitable input for a StockAndFlowF data type:
+:F_NONE for an empty vector, the value alone for a singleton vector,
+and the vector itself if there are multiple arrows given.
 
 ### Input
 - `arrows` -- A vector of symbols which represents some of the arrows for a stock.
@@ -403,19 +458,31 @@ function fnone_value_or_vector(arrows::Vector{Symbol})
 end
 
 """
-    assemble_stock_definitions(stocks::Vector{Symbol}, flows::Vector{Tuple{Symbol,Expr,Symbol}}, sum_variables::Vector{Tuple{Symbol,Vector{Symbol}}})
+    assemble_stock_definitions( stocks::Vector{Symbol}
+                              , flows::Vector{Tuple{Symbol,Expr,Symbol}}
+                              , sum_variables::Vector{Tuple{Symbol,Vector{Symbol}}}
+                              )
 
-Convert the raw syntax of a Stock and Flow block definition into a series of stock definitions suitable for input into the StockAndFlowF data type, which is (:STOCK_NAME => ((INPUT_ARROWS,...), (OUTPUT_ARROWS,...), (SUM_ARROWS,...))). The input, output, and sum arrows are calculated from the sum and flow definitions.
+Convert the raw syntax of a Stock and Flow block definition into a series of stock
+definitions suitable for input into the StockAndFlowF data type, which is
+(:STOCK_NAME => ((INPUT_ARROWS,...), (OUTPUT_ARROWS,...), (SUM_ARROWS,...))).
+The input, output, and sum arrows are calculated from the sum and flow definitions.
 
 ### Input
 - `stocks` -- A list of stock names as symbols
-- `flows` -- A list of flow definitions, which may use any of the stock names as inputs or outputs.
+- `flows` -- A list of flow definitions, which may use any of the stock names as
+             inputs or outputs.
 - `sum_variables` -- A list of sum definitions.
 
 ### Output
-The raw syntax definitions of a Stock and Flow block rearranged into a StockAndFlowF stock definition vector.
+The raw syntax definitions of a Stock and Flow block rearranged into a
+StockAndFlowF stock definition vector.
 """
-function assemble_stock_definitions(stocks::Vector{Symbol}, flows::Vector{Tuple{Symbol,Expr,Symbol}}, sum_variables::Vector{Tuple{Symbol,Vector{Symbol}}})
+function assemble_stock_definitions(
+    stocks::Vector{Symbol},
+    flows::Vector{Tuple{Symbol,Expr,Symbol}},
+    sum_variables::Vector{Tuple{Symbol,Vector{Symbol}}},
+)
     formatted_stocks = []
     for stock in stocks
         input_arrows::Vector{Symbol} = []
@@ -435,7 +502,16 @@ function assemble_stock_definitions(stocks::Vector{Symbol}, flows::Vector{Tuple{
                 push!(sum_arrows, sum_variable_name)
             end
         end
-        push!(formatted_stocks, (stock => (fnone_value_or_vector(input_arrows), fnone_value_or_vector(output_arrows), fnone_value_or_vector(sum_arrows))))
+        push!(
+            formatted_stocks,
+            (
+                stock => (
+                    fnone_value_or_vector(input_arrows),
+                    fnone_value_or_vector(output_arrows),
+                    fnone_value_or_vector(sum_arrows),
+                )
+            ),
+        )
     end
     return formatted_stocks
 end
@@ -443,10 +519,13 @@ end
 """
     dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
 
-Converts a series of dynamic variable definitions of the form `dyvar = dyvar_expression` into a form suitable for input into the StockAndFlowF data type: (:dyvar => ((:arg1, :arg2) => :function_name))
+Converts a series of dynamic variable definitions of the form `dyvar = dyvar_expression`
+into a form suitable for input into the StockAndFlowF data type:
+(:dyvar => ((:arg1, :arg2) => :function_name))
 
 ### Input
-- `dyvars` -- A vector of pairs of dynamic variable names (as symbols) and Julia expressions defining them.
+- `dyvars` -- A vector of pairs of dynamic variable names (as symbols)
+              and Julia expressions defining them.
 
 ### Output
 A vector of dynamic variable definitions suitable for input to StockAndFlowF.
@@ -459,11 +538,13 @@ function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
                 Expr(:call, op, a, b) => begin
                     push!(syms, (dyvar_name => ((a, b) => op)))
                 end
-                Expr(c, _, _) || Expr(c, _, _, _) =>
-                    throw("Unhandled expression in dynamic variable definition " * String(c))
+                Expr(c, _, _) || Expr(c, _, _, _) => throw(
+                    "Unhandled expression in dynamic variable definition " * String(c),
+                )
             end
         else
-            (binops, _) = infix_expression_to_binops(dyvar_definition, finalsym=dyvar_name)
+            (binops, _) =
+                infix_expression_to_binops(dyvar_definition, finalsym = dyvar_name)
             binops_syms = dyvar_exprs_to_symbolic_repr(binops)
             syms = vcat(syms, binops_syms)
         end
@@ -474,18 +555,22 @@ end
 """
     flow_expr_to_symbolic_repr(flow_expression :: Expr, dyvar_names :: Vector{Symbol})
 
-Converts a flow definition from one of three forms into a format suitable for input to StockAndFlowF data types:
+Converts a flow definition from one of three forms into a format suitable
+for input to StockAndFlowF data types:
 
 - `flow_name(name)` -- uses the dynamic variable `name` as the flow equation
-- `flow_name(expr)` -- hoists the expr out as a dynamic variable and replaces it with the generated name
-- `flow_name(expr, name=name)` -- hoists the expr out as a dynamic variable and replaces it with the given name
+- `flow_name(expr)` -- hoists the expr out as a dynamic variable and replaces
+                       it with the generated name
+- `flow_name(expr, name=name)` -- hoists the expr out as a dynamic variable and replaces
+                                  it with the given name
 
 ### Input
 - `flow_expression` -- a flow definition equation from Stock and Flow syntax
 - `dyvar_names` -- a vector of symbols that the flow_expression may be referring to
 
 ### Output
-The flow_expression's representation StockAndFlowF parameter format: `flow_name => dynamic_variable`
+The flow_expression's representation StockAndFlowF parameter format:
+`flow_name => dynamic_variable`
 """
 function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
     @match flow_expression begin
@@ -502,8 +587,8 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
                 return (dyvs, flow_name => var_name)
             end
         end
-        :($flow_name($expr, name=$sym)) => begin
-            (additional_dyvars, var_name) = infix_expression_to_binops(expr, finalsym=sym)
+        :($flow_name($expr, name = $sym)) => begin
+            (additional_dyvars, var_name) = infix_expression_to_binops(expr, finalsym = sym)
             dyvs = dyvar_exprs_to_symbolic_repr(additional_dyvars)
             return (dyvs, flow_name => sym)
         end
@@ -514,16 +599,22 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
 end
 
 """
-    create_flow_definitions(flows::Vector{Tuple{Symbol,Expr,Symbol}}, dyvar_names :: Vector{Symbol})
+    create_flow_definitions( flows::Vector{Tuple{Symbol,Expr,Symbol}}
+                           , dyvar_names :: Vector{Symbol}
+                           )
 
-Assemble the flow parameters for a StockAndFlowF data type from definitions of the form `input_stock => flow_name(flow_equation) => output_stock`.
+Assemble the flow parameters for a StockAndFlowF data type from definitions of the form
+`input_stock => flow_name(flow_equation) => output_stock`.
 
 ### Input
-- `flows` -- A vector of flow definitions in the form of 3-tuple `(input_stock, flow_expr, output_stock)
+- `flows` -- A vector of flow definitions in the form of 3-tuple
+             `(input_stock, flow_expr, output_stock)
 - `dyvar_names` -- A vector of known dynamic variable names
 
 ### Output
-A 2-tuple containing in the first cell the flow definitions of the form `flow_name => dynamic_variable_name`, and in the second cell any dynamic variables generated in generating the flow definitions.
+A 2-tuple containing in the first cell the flow definitions of the form
+`flow_name => dynamic_variable_name`, and in the second cell any dynamic variables
+generated in generating the flow definitions.
 """
 function create_flow_definitions(flows::Vector{Tuple{Symbol,Expr,Symbol}}, dyvar_names)
     flow_definitions = []
@@ -544,26 +635,34 @@ end
 Extract the names of the sum variables from its syntax elements.
 
 ### Input
-`sum_syntax_elements` -- A vector of 2-tuples of the sum variable's name and its constituent stocks.
+`sum_syntax_elements` -- A vector of 2-tuples of the sum variable's name and
+                         its constituent stocks.
 
 ### Output
 A vector of sum variable names.
 """
-sum_variables(sum_syntax_elements) = [sum_name for (sum_name, _sum_definition) in sum_syntax_elements]
+sum_variables(sum_syntax_elements) =
+    [sum_name for (sum_name, _sum_definition) in sum_syntax_elements]
 
 """
     stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowSyntax)
 
-Convert the Stock and Flow Syntax elements to parameters suitable for StockAndFlowF data type instantiation
+Convert the Stock and Flow Syntax elements to parameters suitable for StockAndFlowF
+data type instantiation
 
 ### Input
-- `syntax_elements` -- The output from `parse_stock_and_flow_syntax`, containing the definition of a stock and flow model
+- `syntax_elements` -- The output from `parse_stock_and_flow_syntax`,
+                       containing the definition of a stock and flow model
 
 ### Output
 Parameters for instantiation of a StockAndFlowF data type.
 """
-function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowSyntax)
-    stocks = assemble_stock_definitions(syntax_elements.stocks, syntax_elements.flows, syntax_elements.sums)
+function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
+    stocks = assemble_stock_definitions(
+        syntax_elements.stocks,
+        syntax_elements.flows,
+        syntax_elements.sums,
+    )
     params = syntax_elements.params
     dyvars = dyvar_exprs_to_symbolic_repr(syntax_elements.dyvars)
     dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
@@ -608,16 +707,29 @@ macro stock_and_flow(block)
     Base.remove_linenums!(block)
     syntax_lines = parse_stock_and_flow_syntax(block.args)
     saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
-    return StockAndFlowF(saff_args.stocks, saff_args.params, saff_args.dyvars, saff_args.flows, saff_args.sums)
+    return StockAndFlowF(
+        saff_args.stocks,
+        saff_args.params,
+        saff_args.dyvars,
+        saff_args.flows,
+        saff_args.sums,
+    )
 end
 
 # Current model definition:
-SIR_curr = StockAndFlowF((:S => (:F_NONE, :inf, :N), :I => (:inf, :rec, :N), :R => (:rec, :F_NONE, :N)),# stocks
+SIR_curr = StockAndFlowF(
+    (:S => (:F_NONE, :inf, :N), :I => (:inf, :rec, :N), :R => (:rec, :F_NONE, :N)),# stocks
     (:c, :beta, :tRec),# parameters
-    (:v_prevalence => ((:I, :N) => :/), :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*), :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
-        :v_newInfections => ((:S, :v_perSIncidenceRate) => :*), :v_newRecovery => ((:I, :tRec) => :/)),# dynamical variables
+    (# dynamical variables
+        :v_prevalence => ((:I, :N) => :/),
+        :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*),
+        :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
+        :v_newInfections => ((:S, :v_perSIncidenceRate) => :*),
+        :v_newRecovery => ((:I, :tRec) => :/),
+    ),
     (:inf => :v_newInfections, :rec => :v_newRecovery),# flows
-    (:N))# sum dynamical variables
+    (:N),# sum dynamical variables
+)
 
 # New syntax
 SIR = @stock_and_flow begin
