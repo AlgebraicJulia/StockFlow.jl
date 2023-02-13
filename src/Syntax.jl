@@ -471,6 +471,33 @@ function assemble_stock_definitions(
 end
 
 """
+    generate_dyvar_name(name :: Symbol)
+
+Generate a dynamic variable name using the given symbol as a prefix. All dynamic variables are prefixed with 'v_'
+
+### Input
+- `name` -- A symbol base for the dyvar
+
+### Output
+`name` as a string prefixed with `v_`, for input to `gensym`
+
+### Example
+```julia-repl
+julia> sym = generate_dyvar_name(:my_var)
+"v_my_var"
+julia> gensym(sym)
+Symbol("##v_my_var#718")
+"""
+function generate_dyvar_name(name::Symbol)
+    name_str = String(name)
+    if cmp("v_", name_str) == -1
+        name_str
+    else
+        "v_" * name_str
+    end
+end
+
+"""
     dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
 
 Converts a series of dynamic variable definitions of the form `dyvar = dyvar_expression`
@@ -498,7 +525,7 @@ function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
             end
         else
             (binops, _) =
-                infix_expression_to_binops(dyvar_definition, finalsym=dyvar_name)
+                infix_expression_to_binops(dyvar_definition, finalsym=dyvar_name, gensymbase=generate_dyvar_name(dyvar_name))
             binops_syms = dyvar_exprs_to_symbolic_repr(binops)
             syms = vcat(syms, binops_syms)
         end
@@ -567,7 +594,7 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
                     throw("Unknown dynamic variable referenced " * String(expr))
                 end
             else
-                (additional_dyvars, var_name) = infix_expression_to_binops(expr, gensymbase="v_" * String(flow_name))
+                (additional_dyvars, var_name) = infix_expression_to_binops(expr, gensymbase=generate_dyvar_name(flow_name))
                 dyvs = dyvar_exprs_to_symbolic_repr(additional_dyvars)
                 return (dyvs, flow_name => var_name)
             end
