@@ -567,7 +567,7 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
                     throw("Unknown dynamic variable referenced " * String(expr))
                 end
             else
-                (additional_dyvars, var_name) = infix_expression_to_binops(expr)
+                (additional_dyvars, var_name) = infix_expression_to_binops(expr, gensymbase="v_" * String(flow_name))
                 dyvs = dyvar_exprs_to_symbolic_repr(additional_dyvars)
                 return (dyvs, flow_name => var_name)
             end
@@ -823,5 +823,25 @@ function set_final_binop_varname!(exprs::Vector{Tuple{Symbol,Expr}}, varname::Sy
     idx = lastindex(exprs)
     (_oldvarname, expr) = last(exprs)
     exprs[idx] = (varname, expr)
+end
+SIR_2 = @stock_and_flow begin
+    :stocks
+    S
+    I
+    R
+
+    :parameters
+    c
+    beta
+    tRec
+
+    # We can leave out dynamic variables and let them be inferred from flows entirely!
+
+    :flows
+    S => inf(S * beta * (c * (I / N))) => I
+    I => rec(I / tRec) => R
+
+    :sums
+    N = [S, I, R]
 end
 end
