@@ -824,24 +824,4 @@ function set_final_binop_varname!(exprs::Vector{Tuple{Symbol,Expr}}, varname::Sy
     (_oldvarname, expr) = last(exprs)
     exprs[idx] = (varname, expr)
 end
-SIR_2 = @stock_and_flow begin
-    :stocks
-    S
-    I
-    R
-
-    :parameters
-    c
-    beta
-    tRec
-
-    # We can leave out dynamic variables and let them be inferred from flows entirely!
-
-    :flows
-    S => inf(S * beta * (c * (I / N))) => I
-    I => rec(I / tRec) => R
-
-    :sums
-    N = [S, I, R]
-end
 end
