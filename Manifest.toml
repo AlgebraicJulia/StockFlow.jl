@@ -2,19 +2,13 @@
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "d33377cd2c679bb5d68c94c1984ef907711e3640"
+project_hash = "38b5a13b690e8869f13ef8803ce5fd4df9b31a10"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "195c5505521008abea5aee4f96930717958eac6f"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 version = "3.4.0"
-
-[[deps.AlgebraicRewriting]]
-deps = ["Catlab", "DataStructures", "Random", "Reexport", "Requires", "StructEquality", "Test"]
-path = "/Users/xiaoyanli/.julia/dev/AlgebraicRewriting"
-uuid = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
-version = "0.1.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -205,12 +199,6 @@ deps = ["Base64", "Colors", "DataStructures", "Dates", "IterTools", "JSON", "Lin
 git-tree-sha1 = "d853e57661ba3a57abcdaa201f4c9917a93487a2"
 uuid = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
 version = "0.9.4"
-
-[[deps.Conda]]
-deps = ["Downloads", "JSON", "VersionParsing"]
-git-tree-sha1 = "6e47d11ea2776bc5627421d59cdcc1296c058071"
-uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
-version = "1.7.0"
 
 [[deps.ConstructionBase]]
 deps = ["LinearAlgebra"]
@@ -539,12 +527,6 @@ git-tree-sha1 = "709d864e3ed6e3545230601f94e11ebc65994641"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.11"
 
-[[deps.IJulia]]
-deps = ["Base64", "Conda", "Dates", "InteractiveUtils", "JSON", "Libdl", "Logging", "Markdown", "MbedTLS", "Pkg", "Printf", "REPL", "Random", "SoftGlobalScope", "Test", "UUIDs", "ZMQ"]
-git-tree-sha1 = "59e19713542dd9dd02f31d59edbada69530d6a14"
-uuid = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
-version = "1.24.0"
-
 [[deps.IfElse]]
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
@@ -794,9 +776,9 @@ uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
 version = "0.12.146"
 
 [[deps.MLStyle]]
-git-tree-sha1 = "060ef7956fef2dc06b0e63b294f7dbfbcbdc7ea2"
+git-tree-sha1 = "bc38dff0548128765760c79eb7388a4b37fae2c8"
 uuid = "d8e11817-5142-5d16-987a-aa16d5891078"
-version = "0.4.16"
+version = "0.4.17"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -1203,12 +1185,6 @@ version = "1.0.3"
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
-[[deps.SoftGlobalScope]]
-deps = ["REPL"]
-git-tree-sha1 = "986ec2b6162ccb95de5892ed17832f95badf770c"
-uuid = "b85f4697-e234-5449-a836-ec8e2f98b302"
-version = "1.1.0"
-
 [[deps.SortingAlgorithms]]
 deps = ["DataStructures"]
 git-tree-sha1 = "a4ada03f999bd01b3a25dcaa30b2d929fe537e00"
@@ -1276,12 +1252,6 @@ git-tree-sha1 = "ab6083f09b3e617e34a956b43e9d51b824206932"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "1.1.1"
 
-#[[deps.StockFlow]]
-#deps = ["AutoHashEquals", "Catlab", "Chain", "Combinatorics", "JSON", "LabelledArrays", "LinearAlgebra", "OrdinaryDiffEq", "Plots", "StaticArrays", "StatsBase", "Tables"]
-#git-tree-sha1 = "121e9416046884c9504758de5effb20cfe86dcf7"
-#uuid = "58c4a0e8-2944-4d18-9fa2-e17726aee9e5"
-#version = "0.1.0"
-
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "SIMDTypes", "Static", "ThreadingUtilities"]
 git-tree-sha1 = "70b6ee0e5cc1745a28dd9ba040b8e5ee28fffc69"
@@ -1307,11 +1277,6 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "5.10.1+0"
-
-[[deps.Suppressor]]
-git-tree-sha1 = "c6ed566db2fe3931292865b966d6d140b7ef32a9"
-uuid = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
-version = "0.2.1"
 
 [[deps.SymbolicIndexingInterface]]
 deps = ["DocStringExtensions"]
@@ -1402,22 +1367,11 @@ git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"
 uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
 
-[[deps.UpdateJulia]]
-deps = ["JSON", "Suppressor"]
-git-tree-sha1 = "acb98be84aeb1553fd3e8335e2d58a960bd0a47e"
-uuid = "770da0de-323d-4d28-9202-0e205c1e0aff"
-version = "0.4.2"
-
 [[deps.VectorizationBase]]
 deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "IfElse", "LayoutPointers", "Libdl", "LinearAlgebra", "SIMDTypes", "Static"]
 git-tree-sha1 = "6b1dc4fc039d273abc247eba675ac1299380e5d9"
 uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
 version = "0.21.57"
-
-[[deps.VersionParsing]]
-git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
-uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
-version = "1.3.0"
 
 [[deps.VertexSafeGraphs]]
 deps = ["Graphs"]
@@ -1575,18 +1529,6 @@ git-tree-sha1 = "79c31e7844f6ecf779705fbc12146eb190b7d845"
 uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
 version = "1.4.0+3"
 
-[[deps.ZMQ]]
-deps = ["FileWatching", "Sockets", "ZeroMQ_jll"]
-git-tree-sha1 = "356d2bdcc0bce90aabee1d1c0f6d6f301eda8f77"
-uuid = "c2297ded-f4af-51ae-bb23-16f91089e4e1"
-version = "1.2.2"
-
-[[deps.ZeroMQ_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "libsodium_jll"]
-git-tree-sha1 = "fe5c65a526f066fb3000da137d5785d9649a8a47"
-uuid = "8f1865be-045e-5c20-9c9f-bfbfb0764568"
-version = "4.3.4+0"
-
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
@@ -1638,12 +1580,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "94d180a6d2b5e55e447e2d27a29ed04fe79eb30c"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
 version = "1.6.38+0"
-
-[[deps.libsodium_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "848ab3d00fe39d6fbc2a8641048f8f272af1c51e"
-uuid = "a9144af2-ca23-56d9-984f-0d03f7b5ccf8"
-version = "1.0.20+0"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
