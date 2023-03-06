@@ -238,7 +238,7 @@ function parse_stock_and_flow_syntax(statements::Vector{Any})
                 current_phase = s -> parse_sum!(sums, s)
             end
             QuoteNode(kw) =>
-                throw("Unknown block type for Stock and Flow syntax: " * String(kw))
+                error("Unknown block type for Stock and Flow syntax: " * String(kw))
             _ => current_phase(statement)
         end
     end
@@ -331,7 +331,7 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
     @match dyvar begin
         :($dyvar_name = $dyvar_def) => push!(dyvars, (dyvar_name, dyvar_def))
         Expr(c, _, _) || Expr(c, _, _, _) =>
-            throw("Unhandled expression in dynamic variable definition " * String(c))
+            error("Unhandled expression in dynamic variable definition " * String(c))
     end
 end
 
@@ -376,7 +376,7 @@ function parse_flow(flow_definition::Expr)
             (stock_in, flow, stock_out)
         end
         Expr(en, _, _, _) || Expr(en, _, _) =>
-            throw("Unhandled expression in flow definition " * String(en))
+            error("Unhandled expression in flow definition " * String(en))
     end
 end
 
@@ -417,7 +417,7 @@ function parse_sum!(sums::Vector{Tuple{Symbol,Vector{Symbol}}}, sum::Expr)
     @match sum begin
         :($sum_name = $equation) => push!(sums, (sum_name, equation.args))
         Expr(c, _, _) || Expr(c, _, _, _) =>
-            throw("Unhandled expression in sum defintion " * String(c))
+            error("Unhandled expression in sum defintion " * String(c))
     end
 end
 
@@ -529,7 +529,7 @@ function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
                 Expr(:call, op, a, b) => begin
                     push!(syms, (dyvar_name => ((a, b) => op)))
                 end
-                Expr(c, _, _) || Expr(c, _, _, _) => throw(
+                Expr(c, _, _) || Expr(c, _, _, _) => error(
                     "Unhandled expression in dynamic variable definition " * String(c),
                 )
             end
@@ -601,7 +601,7 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
                 if expr in dyvar_names
                     return ([], flow_name => expr)
                 else
-                    throw("Unknown dynamic variable referenced " * String(expr))
+                    error("Unknown dynamic variable referenced " * String(expr))
                 end
             else
                 (additional_dyvars, var_name) = infix_expression_to_binops(expr, gensymbase=generate_dyvar_name(flow_name))
@@ -615,7 +615,7 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
             return (dyvs, flow_name => sym)
         end
         Expr(c, _, _) || Expr(c, _, _, _) => begin
-            throw("Unhandled expression in flow equation definition " * String(c))
+            error("Unhandled expression in flow equation definition " * String(c))
         end
     end
 end
@@ -644,7 +644,7 @@ function extract_function_name_and_args_expr(flow_equation::Expr)
         :($flow_name($expr)) => (flow_name, expr)
         :($flow_name($expr, name=$_)) => (flow_name, expr)
         Expr(en, _, _, _) || Expr(en, _, _) =>
-            throw("Unhandled expression in flow name definition " * String(en))
+            error("Unhandled expression in flow name definition " * String(en))
     end
 end
 
@@ -743,6 +743,11 @@ function infix_expression_to_binops(
                 varname
             end
             Expr(:call, f, args...) => begin
+                if (isempty(args))
+                    error("Expression f() cannot be converted into form f(a, b)")
+                elseif (length(args) == 1)
+                    error("Expression f(a) cannot be converted into form f(a, b)")
+                end
                 argsyms = map(loop, args)
                 lastsym = gensym(gensymbase)
                 a = popfirst!(argsyms)
@@ -757,9 +762,8 @@ function infix_expression_to_binops(
                 lastsym
             end
             Expr(en, _, _, _) || Expr(en, _, _) => begin
-                throw(
-                    "Unhandled expression cannot be converted into form f(a, b) " *
-                    String(en),
+                error(
+                    "Unhandled expression type " * String(en) * " cannot be converted into form f(a, b)",
                 )
             end
         end
