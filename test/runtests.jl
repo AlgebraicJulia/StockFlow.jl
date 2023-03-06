@@ -1,9 +1,6 @@
-using AlgebraicStockFlow
+using StockFlow
 using Test
-#using OrdinaryDiffEq
-
 
 @testset "AlgebraicStockFlow.jl" begin
-    # Write your tests here.
-    
+    @test true
 end
