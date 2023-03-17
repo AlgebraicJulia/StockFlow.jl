@@ -811,8 +811,10 @@ A boolean indicating if the given julia expression is a function call of two par
 
 ### Examples
 ```julia-repl
-julia> is_binop_or_unary(:(f(a)))
+julia> is_binop_or_unary(:(f()))
 false
+julia> is_binop_or_unary(:(f(a)))
+true
 julia> is_binop_or_unary(:(f(a, b)))
 true
 julia> is_binop_or_unary(:(a * b))
