@@ -194,7 +194,7 @@ struct StockAndFlowArguments
         },
     }
     params::Vector{Symbol}
-    dyvars::Vector{Pair{Symbol,Pair{Tuple{Symbol,Symbol},Symbol}}}
+    dyvars::Vector{Pair{Symbol,Union{Pair{Symbol, Symbol}, Pair{Tuple{Symbol,Symbol},Symbol}}}}
     flows::Vector{Pair{Symbol,Symbol}}
     sums::Vector{Symbol}
 end
@@ -522,10 +522,11 @@ into a form suitable for input into the StockAndFlowF data type:
 A vector of dynamic variable definitions suitable for input to StockAndFlowF.
 """
 function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
-    syms::Vector{Pair{Symbol,Pair{Tuple{Symbol,Symbol},Symbol}}} = []
+    syms ::Vector{Pair{Symbol,Union{Pair{Symbol, Symbol}, Pair{Tuple{Symbol,Symbol},Symbol}}}} = []
     for (dyvar_name, dyvar_definition) in dyvars
-        if is_binop(dyvar_definition)
+        if is_binop_or_unary(dyvar_definition)
             @match dyvar_definition begin
+                Expr(:call, op, a) => push!(syms, (dyvar_name => (a => op)))
                 Expr(:call, op, a, b) => begin
                     push!(syms, (dyvar_name => ((a, b) => op)))
                 end
@@ -735,6 +736,12 @@ function infix_expression_to_binops(
     function loop(e)
         @match e begin
             ::Symbol => e
+            Expr(:call, f, a) => begin
+                asym = loop(a)
+                varname = gensym(gensymbase)
+                push!(exprs, (varname, :($f($asym))))
+                varname
+            end
             Expr(:call, f, a, b) => begin
                 asym = loop(a)
                 bsym = loop(b)
@@ -745,8 +752,6 @@ function infix_expression_to_binops(
             Expr(:call, f, args...) => begin
                 if (isempty(args))
                     error("Expression f() cannot be converted into form f(a, b)")
-                elseif (length(args) == 1)
-                    error("Expression f(a) cannot be converted into form f(a, b)")
                 end
                 argsyms = map(loop, args)
                 lastsym = gensym(gensymbase)
@@ -794,7 +799,7 @@ sum_variables(sum_syntax_elements) =
 
 
 """
-    is_binop(e :: Expr)
+    is_binop_or_unary(e :: Expr)
 
 Check if a Julia expression is a call of the form `op(a, b)` or `a op b`
 
@@ -806,18 +811,19 @@ A boolean indicating if the given julia expression is a function call of two par
 
 ### Examples
 ```julia-repl
-julia> is_binop(:(f(a)))
+julia> is_binop_or_unary(:(f(a)))
 false
-julia> is_binop(:(f(a, b)))
+julia> is_binop_or_unary(:(f(a, b)))
 true
-julia> is_binop(:(a * b))
+julia> is_binop_or_unary(:(a * b))
 true
-julia> is_binop(:(f(a, b, c)))
+julia> is_binop_or_unary(:(f(a, b, c)))
 false
 ```
 """
-function is_binop(e::Expr)
+function is_binop_or_unary(e::Expr)
     @match e begin
+        Expr(:call, f::Symbol, a::Symbol) => true
         Expr(:call, f::Symbol, a::Symbol, b::Symbol) => true
         _ => false
     end

@@ -1,17 +1,16 @@
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr
 
-@testset "is_binop recognises binops" begin
-    @test is_binop(:(a + b))
-    @test is_binop(:(f(a, b)))
+@testset "is_binop_or_unary recognises binops" begin
+    @test is_binop_or_unary(:(a + b))
+    @test is_binop_or_unary(:(f(a, b)))
 end
-@testset "is_binop recognises non-binops as non-binops" begin
-    @test !is_binop(:(f()))
-    @test !is_binop(:(f(a)))
-    @test !is_binop(:(a + b + c))
-    @test !is_binop(:(f(a, b, c)))
+@testset "is_binop_or_unary recognises non-binops as non-binops" begin
+    @test !is_binop_or_unary(:(f()))
+    @test !is_binop_or_unary(:(a + b + c))
+    @test !is_binop_or_unary(:(f(a, b, c)))
 end
 
 @testset "sum_variables" begin
@@ -20,7 +19,8 @@ end
     @test sum_variables([(:a, 1), (:b, 2)]) == [:a, :b]
 end
 
-@testset "infix_expression_to_binops does nothing to binops" begin
+@testset "infix_expression_to_binops does nothing to binops and unary exprs" begin
+    @test infix_expression_to_binops(:(f(a)))[1][1][2] == :(f(a))
     @test infix_expression_to_binops(:(f(a, b)))[1][1][2] == :(f(a, b))
     @test infix_expression_to_binops(:(a + b))[1][1][2] == :(a + b)
 end
@@ -34,7 +34,6 @@ end
 
 @testset "infix_expression_to_binops throws exception when no binops provided" begin
     @test_throws Exception infix_expression_to_binops(:(f()))
-    @test_throws Exception infix_expression_to_binops(:(f(a)))
 end
 
 @testset "infix_expression_to_binops uses final symbol" begin
@@ -61,6 +60,52 @@ end
     @test_throws Exception extract_function_name_and_args_expr(:(testf(a, b)))
 end
 
+@testset "model allows uses unary functions like log" begin
+    SIR_1_via_macro = @stock_and_flow begin
+        :stocks
+        S
+        I
+        R
+
+        :parameters
+        c
+        beta
+        tRec
+
+        :dynamic_variables
+        v_prevalence = exp(I)
+        v_meanInfectiousContactsPerS = c * v_prevalence
+        v_perSIncidenceRate = beta * v_meanInfectiousContactsPerS
+        v_newInfections = S * v_perSIncidenceRate
+        v_newRecovery = log(I)
+
+        :flows
+        S => inf(v_newInfections) => I
+        I => rec(v_newRecovery) => R
+
+        :sums
+        N = [S, I, R]
+    end
+
+    SIR_1_canonical = StockAndFlowF(
+        # stocks
+        (:S => (:F_NONE, :inf, :N), :I => (:inf, :rec, :N), :R => (:rec, :F_NONE, :N)),
+        # parameters
+        (:c, :beta, :tRec),
+        # dynamical variables
+        (:v_prevalence => (:I => :exp),
+            :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*),
+            :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
+            :v_newInfections => ((:S, :v_perSIncidenceRate) => :*),
+            :v_newRecovery => (:I => :log),
+        ),
+        # flows
+        (:inf => :v_newInfections, :rec => :v_newRecovery),
+        # sum dynamical variables
+        (:N),
+    )
+    @test SIR_1_via_macro == SIR_1_canonical
+end
 @testset "stock_and_flow macro generates the expected StockAndFlowF representations" begin
     SIR_1_via_macro = @stock_and_flow begin
         :stocks
