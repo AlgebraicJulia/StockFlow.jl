@@ -23,6 +23,14 @@ def_auxiliaryV(p, v) = ("v$v", Attributes(:label=>"$(vname(p, v))",
                                           :shape=>"plaintext", 
                                           :fontcolor=>"black"))
 
+#def_auxiliaryVF(p, v) = ("v$v", Attributes(:label=>"$(vname(p, v))"*"="*"$(make_v_expr(p,v))",
+#                                          :shape=>"plaintext", 
+#                                          :fontcolor=>"black"))
+
+def_auxiliaryVF(p, v) = ("v$v", Attributes(:label=>p isa AbstractStockAndFlowF ? "$(make_v_expr(p,v))" : "$(vname(p, v))",
+                                          :shape=>"plaintext", 
+                                          :fontcolor=>"black"))
+
 def_sumV(p, sv) = ("sv$sv", Attributes(:label=>"$(svname(p, sv))",
                                        :shape=>"circle", 
                                        :color=>"black",
@@ -233,7 +241,7 @@ end
 
 
 
-function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_auxiliaryV::Function=def_auxiliaryV,
+function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_auxiliaryV::Function=def_auxiliaryVF,
                                          make_sumV::Function=def_sumV, make_cloud::Function=def_cloud,
                                          make_flow_V::Function=def_flow_V, make_flow_noneV::Function=def_flow_noneV,
                                          make_link::Function=def_link, make_parameter::Function=def_parameter,

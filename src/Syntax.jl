@@ -134,7 +134,7 @@ Compiles stock and flow syntax of the line-based block form
     symbol_r => flow_name_1(dyvar_k) => symbol_q
     symbol_z => flow_name_2(dyvar_g * param_v) => symbol_p
     ☁       => flow_name_3(symbol_c + dyvar_b) => symbol_r
-    symbol_j => flow_name_4(param_l + symbol_m) => CLOUD
+    symbol_j => flow_name_4(param_l + symbol_m) => TODO
     ...
     symbol_y => flow_name_n(dyvar_f) => ☁
 ```
@@ -336,7 +336,7 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
 end
 
 """
-    parse_flow(flow_definition :: Expr)
+    parse_flow_io(flow_definition :: Expr)
 
 Given a flow definition of the form `SYMBOL => flow_name(flow_equation) => SYMBOL`,
 return a 3-tuple of its constituent parts: the start symbol, the end symbol,
@@ -345,7 +345,7 @@ and the flow equations's definition as an expression.
 ### Input
 - `flow_definition` -- A flow definition of the form
                        `SYMBOL => flow_name(flow_equation) => SYMBOL`,
-                       where SYMBOL can be an arbitrary name or special cases of ☁ or CLOUD,
+                       where SYMBOL can be an arbitrary name or special cases of ☁ or TODO,
                        which corresponds to a flow from nowhere.
 
 ### Output
@@ -354,27 +354,17 @@ may be :F_NONE for a flow from nowhere) and the flow equation as a julia express
 
 ### Examples
 ```julia-repl
-julia> Syntax.parse_flow_io(:(CLOUD => birthRate(a * b * c) => S))
+julia> Syntax.parse_flow_io(:(TODO => birthRate(a * b * c) => S))
 (:F_NONE, :(birthRate(a * b * c)), :S)
 ```
 """
 function parse_flow(flow_definition::Expr)
     @match flow_definition begin
-        :(CLOUD => $flow => $stock_out) || :(☁ => $flow => $stock_out) =>
+        :(TODO => $flow => $stock_out) || :(☁ => $flow => $stock_out) =>
             (:F_NONE, flow, stock_out)
-        :($stock_in => $flow => CLOUD) || :($stock_in => $flow => ☁) =>
+        :($stock_in => $flow => TODO) || :($stock_in => $flow => ☁) =>
             (stock_in, flow, :F_NONE)
-        :($stock_in => $flow => $stock_out) => begin
-            stock_in_str = String(stock_in)
-            stock_out_str = String(stock_out)
-            if lowercase(stock_in_str) == "cloud"
-                stock_in = :F_NONE
-            end
-            if lowercase(stock_out_str) == "cloud"
-                stock_out = :F_NONE
-            end
-            (stock_in, flow, stock_out)
-        end
+        :($stock_in => $flow => $stock_out) => (stock_in, flow, stock_out)
         Expr(en, _, _, _) || Expr(en, _, _) =>
             throw("Unhandled expression in flow definition " * String(en))
     end
