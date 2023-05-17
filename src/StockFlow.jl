@@ -1,13 +1,15 @@
 module StockFlow
 
-export TheoryStockAndFlow0, TheoryStockAndFlow, TheoryStockAndFlowStructure, TheoryStockAndFlowF, AbstractStockAndFlow0, AbstractStockAndFlow, AbstractStockAndFlowStructure, AbstractStockAndFlowF, StockAndFlow0, StockAndFlow, 
-StockAndFlowStructure, StockAndFlowF, add_flow!, add_flows!, add_stock!, add_stocks!, add_variable!, add_variables!, add_svariable!, add_svariables!, add_parameter!, add_parameters!, add_VVlink!, add_VVlinks!,
+export TheoryStockAndFlow0, TheoryStockAndFlow, TheoryStockAndFlowStructure, TheoryStockAndFlowStructureF, TheoryStockAndFlowF, AbstractStockAndFlow0, AbstractStockAndFlow, AbstractStockAndFlowStructure, 
+AbstractStockAndFlowStructureF, AbstractStockAndFlowF, StockAndFlow0, StockAndFlow, StockAndFlowStructure, StockAndFlowStructureF, StockAndFlowF, add_flow!, add_flows!, add_stock!, add_stocks!, 
+add_variable!, add_variables!, add_svariable!, add_svariables!, add_parameter!, add_parameters!, add_VVlink!, add_VVlinks!,
 add_inflow!, add_inflows!, add_outflow!, add_outflows!, add_Vlink!, add_Vlinks!, add_Slink!, add_Slinks!, add_SVlink!, add_Plink!, add_Plinks!,
-add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, sname, fname, svname, svnames, vname, inflows, outflows, svStocks, 
+add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, np, nlpv,nlvv,sname, fname, svname, svnames, vname, inflows, outflows, svStocks, 
 funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices, 
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
-vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
-object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt
+vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
+object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
+vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -59,8 +61,14 @@ can refer to:
 https://docs.julialang.org/en/v1/manual/mathematical-operations/
 =#
 
-Operators = Dict(2 => [:+, :-, :*, :/, :÷, :^, :%, :log], 
-                 1 => [:log, :exp, :sqrt])
+Operators = Dict(2 => [:+, :-, :*, :/, :÷, :^, :%, :log, Symbol("")], 
+                 1 => [:log, :exp, :sqrt, Symbol("")]) #:NN is for NONE, which is used in create the special diagram using graph rewriting
+
+
+math_expr(op, op1, op2) = Expr(:call, op, op1, op2)
+math_expr(op, op1) = Expr(:call, op, op1)
+#math_expr(op) = Expr(:call, op)
+
 
 # define the sub-schema of c0, which includes the three objects: stocks(S), sum-auxiliary-variables(SV), and the linkages between them (LS) to be composed
 @present TheoryStockAndFlow0(FreeSchema) begin
@@ -154,8 +162,13 @@ const StockAndFlowStructure = StockAndFlowStructureUntyped{Symbol}
   funcDynam::Attr(V, FuncDynam)
 end
 
+@abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlowStructure
+@acset_type StockAndFlowUntyped(TheoryStockAndFlow, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlow
+const StockAndFlow = StockAndFlowUntyped{Symbol,Function} 
+
+
 # define the schema of a general stock and flow diagram
-@present TheoryStockAndFlowF <: TheoryStockAndFlowStructure begin
+@present TheoryStockAndFlowStructureF <: TheoryStockAndFlowStructure begin
 #Objects
   P::Ob
   LVV::Ob
@@ -167,32 +180,32 @@ end
   lpvv::Hom(LPV,V)
 
 # Attributes:
-  Op::AttrType # arithmetic operators
-
-  vop::Attr(V, Op)
   pname::Attr(P, Name)
 end
 
-###### TODO #### delete??
-@abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlowStructure
-@acset_type StockAndFlowUntyped(TheoryStockAndFlow, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlow
+@abstract_acset_type AbstractStockAndFlowStructureF <: AbstractStockAndFlowStructure
+@acset_type StockAndFlowStructureFUntyped(TheoryStockAndFlowStructureF, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp,:lpvv]) <: AbstractStockAndFlowStructureF
+const StockAndFlowStructureF = StockAndFlowStructureFUntyped{Symbol}
 
 
-@abstract_acset_type AbstractStockAndFlowF <: AbstractStockAndFlowStructure
-@acset_type StockAndFlowFUntyped(TheoryStockAndFlowF, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:pv,:lvsrc,:lvtgt]) <: AbstractStockAndFlowF
+# define the schema of a general stock and flow diagram
+@present TheoryStockAndFlowF <: TheoryStockAndFlowStructureF begin
 
-# constrains the attributes data type to be: 
-# 1. InitialValue: Real
-# 2. Name: Symbol
-# 3. FuncDynam: Function
-# Note: those three (or any subgroups) attributes' datatype can be defined by the users. See the example of the PetriNet which allows the Reactionrate and Concentration defined by the users
+# Attributes:
+  Op::AttrType # arithmetic operators
+  Position::AttrType # argument's position of expressions
 
-###### TODO #### delete??
-const StockAndFlow = StockAndFlowUntyped{Symbol,Function} 
+  vop::Attr(V, Op)
 
-# Name: Symbol
-# arithmetic operator: Symbol
-const StockAndFlowF = StockAndFlowFUntyped{Symbol,Symbol}
+  lvsposition::Attr(LV, Position)
+  lsvsvposition::Attr(LSV, Position)
+  lvsrcposition::Attr(LVV, Position)
+  lpvpposition::Attr(LPV, Position)
+end
+
+@abstract_acset_type AbstractStockAndFlowF <: AbstractStockAndFlowStructureF
+@acset_type StockAndFlowFUntyped(TheoryStockAndFlowF, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp,:lpvv]) <: AbstractStockAndFlowF
+const StockAndFlowF = StockAndFlowFUntyped{Symbol,Symbol,Int8}
 
 # functions of adding components of the model schema
 add_flow!(p::AbstractStockAndFlowStructure,v;kw...) = add_part!(p,:F;fv=v,kw...)
@@ -235,10 +248,9 @@ nsv(p::AbstractStockAndFlow0) = nparts(p,:SV) #sum auxiliary variables
 nls(p::AbstractStockAndFlow0) = nparts(p,:LS) #links from Stock to sum dynamic variable
 nlv(p::AbstractStockAndFlowStructure) = nparts(p,:LV) #links from Stock to dynamic variable
 nlsv(p::AbstractStockAndFlowStructure) = nparts(p,:LSV) #links from sum dynamic variable to dynamic varibale
-nlvv(p::AbstractStockAndFlowF) = nparts(p,:LVV) #links from dynamic variable to dynamic varibale
-nlpv(p::AbstractStockAndFlowF) = nparts(p,:LPV) #links from dynamic variable to dynamic varibale
-
-np(p::AbstractStockAndFlowF) = nparts(p,:P) #parameters
+nlvv(p::AbstractStockAndFlowStructureF) = nparts(p,:LVV) #links from dynamic variable to dynamic varibale
+nlpv(p::AbstractStockAndFlowStructureF) = nparts(p,:LPV) #links from dynamic variable to dynamic varibale
+np(p::AbstractStockAndFlowStructureF) = nparts(p,:P) #parameters
 
 #EXAMPLE:
 #sir_StockAndFlow=StockAndFlow(((:S, 990)=>(:birth,(:inf,:deathS),(:v_inf,:v_deathS),:N), (:I, 10)=>(:inf,(:rec,:deathI),(:v_rec,:v_deathI,:v_fractionNonS),:N),(:R, 0)=>(:rec,:deathR,(:v_deathR,:v_fractionNonS),:N)),
@@ -374,17 +386,90 @@ StockAndFlow(s,f,v,sv) = begin
     p
 end
 
-add_parameter!(p::AbstractStockAndFlowF;kw...) = add_part!(p,:P;kw...) 
-add_parameters!(p::AbstractStockAndFlowF,n;kw...) = add_parts!(p,:P,n;kw...)
+add_parameter!(p::AbstractStockAndFlowStructureF;kw...) = add_part!(p,:P;kw...) 
+add_parameters!(p::AbstractStockAndFlowStructureF,n;kw...) = add_parts!(p,:P,n;kw...)
 
-add_variable!(p::AbstractStockAndFlowF;kw...) = add_part!(p,:V;kw...) 
-add_variables!(p::AbstractStockAndFlowF,n;kw...) = add_parts!(p,:V,n;kw...)
+add_variable!(p::AbstractStockAndFlowStructureF;kw...) = add_part!(p,:V;kw...) 
+add_variables!(p::AbstractStockAndFlowStructureF,n;kw...) = add_parts!(p,:V,n;kw...)
 
-add_VVlink!(p::AbstractStockAndFlowF,vs,vt;kw...) = add_part!(p,:LVV;lvsrc=vs,lvtgt=vt,kw...)
-add_VVlinks!(p::AbstractStockAndFlowF,n,vs,vt;kw...) = add_parts!(p,:LVV,n;lvsrc=vs,lvtgt=vt,kw...)
+add_VVlink!(p::AbstractStockAndFlowStructureF,vs,vt;kw...) = add_part!(p,:LVV;lvsrc=vs,lvtgt=vt,kw...)
+add_VVlinks!(p::AbstractStockAndFlowStructureF,n,vs,vt;kw...) = add_parts!(p,:LVV,n;lvsrc=vs,lvtgt=vt,kw...)
 
-add_Plink!(sf::AbstractStockAndFlowF,p,v;kw...) = add_part!(sf,:LPV;lpvp=p,lpvv=v,kw...)
-add_Plinks!(sf::AbstractStockAndFlowF,n,p,v;kw...) = add_parts!(sf,:LPV,n;lpvp=p,lpvv=v,kw...)
+add_Plink!(sf::AbstractStockAndFlowStructureF,p,v;kw...) = add_part!(sf,:LPV;lpvp=p,lpvv=v,kw...)
+add_Plinks!(sf::AbstractStockAndFlowStructureF,n,p,v;kw...) = add_parts!(sf,:LPV,n;lpvp=p,lpvv=v,kw...)
+
+
+# define the function to construct system structure diagram with function transparency: StockAndFlowStructureF
+StockAndFlowStructureF(s,p,v,f,sv) = begin
+  sf = StockAndFlowStructureF()
+
+  s = vectorify(s)
+  f = vectorify(f)
+  v = vectorify(v)
+  p = vectorify(p)
+  sv = vectorify(sv)
+
+  sname = map(first,s)
+  fname = map(first,f)
+  vname = map(first,v)
+
+  s_idx = state_dict(sname)
+  f_idx = state_dict(fname)
+  v_idx = state_dict(vname)
+  p_idx = state_dict(p)
+  sv_idx = state_dict(sv)
+
+  add_parameters!(sf,length(p),pname=p)
+  add_svariables!(sf, length(sv), svname=sv) 
+  add_variables!(sf, length(vname), vname=vname) 
+  add_flows!(sf,map(x->v_idx[x], map(last,f)),length(fname),fname=fname) 
+
+
+  # Parse the elements included in "s" -- stocks
+  for (i, (name,(ins,outs,svs))) in enumerate(s)
+    i = add_stock!(sf,sname=name) # add objects :S (stocks)
+    ins=vectorify(ins) # inflows of each stock
+    outs=vectorify(outs) # outflows of each stock
+    svs=vectorify(svs) # sum auxiliary variables depends on the stock
+    # filter out the fake (empty) elements
+    ins = ins[ins .!= FK_FLOW_NAME]
+    outs = outs[outs .!= FK_FLOW_NAME]
+    svs = svs[svs .!= FK_SVARIABLE_NAME]
+
+    if length(ins)>0
+      add_inflows!(sf, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
+    end
+    if length(outs)>0
+      add_outflows!(sf, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
+    end
+    if length(svs)>0
+      add_Slinks!(sf, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
+    end
+  end
+
+  # Parse the elements included in "v" -- auxiliary vairables
+  for (vn,args) in v
+    
+    args=vectorify(args)
+#    @assert op in Operators[length(args)]
+    
+    for (i,arg) in enumerate(args)
+      if arg in sname
+        add_Vlink!(sf, s_idx[arg], v_idx[vn])
+      elseif arg in vname
+        add_VVlink!(sf, v_idx[arg], v_idx[vn])
+      elseif arg in p
+        add_Plink!(sf, p_idx[arg], v_idx[vn])
+      elseif arg in sv
+        add_SVlink!(sf, sv_idx[arg], v_idx[vn])
+      else
+        error("arg: " * string(arg) * " does not belong to any stock, auxilliary variable, constant parameter or sum auxilliary variable!")
+      end
+    end
+  end
+  sf
+end
+
 
 #EXAMPLE: when define the dynamical variables, need to define with the correct order
 #sir_StockAndFlow=StockAndFlowF((:S=>(:F_NONE,:inf,:N), :I=>(:inf,:F_NONE,:N)),
@@ -446,17 +531,17 @@ StockAndFlowF(s,p,v,f,sv) = begin
   for (vn,(args,op)) in v
     
     args=vectorify(args)
-    @assert op in Operators[length(args)]
+#    @assert op in Operators[length(args)]
     
-    for arg in args
+    for (i,arg) in enumerate(args)
       if arg in sname
-        add_Vlink!(sf, s_idx[arg], v_idx[vn])
+        add_Vlink!(sf, s_idx[arg], v_idx[vn], lvsposition=i)
       elseif arg in vname
-        add_VVlink!(sf, v_idx[arg], v_idx[vn])
+        add_VVlink!(sf, v_idx[arg], v_idx[vn], lvsrcposition=i)
       elseif arg in p
-        add_Plink!(sf, p_idx[arg], v_idx[vn])
+        add_Plink!(sf, p_idx[arg], v_idx[vn], lpvpposition=i)
       elseif arg in sv
-        add_SVlink!(sf, sv_idx[arg], v_idx[vn])
+        add_SVlink!(sf, sv_idx[arg], v_idx[vn], lsvsvposition=i)
       else
         error("arg: " * string(arg) * " does not belong to any stock, auxilliary variable, constant parameter or sum auxilliary variable!")
       end
@@ -469,13 +554,13 @@ sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname) # return the stocks name
 fname(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fname) # return the flows name with index of f
 svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname) # return the sum auxiliary variables name with index of sv
 vname(p::AbstractStockAndFlowStructure,v) = subpart(p,v,:vname) # return the auxiliary variables name with index of v
-pname(sf::AbstractStockAndFlowF,p) = subpart(sf,p,:pname) # return the auxiliary variables name with index of v
+pname(sf::AbstractStockAndFlowStructureF,p) = subpart(sf,p,:pname) # return the auxiliary variables name with index of v
 
 snames(p::AbstractStockAndFlow0) = [sname(p, s) for s in 1:ns(p)]
 fnames(p::AbstractStockAndFlowStructure) = [fname(p, f) for f in 1:nf(p)]
 svnames(p::AbstractStockAndFlow0) = [svname(p, sv) for sv in 1:nsv(p)]
 vnames(p::AbstractStockAndFlowStructure) = [vname(p, v) for v in 1:nvb(p)]
-pnames(p::AbstractStockAndFlowF) = [pname(sf,p) for p in 1:np(sf)]
+pnames(sf::AbstractStockAndFlowStructureF) = [pname(sf,p) for p in 1:np(sf)]
 
 
 fv(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
@@ -515,14 +600,79 @@ vssv(p::AbstractStockAndFlowStructure,sv) = subpart(p,incident(p,sv,:lsvsv),:lsv
 
 
 # return auxiliary variable's source auxiliary variables that is linked to
-vtgt(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lvsrc),:lvtgt)
+vtgt(p::AbstractStockAndFlowStructureF,v) = subpart(p,incident(p,v,:lvsrc),:lvtgt)
 # return auxiliary variable's target auxiliary variables that links to
-vsrc(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lvtgt),:lvsrc)
-
+vsrc(p::AbstractStockAndFlowStructureF,v) = subpart(p,incident(p,v,:lvtgt),:lvsrc)
 # return auxiliary variable's source constant parameters
-vpsrc(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lpvv),:lpvp)
+vpsrc(p::AbstractStockAndFlowStructureF,v) = subpart(p,incident(p,v,:lpvv),:lpvp)
 # return constant parameters's link auxiliary variables
-vptgt(p::AbstractStockAndFlowF,pp) = subpart(p,incident(p,pp,:lpvp),:lpvv)
+vptgt(p::AbstractStockAndFlowStructureF,pp) = subpart(p,incident(p,pp,:lpvp),:lpvv)
+
+
+# return operator of an auxiliary variable
+vop(p::AbstractStockAndFlowF,v) = subpart(p,v,:vop)
+# return argument position of source stock variable of an auxiliary variable
+lvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lvv),:lvsposition) 
+# return argument position of source auxiliary variable of an auxiliary variable
+lvtgtposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lvtgt),:lvsrcposition) 
+# return argument position of source sum dynamical variable of an auxiliary variable
+lsvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lsvv),:lsvsvposition) 
+# return argument position of source constant parameter of an auxiliary variable
+lpvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lpvv),:lpvpposition) 
+
+# create a dictionary
+make_dict(ks, vs) = begin
+    @assert length(ks)==length(vs)
+    dic=()
+    for (k,v) in zip(ks,vs)
+        dic=(dic...,(k,v))
+    end
+    return Dict(dic)
+end
+# create expresision of an auxiliary variable v
+function make_v_expr(p::AbstractStockAndFlowF,v)
+
+    op = vop(p,v)
+    srcsv=map(i->sname(p,i),stocksv(p,v))
+    srcsvv=map(i->svname(p,i),svsv(p,v))
+    srcpv=map(i->pname(p,i),vpsrc(p,v))
+    srcvv=map(i->vname(p,i),vsrc(p,v))
+       
+    lvvp=lvvposition(p,v)
+    lvtgtp=lvtgtposition(p,v)
+    lsvvp=lsvvposition(p,v)
+    lpvvp=lpvvposition(p,v)
+
+    if length(srcvv)>0
+        srcvv=map(x->make_v_expr(p,vsrc(p,v)[x]),1:length(vsrc(p,v)))
+    end
+
+    # create dictionary of (key=position, value=symbole of source argument)
+    position_src=merge(make_dict(lvvp,srcsv),make_dict(lsvvp,srcsvv),make_dict(lpvvp,srcpv),make_dict(lvtgtp,srcvv))    
+    ordered_position_src=sort(collect(position_src), by = x->x[1])    
+    srcs=map(x->last(x),ordered_position_src)
+    
+    return math_expr(op,srcs...)
+end
+# genreate an array of all arguments of an expression
+generate_expr_args(expr) = begin
+    args=expr.args
+    argsarray=[]
+    for arg in args
+        if arg isa Expr
+            argsarray=vcat(argsarray,generate_expr_args(arg))
+        else
+            argsarray=vcat(argsarray,arg)
+        end
+    end
+    ops=vcat(collect(values(Operators))...)
+    return setdiff(unique(argsarray),ops)
+end
+# evaluate an expression to a function
+eval_function(expr,s,sv,p,us,uNs,ps) = begin
+    f=eval(Expr(:->, Expr(:tuple, s..., sv..., p...), Expr(:block,:(()),expr)))
+    return @eval $f($(us...), $(uNs...), $(ps...))
+end
 
 
 # return sum auxiliary variables all stocks link (frequency)
@@ -541,17 +691,35 @@ outflowsAll(p::AbstractStockAndFlowStructure) = [((outflows(p, s) for s in 1:ns(
 
 # return the functions of variables give index v
 funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
+
+funcDynam(sf::AbstractStockAndFlowF,v) = begin
+    expr=make_v_expr(sf,v)
+    args=generate_expr_args(expr)
+    
+    args_s=args[findall(in(snames(sf)),args)]
+    args_sv=args[findall(in(svnames(sf)),args)]
+    args_p=args[findall(in(pnames(sf)),args)]
+    
+    f(u,uN,p,t)=begin
+        us=map(i->u[i],args_s)
+        uNs=map(i->uN[i](u,t),args_sv)
+        ps=map(i->p[i],args_p)
+        return eval_function(expr,args_s,args_sv,args_p,us,uNs,ps)     
+    end    
+    return f
+end
+
 # return the auxiliary variable's index that related to the flow with index of f
 flowVariableIndex(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
 # return the functions (not substitutes the function of sum variables yet) of flow index f
-funcFlowRaw(p::AbstractStockAndFlow,f)=funcDynam(p,flowVariableIndex(p,f))
+funcFlowRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF},f)=funcDynam(p,flowVariableIndex(p,f))
 # return the LVector of pairs: fname => function (raw: not substitutes the function of sum variables yet)
-funcFlowsRaw(p::AbstractStockAndFlow) = begin
+funcFlowsRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
   fnames = [fname(p, f) for f in 1:nf(p)]
   LVector(;[(fnames[f]=>funcFlowRaw(p, f)) for f in 1:nf(p)]...)
 end
 # generate the function substituting sum variables in with flow index fn
-funcFlow(pn::AbstractStockAndFlow, fn) = begin
+funcFlow(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}, fn) = begin
     func=funcFlowRaw(pn,fn)
     f(u,p,t) = begin
         uN=funcSVs(pn)
@@ -559,7 +727,7 @@ funcFlow(pn::AbstractStockAndFlow, fn) = begin
     end
 end
 # return the LVector of pairs: fname => function (with function of sum variables substitue in)
-funcFlows(p::AbstractStockAndFlow)=begin
+funcFlows(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF})=begin
     fnames = [fname(p, f) for f in 1:nf(p)]
     LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
 end
@@ -587,7 +755,7 @@ end
 # Note: the compositional functions currently are only implemented for the StoclFlow diagram (including both structure and functions)
 
 # given a stock and flow diagram in schema "StockAndFlow", return a stock and flow diagram in schema "StockAndFlow0"
-object_shift_right(p::StockAndFlow) = begin
+object_shift_right(p::StockAndFlowStructure) = begin
     s = snames(p)
     sv = svnames(p)
     ssv = map(y->map(x->(sname(p,y),x),svname(p,svsstock(p,y))),collect(1:ns(p)))
@@ -598,13 +766,15 @@ end
 # create open acset, as the structured cospan
 const OpenStockAndFlowStructureOb, OpenStockAndFlowStructure = OpenACSetTypes(StockAndFlowStructureUntyped,StockAndFlowUntyped0)
 const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
+const OpenStockAndFlowStructureFOb, OpenStockAndFlowStructureF = OpenACSetTypes(StockAndFlowStructureFUntyped,StockAndFlowUntyped0)
+const OpenStockAndFlowFOb, OpenStockAndFlowF = OpenACSetTypes(StockAndFlowFUntyped,StockAndFlowUntyped0)
 
 
 foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 
 ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
 
-leg(a::StockAndFlow0, x::Union{StockAndFlow,StockAndFlowStructure}) = begin
+leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowStructureF,StockAndFlowF}) = begin
     if ns(a)>0 # if have stocks
       ϕs = ntcomponent(snames(a), snames(x))
     else
@@ -628,15 +798,21 @@ leg(a::StockAndFlow0, x::Union{StockAndFlow,StockAndFlowStructure}) = begin
     result
 end
 
+Open(p::StockAndFlow, feet...) = begin
+  legs = map(x->leg(x, p), feet)
+  OpenStockAndFlow{Symbol,Function}(p, legs...)
+end 
+
+Open(p::StockAndFlowF, feet...) = begin
+  legs = map(x->leg(x, p), feet)
+  OpenStockAndFlowF{Symbol,Symbol,Int8}(p, legs...)
+end 
+
 Open(p::StockAndFlowStructure, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenStockAndFlowStructure{Symbol}(p, legs...)
 end 
 
-Open(p::StockAndFlow, feet...) = begin
-  legs = map(x->leg(x, p), feet)
-  OpenStockAndFlow{Symbol,Function}(p, legs...)
-end 
 
 ############# functions of generating ODEs ###############
 
@@ -713,7 +889,7 @@ end
 #end
 
 
-vectorfield(pn::AbstractStockAndFlow) = begin
+vectorfield(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
   ϕ=funcFlows(pn)
   tm = TransitionMatrices(pn)
   f(du,u,p,t) = begin
@@ -734,6 +910,8 @@ vectorfield(pn::AbstractStockAndFlow) = begin
   end
   return f
 end
+
+include("Syntax.jl")
 
 include("CausalLoop.jl")
 include("SystemStructure.jl")
