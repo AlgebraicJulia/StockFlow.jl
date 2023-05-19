@@ -34,6 +34,7 @@ OrdinaryDiffEq = "6.20.0"
 Plots = "1.35.3"
 StaticArrays = "1.5.2"
 StatsBase = "^0.33"
+StringManipulation = "0.3"
 Tables = "1.7.0"
 julia = "1.7"
 
