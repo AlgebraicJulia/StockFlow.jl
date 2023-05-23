@@ -194,7 +194,7 @@ struct StockAndFlowArguments
         },
     }
     params::Vector{Symbol}
-    dyvars::Vector{Pair{Symbol,Union{Pair{Symbol, Symbol}, Pair{Tuple{Symbol,Symbol},Symbol}}}}
+    dyvars::Vector{Pair{Symbol,Union{Pair{Symbol,Symbol},Pair{Tuple{Symbol,Symbol},Symbol}}}}
     flows::Vector{Pair{Symbol,Symbol}}
     sums::Vector{Symbol}
 end
@@ -462,7 +462,7 @@ function assemble_stock_definitions(
                 stock => (
                     fnone_value_or_vector(input_arrows),
                     fnone_value_or_vector(output_arrows),
-                    fnone_value_or_vector(sum_arrows),
+                    default_or_value_or_vector(sum_arrows; default=:SV_NONE),
                 )
             ),
         )
@@ -512,7 +512,7 @@ into a form suitable for input into the StockAndFlowF data type:
 A vector of dynamic variable definitions suitable for input to StockAndFlowF.
 """
 function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
-    syms ::Vector{Pair{Symbol,Union{Pair{Symbol, Symbol}, Pair{Tuple{Symbol,Symbol},Symbol}}}} = []
+    syms::Vector{Pair{Symbol,Union{Pair{Symbol,Symbol},Pair{Tuple{Symbol,Symbol},Symbol}}}} = []
     for (dyvar_name, dyvar_definition) in dyvars
         if is_binop_or_unary(dyvar_definition)
             @match dyvar_definition begin
@@ -638,6 +638,34 @@ function extract_function_name_and_args_expr(flow_equation::Expr)
             error("Unhandled expression in flow name definition " * String(en))
     end
 end
+"""
+    default_or_value_or_tuple(arrows :: Vector{Symbol})
+
+Given a vector of arrow names, modify it into suitable input for a StockAndFlowF data type:
+default for an empty vector, the value alone for a singleton vector,
+and the vector itself if there are multiple arrows given.
+
+### Input
+- `arrows` -- A vector of symbols which represents some of the arrows for a stock.
+- `default` -- A default symbol if an empty vector is passed in
+
+### Output
+given default, a single symbol, or a list of symbols.
+
+### Example
+```julia-repl
+`
+"""
+function default_or_value_or_vector(arrows::Vector{Symbol}; default=:F_NONE)
+    if isempty(arrows)
+        default
+    elseif length(arrows) == 1
+        arrows[1]
+    else
+        arrows
+    end
+end
+
 
 """
     fnone_or_tuple(arrows :: Vector{Symbol})
@@ -657,13 +685,7 @@ and the vector itself if there are multiple arrows given.
 `
 """
 function fnone_value_or_vector(arrows::Vector{Symbol})
-    if isempty(arrows)
-        :F_NONE
-    elseif length(arrows) == 1
-        arrows[1]
-    else
-        arrows
-    end
+    default_or_value_or_vector(arrows)
 end
 
 """

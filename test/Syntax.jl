@@ -180,7 +180,47 @@ end
     end
 end
 
-@testset "stock_and_flow macro base case" begin
-    SIR_1_via_macro = @stock_and_flow begin
+@testset "stock_and_flow macro base cases" begin
+    empty_via_macro = @stock_and_flow begin end
+    @test empty_via_macro == StockAndFlowF()
+
+    no_sums = @stock_and_flow begin
+        :stocks
+        A
+        B
+        C
+
+        :parameters
+        p
+        q
+
+        :dynamic_variables
+        dyvar1 = A + B
+        dyvar2 = B * C
+        dyvar3 = sqrt(q)
+        dyvar4 = exp(p)
+        dyvar5 = log(dyvar3, dyvar4)
+
+        :flows
+        A => f1(dyvar1) => B
+        B => f2(dyvar2) => C
+        C => f3(dyvar5) => A
     end
+    no_sums_canonical = StockAndFlowF(
+        #stocks
+        (:A => (:f3, :f1, :SV_NONE), :B => (:f1, :f2, :SV_NONE), :C => (:f2, :f3, :SV_NONE)),
+        #params
+        (:p, :q),
+        # dyvars
+        (:dyvar1 => ((:A, :B) => :+),
+         :dyvar2 => ((:B, :C) => :*),
+         :dyvar3 => (:q => :sqrt),
+         :dyvar4 => (:p => :exp),
+         :dyvar5 => ((:dyvar3, :dyvar4) => :log)),
+        #flows
+        (:f1 => :dyvar1,
+         :f2 => :dyvar2,
+         :f3 => :dyvar5),
+        ())
+    @test no_sums == no_sums_canonical
 end
