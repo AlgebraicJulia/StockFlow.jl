@@ -179,3 +179,8 @@ end
         @test SIR_2.parts[part] == SIR_1_canonical.parts[part]
     end
 end
+
+@testset "stock_and_flow macro base case" begin
+    SIR_1_via_macro = @stock_and_flow begin
+    end
+end
