@@ -194,7 +194,7 @@ struct StockAndFlowArguments
         },
     }
     params::Vector{Symbol}
-    dyvars::Vector{Pair{Symbol,Pair{Tuple{Symbol,Symbol},Symbol}}}
+    dyvars::Vector{Pair{Symbol,Union{Pair{Symbol,Symbol},Pair{Tuple{Symbol,Symbol},Symbol}}}}
     flows::Vector{Pair{Symbol,Symbol}}
     sums::Vector{Symbol}
 end
@@ -238,7 +238,7 @@ function parse_stock_and_flow_syntax(statements::Vector{Any})
                 current_phase = s -> parse_sum!(sums, s)
             end
             QuoteNode(kw) =>
-                throw("Unknown block type for Stock and Flow syntax: " * String(kw))
+                error("Unknown block type for Stock and Flow syntax: " * String(kw))
             _ => current_phase(statement)
         end
     end
@@ -331,7 +331,7 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
     @match dyvar begin
         :($dyvar_name = $dyvar_def) => push!(dyvars, (dyvar_name, dyvar_def))
         Expr(c, _, _) || Expr(c, _, _, _) =>
-            throw("Unhandled expression in dynamic variable definition " * String(c))
+            error("Unhandled expression in dynamic variable definition " * String(c))
     end
 end
 
@@ -366,7 +366,7 @@ function parse_flow(flow_definition::Expr)
             (stock_in, flow, :F_NONE)
         :($stock_in => $flow => $stock_out) => (stock_in, flow, stock_out)
         Expr(en, _, _, _) || Expr(en, _, _) =>
-            throw("Unhandled expression in flow definition " * String(en))
+            error("Unhandled expression in flow definition " * String(en))
     end
 end
 
@@ -407,7 +407,7 @@ function parse_sum!(sums::Vector{Tuple{Symbol,Vector{Symbol}}}, sum::Expr)
     @match sum begin
         :($sum_name = $equation) => push!(sums, (sum_name, equation.args))
         Expr(c, _, _) || Expr(c, _, _, _) =>
-            throw("Unhandled expression in sum defintion " * String(c))
+            error("Unhandled expression in sum defintion " * String(c))
     end
 end
 
@@ -462,7 +462,7 @@ function assemble_stock_definitions(
                 stock => (
                     fnone_value_or_vector(input_arrows),
                     fnone_value_or_vector(output_arrows),
-                    fnone_value_or_vector(sum_arrows),
+                    default_or_value_or_vector(sum_arrows; default=:SV_NONE),
                 )
             ),
         )
@@ -512,14 +512,15 @@ into a form suitable for input into the StockAndFlowF data type:
 A vector of dynamic variable definitions suitable for input to StockAndFlowF.
 """
 function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
-    syms::Vector{Pair{Symbol,Pair{Tuple{Symbol,Symbol},Symbol}}} = []
+    syms::Vector{Pair{Symbol,Union{Pair{Symbol,Symbol},Pair{Tuple{Symbol,Symbol},Symbol}}}} = []
     for (dyvar_name, dyvar_definition) in dyvars
-        if is_binop(dyvar_definition)
+        if is_binop_or_unary(dyvar_definition)
             @match dyvar_definition begin
+                Expr(:call, op, a) => push!(syms, (dyvar_name => (a => op)))
                 Expr(:call, op, a, b) => begin
                     push!(syms, (dyvar_name => ((a, b) => op)))
                 end
-                Expr(c, _, _) || Expr(c, _, _, _) => throw(
+                Expr(c, _, _) || Expr(c, _, _, _) => error(
                     "Unhandled expression in dynamic variable definition " * String(c),
                 )
             end
@@ -591,7 +592,7 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
                 if expr in dyvar_names
                     return ([], flow_name => expr)
                 else
-                    throw("Unknown dynamic variable referenced " * String(expr))
+                    error("Unknown dynamic variable referenced " * String(expr))
                 end
             else
                 (additional_dyvars, var_name) = infix_expression_to_binops(expr, gensymbase=generate_dyvar_name(flow_name))
@@ -605,7 +606,7 @@ function flow_expr_to_symbolic_repr(flow_expression, dyvar_names)
             return (dyvs, flow_name => sym)
         end
         Expr(c, _, _) || Expr(c, _, _, _) => begin
-            throw("Unhandled expression in flow equation definition " * String(c))
+            error("Unhandled expression in flow equation definition " * String(c))
         end
     end
 end
@@ -634,9 +635,37 @@ function extract_function_name_and_args_expr(flow_equation::Expr)
         :($flow_name($expr)) => (flow_name, expr)
         :($flow_name($expr, name=$_)) => (flow_name, expr)
         Expr(en, _, _, _) || Expr(en, _, _) =>
-            throw("Unhandled expression in flow name definition " * String(en))
+            error("Unhandled expression in flow name definition " * String(en))
     end
 end
+"""
+    default_or_value_or_tuple(arrows :: Vector{Symbol})
+
+Given a vector of arrow names, modify it into suitable input for a StockAndFlowF data type:
+default for an empty vector, the value alone for a singleton vector,
+and the vector itself if there are multiple arrows given.
+
+### Input
+- `arrows` -- A vector of symbols which represents some of the arrows for a stock.
+- `default` -- A default symbol if an empty vector is passed in
+
+### Output
+given default, a single symbol, or a list of symbols.
+
+### Example
+```julia-repl
+`
+"""
+function default_or_value_or_vector(arrows::Vector{Symbol}; default=:F_NONE)
+    if isempty(arrows)
+        default
+    elseif length(arrows) == 1
+        arrows[1]
+    else
+        arrows
+    end
+end
+
 
 """
     fnone_or_tuple(arrows :: Vector{Symbol})
@@ -656,13 +685,7 @@ and the vector itself if there are multiple arrows given.
 `
 """
 function fnone_value_or_vector(arrows::Vector{Symbol})
-    if isempty(arrows)
-        :F_NONE
-    elseif length(arrows) == 1
-        arrows[1]
-    else
-        arrows
-    end
+    default_or_value_or_vector(arrows)
 end
 
 """
@@ -725,6 +748,12 @@ function infix_expression_to_binops(
     function loop(e)
         @match e begin
             ::Symbol => e
+            Expr(:call, f, a) => begin
+                asym = loop(a)
+                varname = gensym(gensymbase)
+                push!(exprs, (varname, :($f($asym))))
+                varname
+            end
             Expr(:call, f, a, b) => begin
                 asym = loop(a)
                 bsym = loop(b)
@@ -733,6 +762,9 @@ function infix_expression_to_binops(
                 varname
             end
             Expr(:call, f, args...) => begin
+                if (isempty(args))
+                    error("Expression f() cannot be converted into form f(a, b)")
+                end
                 argsyms = map(loop, args)
                 lastsym = gensym(gensymbase)
                 a = popfirst!(argsyms)
@@ -747,9 +779,8 @@ function infix_expression_to_binops(
                 lastsym
             end
             Expr(en, _, _, _) || Expr(en, _, _) => begin
-                throw(
-                    "Unhandled expression cannot be converted into form f(a, b) " *
-                    String(en),
+                error(
+                    "Unhandled expression type " * String(en) * " cannot be converted into form f(a, b)",
                 )
             end
         end
@@ -780,7 +811,7 @@ sum_variables(sum_syntax_elements) =
 
 
 """
-    is_binop(e :: Expr)
+    is_binop_or_unary(e :: Expr)
 
 Check if a Julia expression is a call of the form `op(a, b)` or `a op b`
 
@@ -792,18 +823,21 @@ A boolean indicating if the given julia expression is a function call of two par
 
 ### Examples
 ```julia-repl
-julia> is_binop(:(f(a)))
+julia> is_binop_or_unary(:(f()))
 false
-julia> is_binop(:(f(a, b)))
+julia> is_binop_or_unary(:(f(a)))
 true
-julia> is_binop(:(a * b))
+julia> is_binop_or_unary(:(f(a, b)))
 true
-julia> is_binop(:(f(a, b, c)))
+julia> is_binop_or_unary(:(a * b))
+true
+julia> is_binop_or_unary(:(f(a, b, c)))
 false
 ```
 """
-function is_binop(e::Expr)
+function is_binop_or_unary(e::Expr)
     @match e begin
+        Expr(:call, f::Symbol, a::Symbol) => true
         Expr(:call, f::Symbol, a::Symbol, b::Symbol) => true
         _ => false
     end
