@@ -147,7 +147,7 @@ macro stock_and_flow(block)
     return StockAndFlowF(
         saff_args.stocks,
         saff_args.params,
-        saff_args.dyvars,
+        map(kv -> kv.first => get(kv.second), saff_args.dyvars),
         saff_args.flows,
         saff_args.sums,
     )
@@ -182,6 +182,15 @@ representing a Stock and Flow model.
 
 This can be used to directly instantiate StockAndFlowF.
 """
+abstract type DyvarExprT end
+struct Binop{P1,P2} <: DyvarExprT
+    binop::Pair{Tuple{P1,P2},Symbol}
+end
+struct Ref <: DyvarExprT
+    ref::Pair{Symbol,Symbol}
+end
+get(r::Ref) = r.ref
+get(b::Binop) = b.binop
 struct StockAndFlowArguments
     stocks::Vector{
         Pair{
@@ -194,7 +203,7 @@ struct StockAndFlowArguments
         },
     }
     params::Vector{Symbol}
-    dyvars::Vector{Pair{Symbol,Union{Pair{Symbol,Symbol},Pair{Tuple{Symbol,Symbol},Symbol}}}}
+    dyvars::Vector{Pair{Symbol, DyvarExprT}}
     flows::Vector{Pair{Symbol,Symbol}}
     sums::Vector{Symbol}
 end
@@ -512,13 +521,13 @@ into a form suitable for input into the StockAndFlowF data type:
 A vector of dynamic variable definitions suitable for input to StockAndFlowF.
 """
 function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
-    syms::Vector{Pair{Symbol,Union{Pair{Symbol,Symbol},Pair{Tuple{Symbol,Symbol},Symbol}}}} = []
+    syms::Vector{Pair{Symbol,DyvarExprT}} = []
     for (dyvar_name, dyvar_definition) in dyvars
         if is_binop_or_unary(dyvar_definition)
             @match dyvar_definition begin
-                Expr(:call, op, a) => push!(syms, (dyvar_name => (a => op)))
+                Expr(:call, op, a) => push!(syms, (dyvar_name => Ref(a => op)))
                 Expr(:call, op, a, b) => begin
-                    push!(syms, (dyvar_name => ((a, b) => op)))
+                    push!(syms, (dyvar_name => Binop((a, b) => op)))
                 end
                 Expr(c, _, _) || Expr(c, _, _, _) => error(
                     "Unhandled expression in dynamic variable definition " * String(c),
@@ -747,7 +756,7 @@ function infix_expression_to_binops(
     exprs::Vector{Tuple{Symbol,Expr}} = []
     function loop(e)
         @match e begin
-            ::Symbol => e
+            ::Symbol || ::Float32 || ::Float64 || ::Int || ::String => e
             Expr(:call, f, a) => begin
                 asym = loop(a)
                 varname = gensym(gensymbase)
@@ -837,8 +846,8 @@ false
 """
 function is_binop_or_unary(e::Expr)
     @match e begin
-        Expr(:call, f::Symbol, a::Symbol) => true
-        Expr(:call, f::Symbol, a::Symbol, b::Symbol) => true
+        Expr(:call, f::Symbol, a) => true
+        Expr(:call, f::Symbol, a, b) => true
         _ => false
     end
 end

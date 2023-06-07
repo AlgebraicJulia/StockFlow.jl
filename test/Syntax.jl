@@ -1,3 +1,4 @@
+using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
@@ -6,6 +7,7 @@ using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_bi
 @testset "is_binop_or_unary recognises binops" begin
     @test is_binop_or_unary(:(a + b))
     @test is_binop_or_unary(:(f(a, b)))
+    @test is_binop_or_unary(:(1.0 + x))
 end
 @testset "is_binop_or_unary recognises non-binops as non-binops" begin
     @test !is_binop_or_unary(:(f()))
@@ -59,6 +61,23 @@ end
     # Multiparameter flows
     @test_throws Exception extract_function_name_and_args_expr(:(testf(a, b)))
 end
+
+#@testset "non-variable parameters in functions" begin
+#  @stock_and_flow begin
+#      :stocks
+#       A
+#       B
+#       C
+#       :parameters
+#       x
+#       y
+#       z
+#       :dynamic_variables
+# TODO? f = 1.0 - x
+#       :flows
+#       A => fname(f) => B
+#  end
+#end
 
 @testset "model allows uses unary functions like log" begin
     SIR_1_via_macro = @stock_and_flow begin
