@@ -323,6 +323,25 @@ function parse_param!(params::Vector{Symbol}, param::Symbol)
 end
 
 """
+   is_recursive_dyvar(dyvar_name :: Symbol, dyvar_def :: Expr)
+
+Check that the dyvar_name is not used somewhere in the dyvar_def
+
+### Input
+- `dyvar_name` -- A dyvar name as a Julia Symbol
+- `dyvar_expr` -- A Julia expression
+
+### Output
+True if the dyvar name is used in the expression; false elsewise.
+"""
+function is_recursive_dyvar(dyvar_name, dyvar_def)
+    @match dyvar_def begin
+        ::Symbol => dyvar_def == dyvar_name
+        :($f()) => f == dyvar_name
+        Expr(:call, args...) => true in map(arg -> is_recursive_dyvar(dyvar_name, arg), args)
+    end
+end
+"""
     parse_dyvar!(dyvars :: Vector{Tuple{Symbol, Expr}}, dyvar :: Expr)
 
 Extract the dynamic variable name and defining expression from a Julia expression of form
@@ -338,7 +357,12 @@ None. This mutates the given dyvars vector.
 """
 function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
     @match dyvar begin
-        :($dyvar_name = $dyvar_def) => push!(dyvars, (dyvar_name, dyvar_def))
+        :($dyvar_name = $dyvar_def) =>
+            if !is_recursive_dyvar(dyvar_name, dyvar_def)
+                push!(dyvars, (dyvar_name, dyvar_def))
+            else
+                error("Recursive dyvar detected in Symbol: " * String(dyvar_name))
+            end
         Expr(c, _, _) || Expr(c, _, _, _) =>
             error("Unhandled expression in dynamic variable definition " * String(c))
     end

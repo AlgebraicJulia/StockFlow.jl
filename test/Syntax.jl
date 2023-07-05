@@ -2,7 +2,7 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar
 
 @testset "is_binop_or_unary recognises binops" begin
     @test is_binop_or_unary(:(a + b))
@@ -113,10 +113,10 @@ end
         (:c, :beta, :tRec),
         # dynamical variables
         (:v_prevalence => (:I => :exp),
-            :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*),
-            :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
-            :v_newInfections => ((:S, :v_perSIncidenceRate) => :*),
-            :v_newRecovery => (:I => :log),
+         :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*),
+         :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
+         :v_newInfections => ((:S, :v_perSIncidenceRate) => :*),
+         :v_newRecovery => (:I => :log),
         ),
         # flows
         (:inf => :v_newInfections, :rec => :v_newRecovery),
@@ -159,10 +159,10 @@ end
         (:c, :beta, :tRec),
         # dynamical variables
         (:v_prevalence => ((:I, :N) => :/),
-            :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*),
-            :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
-            :v_newInfections => ((:S, :v_perSIncidenceRate) => :*),
-            :v_newRecovery => ((:I, :tRec) => :/),
+         :v_meanInfectiousContactsPerS => ((:c, :v_prevalence) => :*),
+         :v_perSIncidenceRate => ((:beta, :v_meanInfectiousContactsPerS) => :*),
+         :v_newInfections => ((:S, :v_perSIncidenceRate) => :*),
+         :v_newRecovery => ((:I, :tRec) => :/),
         ),
         # flows
         (:inf => :v_newInfections, :rec => :v_newRecovery),
@@ -242,4 +242,22 @@ end
          :f3 => :dyvar5),
         ())
     @test no_sums == no_sums_canonical
+end
+@testset "is_recursive_dyvar detects recursive dyvars" begin
+    @test is_recursive_dyvar(:v, :(v + v))
+    @test is_recursive_dyvar(:a, :(b + c + d / (e + f + g / (h + i + j / (a - b * a)))))
+end
+@testset "is_recursive_dyvar does not flag non-recursive dyvars" begin
+    @test !is_recursive_dyvar(:w, :(v + v))
+    @test !is_recursive_dyvar(:z, :(b + c + d / (e + f + g / (h + i + j / (a - b * a)))))
+
+end
+@testset "recursive definitions should be disallowed" begin
+    expr = quote
+        :dynamic_variables
+        v = v + v
+    end
+    # When used as a macro -- @stock_and_flow -- this exception is thrown
+    # at a point that @test_throws cannot capture it.
+    @test_throws Exception stock_and_flow(expr)
 end
