@@ -1,6 +1,6 @@
-using StockFlow
 using Test
+using StockFlow
 
-@testset "AlgebraicStockFlow.jl" begin
-    @test true
+@testset "StockFlow DSL" begin
+    include("Syntax.jl")
 end
