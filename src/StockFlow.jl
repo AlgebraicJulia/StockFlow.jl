@@ -9,7 +9,7 @@ funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMa
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
-vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified
+vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -561,6 +561,23 @@ fnames(p::AbstractStockAndFlowStructure) = [fname(p, f) for f in 1:nf(p)]
 svnames(p::AbstractStockAndFlow0) = [svname(p, sv) for sv in 1:nsv(p)]
 vnames(p::AbstractStockAndFlowStructure) = [vname(p, v) for v in 1:nvb(p)]
 pnames(sf::AbstractStockAndFlowStructureF) = [pname(sf,p) for p in 1:np(sf)]
+
+set_snames!(p::AbstractStockAndFlow0, names) = set_subpart!(p, :sname, names)
+set_fnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :fname, names)
+set_svnames!(p::AbstractStockAndFlow0, names) = set_subpart!(p, :svname, names)
+set_vnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :vname, names)
+set_pnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :pname, names)
+
+
+# Could pull out the right side into another function
+set_sname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :sname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
+set_fname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :fname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(fnames(p))])
+set_svname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :svname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(svnames(p))])
+set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :vname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
+set_pname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :pname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(pnames(p))])
+
+
+
 
 
 fv(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)

@@ -105,8 +105,12 @@ end
 module Syntax
 export @stock_and_flow
 
+
 using StockFlow
 using MLStyle
+import Base.*
+
+
 
 """
     stock_and_flow(block :: Expr)
@@ -141,6 +145,11 @@ Compiles stock and flow syntax of the line-based block form
 into a StockAndFlowF data type for use with the StockFlow.jl modelling system.
 """
 macro stock_and_flow(block)
+   stock_and_flow_function(block)
+end
+
+
+function stock_and_flow_function(block)
     Base.remove_linenums!(block)
     syntax_lines = parse_stock_and_flow_syntax(block.args)
     saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
@@ -152,6 +161,27 @@ macro stock_and_flow(block)
         saff_args.sums,
     )
 end
+
+
+"""
+Concatenate Symbol and (Symbol or String) and return a Symbol.
+"""
+*(a::Symbol,b::Union{Symbol, String}) = Symbol(string(a, b))
+
+
+"""
+Same as single argument stock_and_flow macro, but first argument acts as a suffix for names.
+"""
+macro stock_and_flow(suffix, block)
+    sf = stock_and_flow_function(block)
+    set_snames!(sf, snames(sf) .* suffix)
+    set_fnames!(sf, fnames(sf) .* suffix)
+    set_svnames!(sf, svnames(sf) .* suffix)
+    set_vnames!(sf, vnames(sf) .* suffix)
+    set_pnames!(sf, pnames(sf) .* suffix)
+    return sf
+end
+
 
 """
     StockAndFlowBlock
