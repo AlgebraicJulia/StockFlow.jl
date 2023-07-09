@@ -1,6 +1,8 @@
 export convertStockFlowToSystemStructure, convertSystemStructureToStockFlow, rebuildStratifiedModelByFlattenSymbols,
 extracStocksStructureAndFlatten,extracFlowsStructureAndFlatten,extracSumVStructureAndFlatten,extracVStructureAndFlatten,extracPsStructureAndFlatten,
-extracVAndAttrStructureAndFlatten, extracVStructureAndFlatten, args_vname, args
+extracVAndAttrStructureAndFlatten, extracVStructureAndFlatten, args_vname, args, add_prefix!, add_suffix!
+
+using Catlab.CategoricalAlgebra.StructuredCospans
 
 flattenTupleNames(sn::Tuple)=Symbol(foldr(string,map(x->string(x), sn)))
 flattenTupleNames(sn::Symbol)=sn
@@ -257,7 +259,83 @@ function convertStockFlowToSystemStructure(p::AbstractStockAndFlowF)
 end
 
 
+"""
+Concatenate Symbols.
+"""
+++(a::Symbol,b::Symbol) = Symbol(string(a, b))
+
+"""
+Modify a AbstractStockAndFlowStructureF so named elements end with suffix.
+"""
+function add_suffix!(sf::AbstractStockAndFlowStructureF, suffix)
+    suffix = Symbol(suffix)
+    set_snames!(sf, snames(sf) .++ suffix)
+    set_fnames!(sf, fnames(sf) .++ suffix)
+    set_svnames!(sf, svnames(sf) .++ suffix)
+    set_vnames!(sf, vnames(sf) .++ suffix)
+    set_pnames!(sf, pnames(sf) .++ suffix)
+    return sf
+end
 
 
+"""
+Modify a AbstractStockAndFlow0 so named elements end with suffix.
+For feet.
+"""
+function add_suffix!(sf::AbstractStockAndFlow0, suffix)
+    suffix = Symbol(suffix)
+    set_snames!(sf, snames(sf) .++ suffix)
+    set_svnames!(sf, svnames(sf) .++ suffix)
+    return sf
+end
+
+
+"""
+Modify a StructuredCospan so named elements end with suffix.
+This should work with Open.  Type is more broad than needs to be.
+
+NOTE!  We only need to change the feet and the apex, NOT THE LEGS!  The legs are ACSetTransformations,
+which act on indices, not on names.
+
+"""
+function add_suffix!(sf::StructuredCospan, suffix)
+    add_suffix!(Catlab.CategoricalAlgebra.StructuredCospans.apex(sf), suffix)
+    foreach(foot -> add_suffix!(foot, suffix), Catlab.CategoricalAlgebra.StructuredCospans.feet(sf))
+return sf
+end
+
+"""
+Modify a AbstractStockAndFlowStructureF so named elements begin with prefix
+"""
+function add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
+    prefix = Symbol(prefix)
+    set_snames!(sf, prefix .++ snames(sf))
+    set_fnames!(sf, prefix .++ fnames(sf))
+    set_svnames!(sf, prefix .++ svnames(sf))
+    set_vnames!(sf, prefix .++ vnames(sf))
+    set_pnames!(sf, prefix .++ pnames(sf))
+    return sf
+end
+
+"""
+Modify a AbstractStockAndFlow0 so named elements begin with prefix.
+For feet.
+"""
+function add_prefix!(sf::AbstractStockAndFlow0, suffix)
+    prefix = Symbol(prefix)
+    set_snames!(sf, prefix .++ snames(sf))
+    set_svnames!(sf, prefix .++ svnames(sf))
+    return sf
+end
+
+"""
+Modify a StructuredCospan so named elements begin with prefix.
+This should work with Open.  Type is more broad than needs to be.
+"""
+function add_prefix!(sf::StructuredCospan, prefix)
+    add_prefix!(apex(sf), prefix)
+    foreach(foot -> add_prefix!(foot, prefix), feet(sf))
+return sf
+end
 
 
