@@ -1,9 +1,3 @@
-"import Pkg\n",
-    "Pkg.activate(\"MyProject\")\n",
-    "Pkg.develop(path=\"/home/silicon/Documents/Git/StockFlow.jl/\")\n",
-    "\n",
-    "Pkg.instantiate()"
-
 import Pkg
 Pkg.activate("MyProject")
 Pkg.develop(path="/home/silicon/Documents/Git/StockFlow.jl/")
