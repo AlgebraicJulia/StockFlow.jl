@@ -976,7 +976,7 @@ function create_foot(block::Expr)
     @match block begin
         :(()              => ())              => foot((), (), ())
         :($(s :: Symbol)  => ())              => foot(s, (), ())
-        :(()              => $(sv :: Symbol)) => foot((), sv, ())  $block ;  $(typeof(block))
+        :(()              => $(sv :: Symbol)) => foot((), sv, ())
         :($(s :: Symbol)  => $(sv :: Symbol)) => foot(s, sv, s => sv)
         :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
         :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
