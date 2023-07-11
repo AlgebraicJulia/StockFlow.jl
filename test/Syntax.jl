@@ -1,8 +1,3 @@
-import Pkg
-Pkg.activate("MyProject")
-Pkg.develop(path="/home/silicon/Documents/Git/StockFlow.jl/")
-Pkg.instantiate()
-
 using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
