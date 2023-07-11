@@ -1,3 +1,14 @@
+"import Pkg\n",
+    "Pkg.activate(\"MyProject\")\n",
+    "Pkg.develop(path=\"/home/silicon/Documents/Git/StockFlow.jl/\")\n",
+    "\n",
+    "Pkg.instantiate()"
+
+import Pkg
+Pkg.activate("MyProject")
+Pkg.develop(path="/home/silicon/Documents/Git/StockFlow.jl/")
+Pkg.instantiate()
+
 using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
@@ -269,6 +280,9 @@ end
     @test (@foot P => ()) == foot(:P, (), ())
     @test (@foot () => Q) == foot((), :Q, ())
     @test (@foot () => ()) == foot((),(),())
+
+    @test (@foot =>((), SV)) == foot((),:SV,()) 
+    @test (@foot A11 => B22) == foot(:A11, :B22, :A11 => :B22)
 end
 
 @testset "foot syntax disallows invalid feet" begin # note, @feet calls create_foot for each line, so this should apply to both @foot and @feet
@@ -300,7 +314,11 @@ end
     @test (@feet P => P) == [foot(:P, :P, :P => :P)]
 end
 
-
+@testset "feet syntax fails on invalid feet" begin # mostly to check that an exception is thrown even if some of the feet are valid.
+    @test_throws Exception @eval @feet A => B => C # eval required so the errors occur at runtime, rather than at compilation
+    @test_throws Exception @eval @feet begin A => B; =>(D,E,F) end
+    @test_throws Exception @eval @feet begin A => B; 1 => 2; end
+end
 
 
 
