@@ -947,7 +947,7 @@ Separated by newlines.
 First argument is stock, second is sum variable.
 
 ```julia
-@foot = begin
+feetses = @feet begin
     A => B
     () => N
     C => ()
@@ -957,12 +957,13 @@ end
 ```
 """
 macro feet(block::Expr)
-    feetvector = Vector{StockAndFlow0}()
     Base.remove_linenums!(block)
-    for line in block.args
-        push!(feetvector, create_foot(line))
+    @match block begin
+        quote
+          $((block...))
+        end => map(create_foot, block) # also matches empty
+        Expr(e, _...) => [create_foot(block)] # this also matches the above, so it's necessary this comes second.
     end
-    return feetvector
 end
 
 
@@ -972,31 +973,16 @@ feet(block :: Expr)
 Takes as argument an expression of the form A => B and creates a foot (StockAndFlow0).
 """
 function create_foot(block::Expr)
-
-
-    f, s, sv = block.args
-
-    if f != :(=>)
-        error("Invalid syntax function for foot: $f")
-        return
-    end
-
-    if !(s isa Symbol) && !(s == :())
-        error("Invalid syntax for first argument of foot: $s")
-        return
-    end
-
-    if !(sv isa Symbol) && !(sv == :())
-        error("Invalid syntax for second argument of foot: $sv")
-        return
-    end
-    
-    
-    @match (s, sv) begin
-        (:(), :()) => return foot((),(),())
-        (s, :()) => return foot(s,(),())
-        (:(), sv) => return foot((),sv,())
-        (s, sv) => return foot(s, sv, s => sv)
+    @match block begin
+        :(()              => ())              => foot((), (), ())
+        :($(s :: Symbol)  => ())              => foot(s, (), ())
+        :(()              => $(sv :: Symbol)) => foot((), sv, ())  $block ;  $(typeof(block))
+        :($(s :: Symbol)  => $(sv :: Symbol)) => foot(s, sv, s => sv)
+        :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
+        :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
+        :($s              => $sv)             => error("Foot definition requires symbolic names. Received: $s, $sv")
+        Expr(:call, name, args...)            => error("Received: $name called with $args. Expected foot definition of form: A => B.")
+        _                                     => error("Invalid foot definition.")
     end
 end
 

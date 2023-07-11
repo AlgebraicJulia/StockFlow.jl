@@ -276,6 +276,8 @@ end
     @test_throws Exception create_foot(:(oooo2 + f => C)) # Invalid syntax for first argument of foot: oooo2 + f
     @test_throws Exception create_foot(:(A + B)) # Invalid syntax function for foot: +
     @test_throws Exception create_foot(:(=>)) # no method matching create_foot(::Symbol)
+    @test_throws Exception create_foot(:(=>(A, B, C, D)))
+    @test_throws Exception create_foot(:())
 end
 
 @testset "feet syntax can create feet" begin
@@ -291,9 +293,11 @@ end
 
     end) == [foot(:A, :B, :A => :B), foot(:C, :D, :C => :D), foot((),(),()), foot(:P, (),()), foot((),:Q,())]
 
-    @test (@feet begin P => Q end) == [foot(:P, :Q, :P => :Q)] # note, (@feet P => Q) would fail, as @feet would iterate over the symbols rather than the lines.
+    @test (@feet P => Q) == [foot(:P, :Q, :P => :Q)]
     @test (@feet begin end) == Vector{StockAndFlow0}()
     @test (@feet begin P => Q; L => R end) == [foot(:P, :Q, :P => :Q), foot(:L, :R, :L => :R)]
+
+    @test (@feet P => P) == [foot(:P, :P, :P => :P)]
 end
 
 
