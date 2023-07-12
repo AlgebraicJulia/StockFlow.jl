@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow
+export @stock_and_flow, @foot, @feet
 
 using StockFlow
 using MLStyle
@@ -918,4 +918,74 @@ function set_final_binop_varname!(exprs::Vector{Tuple{Symbol,Expr}}, varname::Sy
     (_oldvarname, expr) = last(exprs)
     exprs[idx] = (varname, expr)
 end
+
+
+
+
+"""
+foot(block :: Expr)
+
+Create a foot with S => N syntax, where S is stock, N is sum variable.
+```julia
+@foot P => Q
+@foot S1 => ()
+@foot () => N
+@foot () => ()
+```
+"""
+macro foot(block::Expr)
+    Base.remove_linenums!(block)
+    return create_foot(block)
+end
+
+
+"""
+feet(block :: Expr)
+
+Create Vector of feet using same notation for foot macro.
+Separated by newlines.
+First argument is stock, second is sum variable.
+
+```julia
+feetses = @feet begin
+    A => B
+    () => N
+    C => ()
+    D => E
+    () => ()
+end
+```
+"""
+macro feet(block::Expr)
+    Base.remove_linenums!(block)
+    @match block begin
+        quote
+          $((block...))
+        end => map(create_foot, block) # also matches empty
+        Expr(e, _...) => [create_foot(block)] # this also matches the above, so it's necessary this comes second.
+    end
+end
+
+
+"""
+feet(block :: Expr)
+
+Takes as argument an expression of the form A => B and creates a foot (StockAndFlow0).
+"""
+function create_foot(block::Expr)
+    @match block begin
+        :(()              => ())              => foot((), (), ())
+        :($(s :: Symbol)  => ())              => foot(s, (), ())
+        :(()              => $(sv :: Symbol)) => foot((), sv, ())
+        :($(s :: Symbol)  => $(sv :: Symbol)) => foot(s, sv, s => sv)
+        :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
+        :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
+        :($s              => $sv)             => error("Foot definition requires symbolic names. Received: $s, $sv")
+        Expr(:call, name, args...)            => error("Received: $name called with $args. Expected foot definition of form: A => B.")
+        _                                     => error("Invalid foot definition.")
+    end
+end
+
+
+
 end
