@@ -2,7 +2,7 @@ module PremadeModels
 using StockFlow.Syntax
 
 
-export seir, sis, sir
+export seir, sis, sir, svi
 
 seir = @stock_and_flow begin
 
@@ -34,7 +34,7 @@ seir = @stock_and_flow begin
 
 
         v_deathS = δ * S       
-        v_deathS = δ * S 
+        v_deathE = δ * E
         v_deathI = δ * I
         v_deathR = δ * R       
 
@@ -57,7 +57,7 @@ seir = @stock_and_flow begin
 
 end
 
-SIS_type = @stock_and_flow begin
+sis = @stock_and_flow begin
     :stocks
     S
     I
@@ -68,8 +68,9 @@ SIS_type = @stock_and_flow begin
     β
     trec # 1 / trecovery.  This corresponds to σ.
     δ
-    rAgeX
+    rAgeS
     rAgeI
+    c
 
 
     
@@ -86,7 +87,7 @@ SIS_type = @stock_and_flow begin
     # v_newInfectious
     v_newRecovery = I * trec
     v_deathsI = I * δ
-    v_agingX = S * rAgeX
+    v_agingS = S * rAgeS
     v_agingI = I * rAgeI 
 
     :flows
@@ -97,7 +98,7 @@ SIS_type = @stock_and_flow begin
     I => f_newRecovery(v_newRecovery) => S
 
     I => f_deathsI(v_deathsI) => CLOUD
-    S => f_agingX(v_agingX) => S
+    S => f_agingX(v_agingS) => S
     I => f_agingI(v_agingI) => I
 
 
@@ -157,19 +158,28 @@ svi = @stock_and_flow begin
 
     :parameters
     rvaccine
-    rdeath
-    lambda
-    evaccine_complement # 1.0 - evaccine
+    δ
+    evaccine
+    c
+    β
 
     :dynamic_variables
-    v_vacV = evaccine_complement * V
-    v_infV = v_vacV * lambda
 
+
+
+    v_vacc = S * rvaccine 
+    v_deathV = δ * V
     
+    v_prevalence = NI / NS
+    v_meanInfectiousContactsPerS = c * v_prevalence
+    v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
+    v_unvaccinatedRate = V / evaccine # same thing as multiplying by complement
+    v_perSIncidenceUnvaccinated = v_unvaccinatedRate * v_perSIncidenceRate
+
     :flows
-    S => f_vacc(S * rvaccine) => V
-    V => f_deathV(V * rdeath) => CLOUD
-    V => f_infV(v_infV) => I 
+    S => f_vacc(v_vacc) => V
+    V => f_deathV(v_deathV) => CLOUD
+    V => f_infV(v_perSIncidenceUnvaccinated) => I 
 
     :sums
     N = [S, V, I]
@@ -177,8 +187,6 @@ svi = @stock_and_flow begin
     NS = [S, V, I]
 
 end
-
-
 
 
 
