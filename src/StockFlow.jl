@@ -919,4 +919,7 @@ include("SystemStructure.jl")
 include("visualization.jl")
 # The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
 include("PrimitiveStockFlowInPaper.jl")
+
+include("PremadeModels.jl")
+
 end
