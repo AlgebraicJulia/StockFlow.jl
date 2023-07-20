@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet
+export @stock_and_flow, @foot, @feet, stock_and_flow_simpler
 
 using StockFlow
 using MLStyle
@@ -985,6 +985,83 @@ function create_foot(block::Expr)
         _                                     => error("Invalid foot definition.")
     end
 end
+
+
+
+"""
+stock_and_flow_simpler(;
+    stocks::Vector{Symbol}
+    flows::Vector{Pair{Symbol, Pair{Expr, Symbol}}}
+    dynamic_variables::Vector{Pair{Symbol, Expr}}
+    parameters::Vector{Symbol}
+    sums::Vector{Pair{Symbol, Vector{Symbol}}}
+    )
+    
+Uses StockAndFlowBlock to create a StockFlowF, but allows for a simpler syntax.
+Useful for creating StockFlows dynamically.
+```julia
+stock_and_flow_simpler(
+    stocks = [:A,:B,:C],
+    flows = [:A => :(f(v1)) => :F_NONE, :B => :(f2(v1 + A)) => :C],
+    sums = [:N => [:A,:C], :NI => [:SV_NONE]],
+    parameters = Vector{Symbol}(), # alternatively, don't provide parameters as arg
+    dynamic_variables=[:v1 => :(A * B)]
+)
+```
+
+"""
+function stock_and_flow_simpler(;
+    stocks::Vector{Symbol}=Vector{Symbol}(),
+    flows::Vector{Pair{Symbol, Pair{Expr, Symbol}}}=Vector{Pair{Symbol, Pair{Expr, Symbol}}}(),
+    dynamic_variables::Vector{Pair{Symbol, Expr}}=Vector{Pair{Symbol, Expr}}(),
+    parameters::Vector{Symbol}=Vector{Symbol}(),
+    sums::Vector{Pair{Symbol, Vector{Symbol}}}=Vector{Pair{Symbol, Vector{Symbol}}}()
+    )
+    
+    newflows = Vector{Tuple{Symbol,Expr,Symbol}}() # doing this to make sure newflows is the right type
+    newflows = vcat(newflows, [(a,b,c) for (a,(b,c)) ∈ flows])
+    
+    newsums = Vector{Tuple{Symbol,Vector{Symbol}}}()
+    newsums = vcat(newsums, [(a,b) for (a,b) ∈ sums]) # pair to tuple
+    
+    newvars = Vector{Tuple{Symbol,Expr}}()
+    newvars = vcat(newvars, [(a,b) for (a,b) ∈ dynamic_variables])
+        
+    stock_and_flow_standard(stocks=stocks,parameters=parameters,flows=newflows, sums=newsums, dynamic_variables=newvars)
+    
+end
+    
+    
+"""
+stock_and_flow_standard(;
+        stocks::Vector{Symbol}
+        flows::Vector{Tuple{Symbol,Expr,Symbol}}
+        dynamic_variables::Vector{Tuple{Symbol,Expr}}
+        parameters::Vector{Symbol}
+        sums::Vector{Tuple{Symbol,Vector{Symbol}}}
+    )
+    
+Accepts input in the same format as a StockAndFlowBlock and returns a StockAndFlowF
+
+"""
+function stock_and_flow_standard(;
+        stocks::Vector{Symbol}=Vector{Symbol}(),
+        flows::Vector{Tuple{Symbol,Expr,Symbol}}=Vector{Tuple{Symbol,Expr,Symbol}}(),
+        dynamic_variables::Vector{Tuple{Symbol,Expr}}=Vector{Tuple{Symbol,Expr}}(),
+        parameters::Vector{Symbol}=Vector{Symbol}(),
+        sums::Vector{Tuple{Symbol,Vector{Symbol}}}=Vector{Tuple{Symbol,Vector{Symbol}}}()
+    )
+    block = StockAndFlowBlock(stocks, parameters, dynamic_variables, flows, sums)
+    saff_args = stock_and_flow_syntax_to_arguments(block)
+    return StockAndFlowF(
+        saff_args.stocks,
+        saff_args.params,
+        map(kv -> kv.first => get(kv.second), saff_args.dyvars),
+        saff_args.flows,
+        saff_args.sums,
+    )
+end
+    
 
 
 
