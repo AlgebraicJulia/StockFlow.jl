@@ -45,7 +45,7 @@ seir = @stock_and_flow begin
         S => f_deathS(v_deathS) => CLOUD
         E => f_inf(v_inf) => I
         E => f_deathE(v_deathE) => CLOUD
-        I => f_rec(v_rec) => CLOUD
+        I => f_rec(v_rec) => R
         I => f_deathI(v_deathI) => CLOUD
         R => f_deathR(v_deathR) => CLOUD
 
