@@ -173,13 +173,13 @@ svi = @stock_and_flow begin
     v_prevalence = NI / NS
     v_meanInfectiousContactsPerS = c * v_prevalence
     v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
-    v_unvaccinatedRate = V / evaccine # same thing as multiplying by complement
-    v_perSIncidenceUnvaccinated = v_unvaccinatedRate * v_perSIncidenceRate
+    v_vaccineInfectionRate = V / evaccine # same thing as multiplying by complement
+    v_perSIncidenceVaccinated = v_vaccineInfectionRate * v_perSIncidenceRate
 
     :flows
     S => f_vacc(v_vacc) => V
     V => f_deathV(v_deathV) => CLOUD
-    V => f_infV(v_perSIncidenceUnvaccinated) => I 
+    V => f_infV(v_perSIncidenceVaccinated) => I 
 
     :sums
     N = [S, V, I]
