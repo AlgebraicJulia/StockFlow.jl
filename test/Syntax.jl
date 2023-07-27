@@ -1,3 +1,9 @@
+import Pkg
+Pkg.activate("MyProject")
+Pkg.develop(path="/home/silicon/Documents/Git/StockFlow.jl/")
+
+Pkg.instantiate()
+
 using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
@@ -272,6 +278,12 @@ end
 
     @test (@foot =>((), SV)) == foot((),:SV,()) 
     @test (@foot A11 => B22) == foot(:A11, :B22, :A11 => :B22)
+
+    @test (@foot () => B, A => ()) == foot(:A, :B, ())
+    @test (@foot A => B, A => C) == foot(:A, (:B, :C), (:A => :B, :A => :C))
+    @test (@foot A => B, A => B, A => B) == foot(:A, :B, (:A => :B, :A => :B, :A => :B)) # at present, it deduplicates stocks and sums, but not links.
+    @test (@foot P => Q, R => (), () => ()) == foot((:P, :R), (:Q), (:P => :Q))
+    @test (@foot () => (), () => ()) == foot((), (), ())
 end
 
 @testset "foot syntax disallows invalid feet" begin # note, @feet calls create_foot for each line, so this should apply to both @foot and @feet
@@ -281,6 +293,11 @@ end
     @test_throws Exception create_foot(:(=>)) # no method matching create_foot(::Symbol)
     @test_throws Exception create_foot(:(=>(A, B, C, D)))
     @test_throws Exception create_foot(:())
+    @test_throws Exception create_foot(:(([]) => ()))
+
+    @test_throws Exception create_foot(:(A => B, P => Q, C))
+    @test_throws Exception create_foot(:(() => E, () => (K,)))
+
 end
 
 @testset "feet syntax can create feet" begin
@@ -301,6 +318,23 @@ end
     @test (@feet begin P => Q; L => R end) == [foot(:P, :Q, :P => :Q), foot(:L, :R, :L => :R)]
 
     @test (@feet P => P) == [foot(:P, :P, :P => :P)]
+
+    @test (@feet begin A => NS, A => N; B => NS; C => (), D => () end) == [
+        foot((:A), (:NS, :N), (:A => :NS, :A => :N)),
+        foot((:B), (:NS), (:B => :NS)),
+        foot((:C, :D), (), ())
+        ]
+
+    @test (@feet begin
+        P => Q, R => ()
+        () => ()
+        J => K, J => Q
+    end) == [
+        foot((:P, :R), :Q, :P => :Q),
+        foot((), (), ()),
+        foot(:J, (:K, :Q), (:J => :K, :J => :Q))
+    ]
+
 end
 
 @testset "feet syntax fails on invalid feet" begin # mostly to check that an exception is thrown even if some of the feet are valid.

@@ -968,16 +968,38 @@ end
 
 
 """
-feet(block :: Expr)
+(block :: Expr)
+
+Takes as argument an expression of the form A => B, C => (), D => E and creates a single foot from it.
+Can also take arguments of form A => B.
+"""
+function create_foot(block::Expr)
+    @match block.head begin
+        :tuple => begin #TODO: Make more efficient
+            footvector = [match_foot_format(footblock) for footblock in block.args]
+            footFormatVector = [collect(arg) for arg ∈ zip(footvector...)] # group stocks, sums, links
+            footFormatVector[1:2] = map(x -> unique(x), footFormatVector[1:2]) # Make sure there's no duplicate stocks or sums (but preserve duplicate links)
+            footFormatVector = map(y -> filter(x -> x != (), y), footFormatVector)
+            # Converts inner vectors to tuples, and if the vectors are length 1, then just the elements.
+            footFormatVector = map(x -> length(x) == 1 ? x : Tuple(x), footFormatVector) # TODO: Allow foot in StockFlow.jl to accept tuples of length 1
+            foot(footFormatVector...) # creates the foot proper
+        end
+        :call => foot(match_foot_format(block)...)
+        _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
+    end
+end
+
+"""
+match_foot_format(footblock :: Expr)
 
 Takes as argument an expression of the form A => B and creates a foot (StockAndFlow0).
 """
-function create_foot(block::Expr)
-    @match block begin
-        :(()              => ())              => foot((), (), ())
-        :($(s :: Symbol)  => ())              => foot(s, (), ())
-        :(()              => $(sv :: Symbol)) => foot((), sv, ())
-        :($(s :: Symbol)  => $(sv :: Symbol)) => foot(s, sv, s => sv)
+function match_foot_format(footblock::Expr) 
+    @match footblock begin
+        :(()              => ())              => ((), (), ())
+        :($(s :: Symbol)  => ())              => (s, (), ())
+        :(()              => $(sv :: Symbol)) => ((), sv, ())
+        :($(s :: Symbol)  => $(sv :: Symbol)) => (s, sv, s => sv)
         :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
         :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
         :($s              => $sv)             => error("Foot definition requires symbolic names. Received: $s, $sv")
@@ -985,7 +1007,6 @@ function create_foot(block::Expr)
         _                                     => error("Invalid foot definition.")
     end
 end
-
 
 
 end
