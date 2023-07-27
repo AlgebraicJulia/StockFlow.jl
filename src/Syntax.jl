@@ -931,6 +931,7 @@ Create a foot with S => N syntax, where S is stock, N is sum variable.
 @foot S1 => ()
 @foot () => N
 @foot () => ()
+@foot A => N, () => NI
 ```
 """
 macro foot(block::Expr)
@@ -953,6 +954,7 @@ feetses = @feet begin
     C => ()
     D => E
     () => ()
+    P => NI, R => NI, () => N
 end
 ```
 """
@@ -976,7 +978,7 @@ Can also take arguments of form A => B.
 function create_foot(block::Expr)
     @match block.head begin
         :tuple => begin #TODO: Make more efficient
-            footvector = [match_foot_format(footblock) for footblock in block.args]
+            footvector = [match_foot_format(footblock) for footblock ∈ block.args]
             footFormatVector = [collect(arg) for arg ∈ zip(footvector...)] # group stocks, sums, links
             footFormatVector[1:2] = map(x -> unique(x), footFormatVector[1:2]) # Make sure there's no duplicate stocks or sums (but preserve duplicate links)
             footFormatVector = map(y -> filter(x -> x != (), y), footFormatVector)
@@ -1007,6 +1009,7 @@ function match_foot_format(footblock::Expr)
         _                                     => error("Invalid foot definition.")
     end
 end
+
 
 
 end
