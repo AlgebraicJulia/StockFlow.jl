@@ -25,7 +25,7 @@ Examples of the domain specific language, composition, stratification and algebr
 
  ## Example interpretation of a stock and flow diagram using an ODE solver
  
- From the [SEIR Composition Example](examples/full_fledged_schema_examples/composition/SEIR_full_model_measles_chickenpox.ipynb):
+ From the [SEIR Composition Example](examples/full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox.ipynb):
  
  ```julia
  seir = @stock_and_flow begin
