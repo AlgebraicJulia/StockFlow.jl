@@ -19,6 +19,8 @@ seir = @stock_and_flow begin
         trecovery
         δ
         c
+        rAge 
+        
 
         :dynamic_variables
         v_prevalence = NI / NS
@@ -36,8 +38,12 @@ seir = @stock_and_flow begin
         v_deathS = δ * S       
         v_deathE = δ * E
         v_deathI = δ * I
-        v_deathR = δ * R       
-
+        v_deathR = δ * R
+        
+        v_idS = rAge * S
+        v_idE = rAge * E
+        v_idI = rAge * I
+        v_idR = rAge * R
 
         :flows
         CLOUD => f_birth(v_birth) => S
@@ -49,7 +55,11 @@ seir = @stock_and_flow begin
         I => f_deathI(v_deathI) => CLOUD
         R => f_deathR(v_deathR) => CLOUD
 
-        
+        S => f_idS(v_idS) => S
+        E => f_idE(v_idE) => E
+        I => f_idI(v_idI) => I       
+        R => f_idR(v_idR) => R
+
         :sums
         N = [S, E, I, R]
         NI = [I]
@@ -162,10 +172,9 @@ svi = @stock_and_flow begin
     evaccine
     c
     β
+    rAge
 
     :dynamic_variables
-
-
 
     v_vacc = S * rvaccine 
     v_deathV = δ * V
@@ -176,11 +185,20 @@ svi = @stock_and_flow begin
     v_vaccineInfectionRate = V / evaccine # same thing as multiplying by complement
     v_perSIncidenceVaccinated = v_vaccineInfectionRate * v_perSIncidenceRate
 
+    v_idS = S * rAge
+    v_idV = V * rAge
+    v_idI = I * rAge
+    
+
     :flows
     S => f_vacc(v_vacc) => V
     V => f_deathV(v_deathV) => CLOUD
     V => f_infV(v_perSIncidenceVaccinated) => I 
 
+    S => f_idS(v_idS) => S
+    V => f_idV(v_idV) => V
+    I => f_idI(v_idI) => I
+    
     :sums
     N = [S, V, I]
     NI = [I]
