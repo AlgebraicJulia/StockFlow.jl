@@ -289,21 +289,6 @@ function add_suffix!(sf::AbstractStockAndFlow0, suffix)
     return sf
 end
 
-
-"""
-Modify a StructuredCospan so named elements end with suffix.
-This should work with Open.  Type is more broad than needs to be.
-
-NOTE!  We only need to change the feet and the apex, NOT THE LEGS!  The legs are ACSetTransformations,
-which act on indices, not on names.
-
-"""
-function add_suffix!(sf::StructuredCospan, suffix)
-    add_suffix!(Catlab.CategoricalAlgebra.StructuredCospans.apex(sf), suffix)
-    foreach(foot -> add_suffix!(foot, suffix), Catlab.CategoricalAlgebra.StructuredCospans.feet(sf))
-return sf
-end
-
 """
 Modify a AbstractStockAndFlowStructureF so named elements begin with prefix
 """
@@ -326,16 +311,6 @@ function add_prefix!(sf::AbstractStockAndFlow0, suffix)
     set_snames!(sf, prefix .++ snames(sf))
     set_svnames!(sf, prefix .++ svnames(sf))
     return sf
-end
-
-"""
-Modify a StructuredCospan so named elements begin with prefix.
-This should work with Open.  Type is more broad than needs to be.
-"""
-function add_prefix!(sf::StructuredCospan, prefix)
-    add_prefix!(apex(sf), prefix)
-    foreach(foot -> add_prefix!(foot, prefix), feet(sf))
-return sf
 end
 
 
