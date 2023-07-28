@@ -1,9 +1,3 @@
-
-import Pkg
-Pkg.activate("MyProject")
-Pkg.develop(path="/home/sodium/Documents/JuliaShare/StockFlow.jl")
-Pkg.instantiate()
-
 using Test
 using StockFlow
 using StockFlow.Syntax
