@@ -988,14 +988,21 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 """
 function create_foot(block::Expr)
     @match block.head begin
-        :tuple => begin #TODO: Make more efficient
-            footvector = [match_foot_format(footblock) for footblock ∈ block.args]
-            footFormatVector = [collect(arg) for arg ∈ zip(footvector...)] # group stocks, sums, links
-            footFormatVector[1:2] = map(x -> unique(x), footFormatVector[1:2]) # Make sure there's no duplicate stocks or sums (but preserve duplicate links)
-            footFormatVector = map(y -> filter(x -> x != (), y), footFormatVector)
-            # Converts inner vectors to tuples, and if the vectors are length 1, then just the elements.
-            footFormatVector = map(x -> length(x) == 1 ? x : Tuple(x), footFormatVector) # TODO: Allow foot in StockFlow.jl to accept tuples of length 1
-            foot(footFormatVector...) # creates the foot proper
+
+        :tuple => begin 
+            if isempty(block.args) # case for create_foot(:()) 
+                error("Cannot create foot with no arguments.")
+            end
+            foot_s = Vector{Symbol}()
+            foot_sv = Vector{Symbol}()
+            foot_ssv = Vector{Pair{Symbol, Symbol}}()
+
+            for (s, sv, ssv) ∈ map(match_foot_format, block.args)
+                if s != () push!(foot_s, s) end
+                if sv != () push!(foot_sv, sv) end
+                if ssv != () push!(foot_ssv, ssv) end
+            end
+            return foot(unique(foot_s), unique(foot_sv), foot_ssv)
         end
         :call => foot(match_foot_format(block)...)
         _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
