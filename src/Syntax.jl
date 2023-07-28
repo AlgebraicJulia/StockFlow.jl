@@ -923,7 +923,7 @@ end
 
 
 """
-foot(block :: Expr)
+    foot(block :: Expr)
 
 Create a foot with S => N syntax, where S is stock, N is sum variable.
 ```julia
@@ -941,7 +941,7 @@ end
 
 
 """
-feet(block :: Expr)
+    feet(block :: Expr)
 
 Create Vector of feet using same notation for foot macro.
 Separated by newlines.
@@ -970,7 +970,7 @@ end
 
 
 """
-(block :: Expr)
+    create_foot(block :: Expr)
 
 Takes as argument an expression of the form A => B, C => (), D => E and creates a single foot from it.
 Can also take arguments of form A => B.
@@ -992,7 +992,7 @@ function create_foot(block::Expr)
 end
 
 """
-match_foot_format(footblock :: Expr)
+    match_foot_format(footblock :: Expr)
 
 Takes as argument an expression of the form A => B and creates a foot (StockAndFlow0).
 """
