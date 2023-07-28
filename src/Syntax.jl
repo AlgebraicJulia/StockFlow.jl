@@ -972,8 +972,19 @@ end
 """
     create_foot(block :: Expr)
 
-Takes as argument an expression of the form A => B, C => (), D => E and creates a single foot from it.
-Can also take arguments of form A => B.
+Create foot (StockAndFlow0) using format A => B, where A is a stock and B is a sum variable.  Use () to represent no stock or sum variable.
+To have multiple stocks or sum variables, chain together multiple pairs with commas.  Repeated occurences of the same symbol will be treated as the same stock or sum variable.
+You cannot create distinct stocks or sum variables with the same name using this format. 
+
+```julia
+standard_foot = @foot A => N
+emptyfoot = @foot () => ()
+all_seir_links = @foot S => N, E => N, I => N, R => N
+no_stocks = @foot () => N, () => NI, () => NS
+no_sum = @foot A => ()
+multiple_links = @foot A => B, A => B # will have two links from A to B.
+```
+
 """
 function create_foot(block::Expr)
     @match block.head begin
@@ -994,7 +1005,9 @@ end
 """
     match_foot_format(footblock :: Expr)
 
-Takes as argument an expression of the form A => B and creates a foot (StockAndFlow0).
+Takes as argument an expression of the form A => B and returns a tuple in a format acceptable as arguments to create a foot.
+Return type is Tuple{Union{Tuple{}, Symbol}, Union{Tuple{}, Symbol}, Union{Tuple{}, Pair{Symbol, Symbol}}}.  The empty tuple represents no stocks, no flows, or no links.
+
 """
 function match_foot_format(footblock::Expr) 
     @match footblock begin
