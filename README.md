@@ -43,14 +43,14 @@ Examples of the domain specific language, composition, stratification and algebr
      δ
  
      :flows
-     ☁ = fbirth(μ * N) = S # dynamic variables can be defined implicitly or with :dynamic_variables
-     S = fincid(β * S * I / N) = E
-     S = fdeathS(S * δ) = ☁
-     E = finf(E / tlatent) = I
-     E = fdeathE(E * δ) = ☁
-     I = frec(I / trecovery) = R
-     I = fdeathI(I * δ) = ☁
-     R = fdeathR(R * δ) = ☁
+     ☁ => fbirth(μ * N) => S # dynamic variables can be defined implicitly or with :dynamic_variables
+     S => fincid(β * S * I / N) => E
+     S => fdeathS(S * δ) => ☁
+     E => finf(E / tlatent) => I
+     E => fdeathE(E * δ) => ☁
+     I => frec(I / trecovery) => R
+     I => fdeathI(I * δ) => ☁
+     R => fdeathR(R * δ) => ☁
  
      :sums
      N = [S, E, I, R]
