@@ -4,7 +4,25 @@ using StockFlow.Syntax
 
 export seir, sis, sir, svi
 
-seir = @stock_and_flow begin
+function seir()
+    return deepcopy(seir_model)
+end
+
+function sis()
+    return deepcopy(sis_model)
+end
+
+function sir()
+    return deepcopy(sir_model)
+end
+
+function svi()
+    return deepcopy(svi_model)
+end
+
+
+
+seir_model = @stock_and_flow begin
 
         :stocks
         S
@@ -67,7 +85,7 @@ seir = @stock_and_flow begin
 
 end
 
-sis = @stock_and_flow begin
+sis_model = @stock_and_flow begin
     :stocks
     S
     I
@@ -120,7 +138,7 @@ sis = @stock_and_flow begin
 end
 
 
-sir = @stock_and_flow begin
+sir_model = @stock_and_flow begin
     :stocks
     S
     I
@@ -159,7 +177,7 @@ end
 
 
 
-svi = @stock_and_flow begin
+svi_model = @stock_and_flow begin
     
     :stocks
     S
