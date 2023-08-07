@@ -923,7 +923,7 @@ end
 
 
 """
-foot(block :: Expr)
+    foot(block :: Expr)
 
 Create a foot with S => N syntax, where S is stock, N is sum variable.
 ```julia
@@ -931,6 +931,7 @@ Create a foot with S => N syntax, where S is stock, N is sum variable.
 @foot S1 => ()
 @foot () => N
 @foot () => ()
+@foot A => N, () => NI
 ```
 """
 macro foot(block::Expr)
@@ -940,7 +941,7 @@ end
 
 
 """
-feet(block :: Expr)
+    feet(block :: Expr)
 
 Create Vector of feet using same notation for foot macro.
 Separated by newlines.
@@ -953,6 +954,7 @@ feetses = @feet begin
     C => ()
     D => E
     () => ()
+    P => NI, R => NI, () => N
 end
 ```
 """
@@ -968,16 +970,58 @@ end
 
 
 """
-feet(block :: Expr)
+    create_foot(block :: Expr)
 
-Takes as argument an expression of the form A => B and creates a foot (StockAndFlow0).
+Create foot (StockAndFlow0) using format A => B, where A is a stock and B is a sum variable.  Use () to represent no stock or sum variable.
+To have multiple stocks or sum variables, chain together multiple pairs with commas.  Repeated occurences of the same symbol will be treated as the same stock or sum variable.
+You cannot create distinct stocks or sum variables with the same name using this format. 
+
+```julia
+standard_foot = @foot A => N
+emptyfoot = @foot () => ()
+all_seir_links = @foot S => N, E => N, I => N, R => N
+no_stocks = @foot () => N, () => NI, () => NS
+no_sum = @foot A => ()
+multiple_links = @foot A => B, A => B # will have two links from A to B.
+```
+
 """
 function create_foot(block::Expr)
-    @match block begin
-        :(()              => ())              => foot((), (), ())
-        :($(s :: Symbol)  => ())              => foot(s, (), ())
-        :(()              => $(sv :: Symbol)) => foot((), sv, ())
-        :($(s :: Symbol)  => $(sv :: Symbol)) => foot(s, sv, s => sv)
+    @match block.head begin
+
+        :tuple => begin 
+            if isempty(block.args) # case for create_foot(:()) 
+                error("Cannot create foot with no arguments.")
+            end
+            foot_s = Vector{Symbol}()
+            foot_sv = Vector{Symbol}()
+            foot_ssv = Vector{Pair{Symbol, Symbol}}()
+
+            for (s, sv, ssv) ∈ map(match_foot_format, block.args)
+                if s != () push!(foot_s, s) end
+                if sv != () push!(foot_sv, sv) end
+                if ssv != () push!(foot_ssv, ssv) end
+            end
+            return foot(unique(foot_s), unique(foot_sv), foot_ssv)
+        end
+        :call => foot(match_foot_format(block)...)
+        _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
+    end
+end
+
+"""
+    match_foot_format(footblock :: Expr)
+
+Takes as argument an expression of the form A => B and returns a tuple in a format acceptable as arguments to create a foot.
+Return type is Tuple{Union{Tuple{}, Symbol}, Union{Tuple{}, Symbol}, Union{Tuple{}, Pair{Symbol, Symbol}}}.  The empty tuple represents no stocks, no flows, or no links.
+
+"""
+function match_foot_format(footblock::Expr) 
+    @match footblock begin
+        :(()              => ())              => ((), (), ())
+        :($(s :: Symbol)  => ())              => (s, (), ())
+        :(()              => $(sv :: Symbol)) => ((), sv, ())
+        :($(s :: Symbol)  => $(sv :: Symbol)) => (s, sv, s => sv)
         :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
         :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
         :($s              => $sv)             => error("Foot definition requires symbolic names. Received: $s, $sv")
