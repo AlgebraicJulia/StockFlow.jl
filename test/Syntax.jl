@@ -1,8 +1,9 @@
 using Base: is_unary_and_binary_operator
 using Test
-using StockFlow
-using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
+include("../src/StockFlow.jl")
+using .StockFlow
+using .StockFlow.Syntax
+using .StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
 
 @testset "is_binop_or_unary recognises binops" begin
     @test is_binop_or_unary(:(a + b))
@@ -194,7 +195,7 @@ end
 
     # Although the variable names are different
     # due to gensym, the models should structurally be the same.
-    for part in SIR_2.parts
+    for part in keys(SIR_2.parts)
         @test SIR_2.parts[part] == SIR_1_canonical.parts[part]
     end
 end
