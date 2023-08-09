@@ -105,7 +105,7 @@ end
 module Syntax
 export @stock_and_flow, @foot, @feet
 
-using StockFlow
+using ..StockFlow
 using MLStyle
 
 """
