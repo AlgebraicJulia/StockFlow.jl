@@ -14,14 +14,7 @@ vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets
-
-if (hasproperty(Catlab, :GATs)) # this is the worst.
-  using Catlab.GATs.Presentations
-else
-  using Catlab.Present
-end
-
-
+using Catlab.GATs.Presentations
 using Catlab.Theories
 using LabelledArrays
 using LinearAlgebra: mul!
