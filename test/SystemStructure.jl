@@ -1,10 +1,6 @@
 using Test
 using StockFlow
 using StockFlow.Syntax
-import Base.deepcopy
-using Catlab.CategoricalAlgebra.StructuredCospans
-
-
 
 empty = @stock_and_flow begin end
 
@@ -68,15 +64,11 @@ p_suffixed = @stock_and_flow begin
     NIsuf = [Isuf]
 end
 
-empty_foot = foot((),(),())
+empty_foot = @foot () => ()
 
-footA = foot(:S, :N, :S => :N)
-footA_pref = foot(:prefS, :prefN, :prefS => :prefN)
-footA_suf = foot(:Ssuf, :Nsuf, :Ssuf => :Nsuf)
-
-footB = foot(:prefI, :prefNI, :prefI => :prefNI)
-
-
+footA = @foot S => N
+footA_pref = @foot prefS => prefN
+footA_suf = @foot Ssuf => Nsuf
 
 
 @testset "changing names act the same as if the stock flow/foot/open was created with the changed name" begin

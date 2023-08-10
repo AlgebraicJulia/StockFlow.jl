@@ -2,8 +2,6 @@ export convertStockFlowToSystemStructure, convertSystemStructureToStockFlow, reb
 extracStocksStructureAndFlatten,extracFlowsStructureAndFlatten,extracSumVStructureAndFlatten,extracVStructureAndFlatten,extracPsStructureAndFlatten,
 extracVAndAttrStructureAndFlatten, extracVStructureAndFlatten, args_vname, args, add_prefix!, add_suffix!
 
-using Catlab.CategoricalAlgebra.StructuredCospans
-
 flattenTupleNames(sn::Tuple)=Symbol(foldr(string,map(x->string(x), sn)))
 flattenTupleNames(sn::Symbol)=sn
 flattenTupleNames(sn::SubArray{Symbol})=sn
@@ -306,7 +304,7 @@ end
 Modify a AbstractStockAndFlow0 so named elements begin with prefix.
 For feet.
 """
-function add_prefix!(sf::AbstractStockAndFlow0, suffix)
+function add_prefix!(sf::AbstractStockAndFlow0, prefix)
     prefix = Symbol(prefix)
     set_snames!(sf, prefix .++ snames(sf))
     set_svnames!(sf, prefix .++ svnames(sf))
