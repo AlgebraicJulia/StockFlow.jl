@@ -338,4 +338,9 @@ end
 end
 
 
-
+@testset "hom macro creates correct homomorphisms" begin
+    empty = @stock_and_flow begin end
+    empty_hom_DSL = @hom begin end
+    empty_hom = ACSetTransformation(empty, empty)
+    @test apply_hom(empty_hom_DSL, empty, empty) == empty_hom
+end
