@@ -105,7 +105,7 @@ end
 module Syntax
 export @stock_and_flow, @foot, @feet
 
-using StockFlow
+using ..StockFlow
 using MLStyle
 
 """
@@ -1031,5 +1031,164 @@ function match_foot_format(footblock::Expr)
 end
 
 
+macro homomorphism(block)
+    Base.remove_linenums!(block)
+    stocks::Vector{Pair{Symbol,Symbol}} = []
+    params::Vector{Pair{Symbol,Symbol}} = []
+    dyvars::Vector{Pair{Symbol,Symbol}} = []
+    flows::Vector{Pair{Symbol,Symbol}} = []
+    sums::Vector{Pair{Symbol,Symbol}} = []
+    current_phase = (_, _) -> ()
+    for statement in block.args
+        @match statement begin
+            QuoteNode(:stocks) => begin
+                current_phase = s -> push!(stocks, s)
+            end
+            QuoteNode(:parameters) => begin
+                current_phase = p -> push!(params, p)
+            end
+            QuoteNode(:dynamic_variables) => begin
+                current_phase = d -> push!(dyvars, d)
+            end
+            QuoteNode(:flows) => begin
+                current_phase = f -> push!(flows, f)
+            end
+            QuoteNode(:sums) => begin
+                current_phase = s -> push!(sums, s)
+            end
+            QuoteNode(kw) =>
+                error("Unknown block type for homomorphism syntax: " * String(kw))
+            :($A => $B) => current_phase(A => B)
+            _ => error("Unknown symbol format.  Must be A => B.")
+        end
+    end
+    return Dict(:stocks => stocks, :flows => flows, :dyvars => dyvars, :params => params, :sums => sums)
+end
 
+function names_to_index(sf, func)
+    Dict(name => i for (i, name) in enumerate(func(sf)))
+end
+
+function all_names_to_index(sf)
+    Dict(:stocks => names_to_index(sf, snames),
+    :flows => names_to_index(sf, fnames),
+    :dyvars => names_to_index(sf, vnames),
+    :params => names_to_index(sf, pnames),
+    :sums => names_to_index(sf, svnames)
+    )
+end
+
+
+function apply_homomorphism(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
+    srcnames = all_names_to_index(sf1)
+    tgtnames = all_names_to_index(sf2)
+
+    homstocks = [srcnames[:stocks][name1] => tgtnames[:stocks][name2] for (name1, name2) in hom[:stocks]]
+    homflows = [srcnames[:flows][name1] => tgtnames[:flows][name2] for (name1, name2) in hom[:flows]]
+    homparams = [srcnames[:params][name1] => tgtnames[:params][name2] for (name1, name2) in hom[:params]]
+    homdyvars = [srcnames[:dyvars][name1] => tgtnames[:dyvars][name2] for (name1, name2) in hom[:dyvars]]
+    homsums = [srcnames[:sums][name1] => tgtnames[:sums][name2] for (name1, name2) in hom[:sums]]
+
+
+    necMaps = Dict(:S => map(first, sort!(homstocks, by=x -> x[2])), 
+    :F => map(first, sort!(homflows, by=x -> x[2])), 
+    :SV => map(first, sort!(homsums, by=x -> x[2])), 
+    :P => map(first, sort!(homparams, by=x -> x[2])), 
+    :V => map(first, sort!(homdyvars, by=x -> x[2]))
+    )
+
+    links = infer_links(sf1, sf2, necMaps)
+    println(necMaps)
+    println(links)
+
+
+    ACSetTransformation(sf1, sf2, ; necMaps..., links...)
+
+
+end
+
+function infer_links(sfsrc, sftgt, necMaps::Dict{Symbol, Vector{Int64}})
+    LS = :LS => infer_particular_link(sfsrc, sftgt, :lss => necMaps[:S], :lssv => necMaps[:SV])
+    I = :I => infer_particular_link(sfsrc, sftgt, :ifn => necMaps[:F], :is => necMaps[:S])
+    O = :O => infer_particular_link(sfsrc, sftgt, :ofn => necMaps[:F], :os => necMaps[:S])
+    LV = :LV => infer_particular_link(sfsrc, sftgt, :lvs => necMaps[:S], :lvv => necMaps[:V])
+    LSV = :LSV => infer_particular_link(sfsrc, sftgt, :lsvsv => necMaps[:SV], :lsvv => necMaps[:V])
+    LVV = :LVV => infer_particular_link(sfsrc, sftgt, :lvsrc => necMaps[:V], :lvtgt => necMaps[:V])
+    LPV = :LPV => infer_particular_link(sfsrc, sftgt, :lpvp => necMaps[:P], :lpvv => necMaps[:V])
+    return Dict(LS, I, O, LV, LSV, LVV, LPV)
+end
+
+
+
+
+
+
+"""
+I wrote this a few months ago, so it may nede some rewrites.
+"""
+function infer_particular_link(sfsrc, sftgt, link1::Pair{Symbol, Vector{Int64}}, link2::Pair{Symbol, Vector{Int64}}) # linkname isn't necessary but means we don't need to check all subparts
+    # maps go index -> index.  EG, [1,3,2] means 1 -> 1, 2 -> 3, 3 -> 2
+    # linkmap = collect(zip(map1, map2))::Vector{Tuple{Int64, Int64}}
+
+    linkname1, map1 = link1
+    linkname2, map2 = link2
+
+    link_domain = extract_subpart_ordered_tuple(sfsrc, linkname1, linkname2) # ::Vector{Vector{Int64}} (at present, it's just Vector{Vector{Any}})
+    # Corresponds to column 2 and 3 when printing the sf
+    # Note, does NOT currently include position, which could lead to ambiguity
+    link_codomain = extract_subpart_ordered_tuple(sftgt, linkname1, linkname2) # ::Vector{Vector{Int64}}
+    # link_codomain = collect(zip(extract_subpart_ordered(sftgt, linkname1), extract_subpart_ordered(sftgt, linkname2)))
+
+    # link_maps = [map1, map2]
+
+    inferred_links = Vector{Int64}() # points to index should map to
+    for (i, (x1, x2)) in enumerate(link_domain) # eg, v1 is a stock, v2 is a sum variable, and they have a link.  Let's say stock A -> A′, sv N -> N′.
+        # We're checking that there exists a unique link between A′ and N′.
+        # We do this by grabbing all the links L in the domain and L′ in the codomain, converting L based on what its constituents map to, checking that
+        # there's a unique match, and appending the unique match's index to a vector (of int64, since everything is just an int)
+        
+        m1, m2 = map1[x1], map2[x2] 
+        
+        potential_values = Vector{Int64}()
+        for (j, (y1, y2)) in enumerate(link_codomain)
+            if (m1 == y1) && (m2 == y2)
+                push!(potential_values, j)
+            end
+        end
+        # potential_values = filter(((index, (i, j)),) -> i == m1 && j == m2, [(index, (i, j)) for (index, (i,j)) in enumerate(link_codomain)])
+        @assert length(potential_values) == 1 "Didn't find one value to map ($x1, $x2) to for $linkname1, $linkname2 !  Found: $(potential_values)"
+        push!(inferred_links, potential_values[1])
+    end
+
+    return inferred_links
+end
+
+function extract_subpart_ordered_tuple(sf, subpart::Symbol...)::Vector{Vector{Any}} # usually Int64 but works with names too.  Might just be Int64 and Symbol
+    if isempty(subpart)
+        return []
+    end
+
+    subparts = [extract_subpart_ordered(sf, sp) for sp in subpart]
+    # println(subparts)
+    # println("HERE")
+    # collected_tuples = [tuple(vec...) for vec in zip(subparts...)]
+    collected_tuples = [collect(vec) for vec in zip(subparts...)]
+
+    # println(collected_tuples)
+    return collected_tuples
+    # k = collect([extract_subpart_ordered(sf, sp) for sp in subpart])
+    # println(k)
+    # return k
+end
+
+function extract_subpart_ordered(sf, subpart::Symbol)
+    return [k[2] for k in extract_subpart(sf, subpart)] # Here's hoping it's ordered, heh.  It should be.
+    # As in, the pairs should be 1 => _, 2 => _, ..., rather than 5 => _, 14 => _, ...
+end
+
+function extract_subpart(sf, subpart::Symbol)
+    return (getfield(sf, :subparts)[subpart]).m
+end
+
+    
 end
