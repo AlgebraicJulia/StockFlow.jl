@@ -103,10 +103,11 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet
+export @stock_and_flow, @foot, @feet, @hom, apply_hom
 
 using ..StockFlow
 using MLStyle
+using Catlab.CategoricalAlgebra
 
 """
     stock_and_flow(block :: Expr)
@@ -1031,7 +1032,7 @@ function match_foot_format(footblock::Expr)
 end
 
 
-macro homomorphism(block)
+macro hom(block)
     Base.remove_linenums!(block)
     stocks::Vector{Pair{Symbol,Symbol}} = []
     params::Vector{Pair{Symbol,Symbol}} = []
@@ -1079,7 +1080,7 @@ function all_names_to_index(sf)
 end
 
 
-function apply_homomorphism(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
+function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
     srcnames = all_names_to_index(sf1)
     tgtnames = all_names_to_index(sf2)
 
@@ -1097,17 +1098,17 @@ function apply_homomorphism(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1,
     :V => map(first, sort!(homdyvars, by=x -> x[2]))
     )
 
-    links = infer_links(sf1, sf2, necMaps)
     println(necMaps)
+    links = infer_links(sf1, sf2, necMaps)
     println(links)
 
 
-    ACSetTransformation(sf1, sf2, ; necMaps..., links...)
+    ACSetTransformation(sf1, sf2, ; filter(kv -> !isempty(kv[2]), necMaps)..., filter(kv -> !isempty(kv[2]), links)...,)
 
 
 end
 
-function infer_links(sfsrc, sftgt, necMaps::Dict{Symbol, Vector{Int64}})
+function infer_links(sfsrc, sftgt, necMaps) # necMaps::Dict{Symbol, Vector{Int64}}
     LS = :LS => infer_particular_link(sfsrc, sftgt, :lss => necMaps[:S], :lssv => necMaps[:SV])
     I = :I => infer_particular_link(sfsrc, sftgt, :ifn => necMaps[:F], :is => necMaps[:S])
     O = :O => infer_particular_link(sfsrc, sftgt, :ofn => necMaps[:F], :os => necMaps[:S])
@@ -1124,9 +1125,10 @@ end
 
 
 """
-I wrote this a few months ago, so it may nede some rewrites.
+I wrote this a few months ago, so it may need some rewrites.
 """
-function infer_particular_link(sfsrc, sftgt, link1::Pair{Symbol, Vector{Int64}}, link2::Pair{Symbol, Vector{Int64}}) # linkname isn't necessary but means we don't need to check all subparts
+#link::Pair{Symbol, Vector{Int64}}
+function infer_particular_link(sfsrc, sftgt, link1, link2) # linkname isn't necessary but means we don't need to check all subparts
     # maps go index -> index.  EG, [1,3,2] means 1 -> 1, 2 -> 3, 3 -> 2
     # linkmap = collect(zip(map1, map2))::Vector{Tuple{Int64, Int64}}
 
@@ -1177,7 +1179,7 @@ function extract_subpart_ordered_tuple(sf, subpart::Symbol...)::Vector{Vector{An
     # println(collected_tuples)
     return collected_tuples
     # k = collect([extract_subpart_ordered(sf, sp) for sp in subpart])
-    # println(k)
+    # println(k)apply_homo
     # return k
 end
 
@@ -1187,6 +1189,8 @@ function extract_subpart_ordered(sf, subpart::Symbol)
 end
 
 function extract_subpart(sf, subpart::Symbol)
+    println(subpart)
+    println("printing in extract_subpart in Syntax")
     return (getfield(sf, :subparts)[subpart]).m
 end
 
