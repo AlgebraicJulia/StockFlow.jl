@@ -194,7 +194,7 @@ end
 
     # Although the variable names are different
     # due to gensym, the models should structurally be the same.
-    for part in SIR_2.parts
+    for part in keys(SIR_2.parts)
         @test SIR_2.parts[part] == SIR_1_canonical.parts[part]
     end
 end
