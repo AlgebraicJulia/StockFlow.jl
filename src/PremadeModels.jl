@@ -1,5 +1,5 @@
 module PremadeModels
-using StockFlow.Syntax
+using ..StockFlow.Syntax
 
 
 export seir, sis, sir, svi
