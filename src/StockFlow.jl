@@ -14,7 +14,7 @@ vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets
-using Catlab.GATs.Presentations
+using Catlab.Present
 using Catlab.Theories
 using LabelledArrays
 using LinearAlgebra: mul!
