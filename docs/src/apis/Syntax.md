@@ -1,8 +1,8 @@
-# [StockFlow](@id StockFlow)
+# [Syntax](@id Syntax)
 
 ```@autodocs
 Modules = [
-    StockFlow
+    StockFlow.Syntax
 ]
 Private = false
 ```

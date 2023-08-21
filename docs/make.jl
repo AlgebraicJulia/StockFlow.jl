@@ -48,6 +48,10 @@ makedocs(
   checkdocs   = :none,
   pages       = Any[
     "StockFlow.jl" => "index.md",
+    "Modules" => Any[
+      "apis/Syntax.md",
+      "apis/PremadeModels.md"
+    ]
   ]
 )
 
