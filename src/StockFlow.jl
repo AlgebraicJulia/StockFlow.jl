@@ -826,8 +826,6 @@ object_shift_right(p::StockAndFlowStructure) = begin
 end
 
 # create open acset, as the structured cospan
-const OpenStockAndFlowStructureOb, OpenStockAndFlowStructure = OpenACSetTypes(StockAndFlowStructureUntyped,StockAndFlowUntyped0)
-const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
 const OpenStockAndFlowStructureFOb, OpenStockAndFlowStructureF = OpenACSetTypes(StockAndFlowStructureFUntyped,StockAndFlowUntyped0)
 const OpenStockAndFlowFOb, OpenStockAndFlowF = OpenACSetTypes(StockAndFlowFUntyped,StockAndFlowUntyped0)
 
