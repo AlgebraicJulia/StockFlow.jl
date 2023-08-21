@@ -1,7 +1,12 @@
+module CL
+
+using ..StockFlow
+
+using Catlab.CategoricalAlgebra
+using Catlab.GATs.Presentations # Not required here.
+
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames
-
-
 
 @present TheoryCausalLoop(FreeSchema) begin
   E::Ob
@@ -97,4 +102,6 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     es=vcat(lses,lsvfes,lfves,fies,foes,lpvs,lvvs)
 
     return CausalLoop(ns,es)
+end
+
 end

@@ -1,3 +1,7 @@
+module SystemStructure
+
+using ..StockFlow
+
 export convertStockFlowToSystemStructure, convertSystemStructureToStockFlow, rebuildStratifiedModelByFlattenSymbols,
 extracStocksStructureAndFlatten,extracFlowsStructureAndFlatten,extracSumVStructureAndFlatten,extracVStructureAndFlatten,extracPsStructureAndFlatten,
 extracVAndAttrStructureAndFlatten, extracVStructureAndFlatten, args_vname, args, add_prefix!, add_suffix!
@@ -312,3 +316,4 @@ function add_prefix!(sf::AbstractStockAndFlow0, prefix)
 end
 
 
+end

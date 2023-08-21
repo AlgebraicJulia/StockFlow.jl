@@ -1,3 +1,13 @@
+module PrimitiveStockFlowInPaper
+
+using ..StockFlow
+
+using Catlab.GATs.Presentations
+using Catlab.Theories
+using Catlab.CategoricalAlgebra
+
+using LabelledArrays
+
 export TheoryStockAndFlowp, AbstractStockAndFlowp, StockAndFlowp, OpenStockAndFlowpOb, OpenStockAndFlowp, checkfls,
 upstock, downstock, linkstock, linkflow
 
@@ -200,36 +210,4 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+end

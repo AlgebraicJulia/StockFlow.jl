@@ -1,4 +1,6 @@
 module PremadeModels
+
+using ..StockFlow
 using ..StockFlow.Syntax
 
 

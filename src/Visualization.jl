@@ -1,3 +1,8 @@
+module Visualiation
+
+using ..StockFlow
+using ..StockFlow.CL
+
 using Catlab.CategoricalAlgebra
 using Catlab.Graphics.Graphviz
 import Catlab.Graphics.Graphviz: Graph, Subgraph
@@ -414,5 +419,8 @@ function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_a
 
   g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, edge_attrs=edge_attrs)
   return g
+
+end
+
 
 end

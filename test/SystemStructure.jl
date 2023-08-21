@@ -1,6 +1,7 @@
 using Test
 using StockFlow
 using StockFlow.Syntax
+using StockFlow.SystemStructure
 
 empty = @stock_and_flow begin end
 

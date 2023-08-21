@@ -11,9 +11,7 @@ vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAn
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!
 
-using Catlab
 using Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets
 using Catlab.GATs.Presentations
 using Catlab.Theories
 using LabelledArrays
@@ -933,7 +931,7 @@ include("Syntax.jl")
 include("CausalLoop.jl")
 include("SystemStructure.jl")
 
-include("visualization.jl")
+include("Visualization.jl")
 # The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
 include("PrimitiveStockFlowInPaper.jl")
 
