@@ -263,8 +263,10 @@ Concatenate Symbols.
 ++(a::Symbol,b::Symbol) = Symbol(string(a, b))
 
 """
-Modify a AbstractStockAndFlowStructureF so named elements end with suffix.
-"""
+    add_suffix!(sf::AbstractStockAndFlow0, suffix)
+
+Modify a AbstractStockAndFlow0 so named elements end with suffix.
+Suffix can be anything which can be cast to a Symbol."""
 function add_suffix!(sf::AbstractStockAndFlowStructureF, suffix)
     suffix = Symbol(suffix)
     set_snames!(sf, snames(sf) .++ suffix)
@@ -277,7 +279,10 @@ end
 
 
 """
+    add_suffix!(sf::AbstractStockAndFlow0, suffix)
+
 Modify a AbstractStockAndFlow0 so named elements end with suffix.
+Suffix can be anything which can be cast to a Symbol.
 For feet.
 """
 function add_suffix!(sf::AbstractStockAndFlow0, suffix)
@@ -288,7 +293,10 @@ function add_suffix!(sf::AbstractStockAndFlow0, suffix)
 end
 
 """
+    add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
+
 Modify a AbstractStockAndFlowStructureF so named elements begin with prefix
+Prefix can be anything which can be cast to a Symbol.
 """
 function add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
     prefix = Symbol(prefix)
@@ -301,8 +309,10 @@ function add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
 end
 
 """
-Modify a AbstractStockAndFlow0 so named elements begin with prefix.
-For feet.
+    add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
+
+Modify a AbstractStockAndFlowStructureF so named elements begin with prefix
+Prefix can be anything which can be cast to a Symbol.For feet.
 """
 function add_prefix!(sf::AbstractStockAndFlow0, prefix)
     prefix = Symbol(prefix)
