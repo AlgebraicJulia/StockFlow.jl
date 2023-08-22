@@ -107,6 +107,7 @@ export @stock_and_flow, @foot, @feet, @stratify
 
 using ..StockFlow
 using MLStyle
+import Base.get
 
 """
     stock_and_flow(block :: Expr)
@@ -1030,7 +1031,7 @@ function match_foot_format(footblock::Expr)
     end
 end
 
-const TEMP_STRAT_DEFAULT = :UNDERSCORE
+const TEMP_STRAT_DEFAULT = :_
 
 """
 Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
@@ -1119,16 +1120,17 @@ end
 
     Ok, so the general idea here is:
     1. Grab all names from strata, type and aggregate, and create dictionaries which map them to their indices
-    2. Initialize an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate
-    3. iterate over each line in the block
-        3a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
-        3b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
-        3c. Insert type index value into aggregate/strata index values.
-    4. Do a once over of the arrays and replace wildcard values, ensure there are no zeroes remaining
-    5. Do some magic to infer LS, LSV, etc.
-    6. Deal with attributes
-    7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
-    8. Return pullback
+    2. iterate over each line in the block
+        2a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
+        2b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
+        2c. Accumulate respective dictionaries
+    3. Initialize an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate
+    4. Insert into arrays all (nonwildcard)
+    5. Do a once over of the arrays and replace wildcard values, replacing all 0s with index for wildcard, ensure there are no zeroes remaining
+    6. Do some magic to infer LS, LSV, etc.
+    7. Deal with attributes
+    8. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
+    9. Return pullback
 
 """
 macro stratify(sf, block) # Trying to be very vigilant about catching errors.
@@ -1150,11 +1152,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     strata_fnames = Dict(S => i for (i, S) in enumerate(fnames(strata)))
     strata_pnames = Dict(S => i for (i, S) in enumerate(pnames(strata)))
 
-    strata_stock_mappings::Vector{Int} = zeros(Int, ns(strata))
-    strata_flow_mappings::Vector{Int} = zeros(Int, nf(strata))
-    strata_dyvar_mappings::Vector{Int} = zeros(Int, nvb(strata))
-    strata_param_mappings::Vector{Int} = zeros(Int, np(strata))
-    strata_sum_mappings::Vector{Int} = zeros(Int, nsv(strata))
+
 
 
     type_snames = Dict(S => i for (i, S) in enumerate(snames(type)))
@@ -1170,11 +1168,23 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_fnames = Dict(S => i for (i, S) in enumerate(fnames(aggregate)))
     aggregate_pnames = Dict(S => i for (i, S) in enumerate(pnames(aggregate)))
 
-    aggregate_stock_mappings::Vector{Int} = zeros(Int, ns(aggregate))
-    aggregate_flow_mappings::Vector{Int} = zeros(Int, nf(aggregate))
-    aggregate_dyvar_mappings::Vector{Int} = zeros(Int, nvb(aggregate))
-    aggregate_param_mappings::Vector{Int} = zeros(Int, np(aggregate))
-    aggregate_sum_mappings::Vector{Int} = zeros(Int, nsv(aggregate))
+
+
+
+    strata_stock_mappings_dict::Dict{Int, Int} = Dict()
+    strata_flow_mappings_dict::Dict{Int, Int} = Dict()
+    strata_dyvar_mappings_dict::Dict{Int, Int} = Dict()
+    strata_param_mappings_dict::Dict{Int, Int} = Dict()
+    strata_sum_mappings_dict::Dict{Int, Int} = Dict()
+    
+
+    aggregate_stock_mappings_dict::Dict{Int, Int} = Dict()
+    aggregate_flow_mappings_dict::Dict{Int, Int} = Dict()
+    aggregate_dyvar_mappings_dict::Dict{Int, Int} = Dict()
+    aggregate_param_mappings_dict::Dict{Int, Int} = Dict()
+    aggregate_sum_mappings_dict::Dict{Int, Int} = Dict()
+    
+    
 
 
 
@@ -1193,19 +1203,18 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), aggregate_all_names)
 
     # Inserting the symbol for wildcard into each dictionary
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1), strata_all_names)))
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1), type_all_names)))
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1), aggregate_all_names)))
+    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), strata_all_names)
+    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), type_all_names) # TODO: Make this do something?  Maybe if there's only one stock, flow, etc.
+    # ...in the type schema, you can replace it with an underscore?
+    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), aggregate_all_names)
+
+    println(strata_all_names)
+    println(strata_snames)
 
 
     # use 0 for uninitialized, -1 for map to default
     # indices start at 1, so both these are clearly placeholder values.
 
-    default_index_stock = 0
-    default_index_flow = 0
-    default_index_dyvar = 0
-    default_index_param = 0
-    default_index_sum = 0
 
 
     # STEP 3
@@ -1223,21 +1232,28 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
                     
 
-                    for (s,t) in current_strata_dict
-                        if strata_stock_mappings[s] != 0
-                            error("Strata stock at index $s has already been assigned!")
-                        else
-                            strata_stock_mappings[s] = t
-                        end
-                    end
+                    # for (s,t) in current_strata_dict
+                    println(keys(current_aggregate_dict))
+                    println(strata_stock_mappings_dict)
+                    @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(strata_stock_mappings_dict, current_aggregate_dict)
+                    #     if strata_stock_mappings[s] != 0
+                    #         error("Strata stock at index $s has already been assigned!")
+                    #     else
+                    #         strata_stock_mappings[s] = t
+                    #     end
+                    # end
 
-                    for (a,t) in current_aggregate_dict
-                        if aggregate_stock_mappings[a] != 0
-                            error("Aggregate stock at index $s has already been assigned!")
-                        else
-                            aggregate_stock_mappings[a] = t
-                        end
-                    end
+                    @assert (all(x -> x ∉ keys(aggregate_stock_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(aggregate_stock_mappings_dict, current_aggregate_dict)
+
+                    # for (a,t) in current_aggregate_dict
+                    #     if aggregate_stock_mappings[a] != 0
+                    #         error("Aggregate stock at index $s has already been assigned!")
+                    #     else
+                    #         aggregate_stock_mappings[a] = t
+                    #     end
+                    # end
 
                 end
             end
@@ -1247,23 +1263,28 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_pnames, type_pnames, aggregate_pnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
+                    @assert (all(x -> x ∉ keys(strata_param_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(strata_param_mappings_dict, current_aggregate_dict)
+
+                    @assert (all(x -> x ∉ keys(aggregate_param_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(aggregate_param_mappings_dict, current_aggregate_dict)
 
 
-                    for (s,t) in current_strata_dict
-                        if strata_param_mappings[s] != 0
-                            error("Strata parameter at index $s has already been assigned!")
-                        else
-                            strata_param_mappings[s] = t
-                        end
-                    end
+                    # for (s,t) in current_strata_dict
+                    #     if strata_param_mappings[s] != 0
+                    #         error("Strata parameter at index $s has already been assigned!")
+                    #     else
+                    #         strata_param_mappings[s] = t
+                    #     end
+                    # end
 
-                    for (a,t) in current_aggregate_dict
-                        if aggregate_param_mappings[a] != 0
-                            error("Aggregate parameter at index $s has already been assigned!")
-                        else
-                            aggregate_param_mappings[a] = t
-                        end
-                    end
+                    # for (a,t) in current_aggregate_dict
+                    #     if aggregate_param_mappings[a] != 0
+                    #         error("Aggregate parameter at index $s has already been assigned!")
+                    #     else
+                    #         aggregate_param_mappings[a] = t
+                    #     end
+                    # end
                 end
             end
             QuoteNode(:dynamic_variables) => begin
@@ -1273,23 +1294,27 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_vnames, type_vnames, aggregate_vnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
+                    @assert (all(x -> x ∉ keys(strata_dyvar_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(strata_dyvar_mappings_dict, current_aggregate_dict)
 
+                    @assert (all(x -> x ∉ keys(aggregate_dyvar_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(aggregate_dyvar_mappings_dict, current_aggregate_dict)
                     
-                    for (s,t) in current_strata_dict
-                        if strata_dyvar_mappings[s] != 0
-                            error("Strata dyvar at index $s has already been assigned!")
-                        else
-                            strata_dyvar_mappings[s] = t
-                        end
-                    end
+                    # for (s,t) in current_strata_dict
+                    #     if strata_dyvar_mappings[s] != 0
+                    #         error("Strata dyvar at index $s has already been assigned!")
+                    #     else
+                    #         strata_dyvar_mappings[s] = t
+                    #     end
+                    # end
 
-                    for (a,t) in current_aggregate_dict
-                        if aggregate_dyvar_mappings[a] != 0
-                            error("Aggregate dyvar at index $s has already been assigned!")
-                        else
-                            aggregate_dyvar_mappings[a] = t
-                        end
-                    end
+                    # for (a,t) in current_aggregate_dict
+                    #     if aggregate_dyvar_mappings[a] != 0
+                    #         error("Aggregate dyvar at index $s has already been assigned!")
+                    #     else
+                    #         aggregate_dyvar_mappings[a] = t
+                    #     end
+                    # end
                 end
             end            
             QuoteNode(:flows) => begin
@@ -1300,22 +1325,27 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_fnames, type_fnames, aggregate_fnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
+                    @assert (all(x -> x ∉ keys(strata_flow_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(strata_flow_mappings_dict, current_aggregate_dict)
 
-                    for (s,t) in current_strata_dict
-                        if strata_flow_mappings[s] != 0
-                            error("Strata flow at index $s has already been assigned!")
-                        else
-                            strata_flow_mappings[s] = t
-                        end
-                    end
+                    @assert (all(x -> x ∉ keys(aggregate_flow_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(aggregate_flow_mappings_dict, current_aggregate_dict)
 
-                    for (a,t) in current_aggregate_dict
-                        if aggregate_flow_mappings[a] != 0
-                            error("Aggregate flow at index $s has already been assigned!")
-                        else
-                            aggregate_flow_mappings[a] = t
-                        end
-                    end
+                    # for (s,t) in current_strata_dict
+                    #     if strata_flow_mappings[s] != 0
+                    #         error("Strata flow at index $s has already been assigned!")
+                    #     else
+                    #         strata_flow_mappings[s] = t
+                    #     end
+                    # end
+
+                    # for (a,t) in current_aggregate_dict
+                    #     if aggregate_flow_mappings[a] != 0
+                    #         error("Aggregate flow at index $s has already been assigned!")
+                    #     else
+                    #         aggregate_flow_mappings[a] = t
+                    #     end
+                    # end
                 end
             end                    
                   
@@ -1325,21 +1355,28 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_svnames, type_svnames, aggregate_svnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
                     
-                    for (s,t) in current_strata_dict
-                        if strata_sum_mappings[s] != 0
-                            error("Strata sum at index $s has already been assigned!")
-                        else
-                            strata_sum_mappings[s] = t
-                        end
-                    end
+
+                    @assert (all(x -> x ∉ keys(strata_sum_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(strata_sum_mappings_dict, current_aggregate_dict)
+
+                    @assert (all(x -> x ∉ keys(aggregate_sum_mappings_dict), keys(current_aggregate_dict)))
+                    merge!(aggregate_sum_mappings_dict, current_aggregate_dict)
                     
-                    for (a,t) in current_aggregate_dict
-                        if aggregate_sum_mappings[a] != 0
-                            error("Aggregate sum at index $s has already been assigned!")
-                        else
-                            aggregate_sum_mappings[a] = t
-                        end
-                    end
+                    # for (s,t) in current_strata_dict
+                    #     if strata_sum_mappings[s] != 0
+                    #         error("Strata sum at index $s has already been assigned!")
+                    #     else
+                    #         strata_sum_mappings[s] = t
+                    #     end
+                    # end
+                    
+                    # for (a,t) in current_aggregate_dict
+                    #     if aggregate_sum_mappings[a] != 0
+                    #         error("Aggregate sum at index $s has already been assigned!")
+                    #     else
+                    #         aggregate_sum_mappings[a] = t
+                    #     end
+                    # end
                 end
             end                    
 
@@ -1352,23 +1389,49 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     # STEP 4
 
-    # TODO: Add assert that there are no zeros in any of these lists
+
+    # println(strata_stock_mappings)
+    # println("I'm sorry.")
+    default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : 0
+    default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : 0
+    default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : 0
+    default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : 0
+    default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : 0
+
+    default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : 0
+    default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : 0
+    default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : 0
+    default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : 0
+    default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : 0
 
 
-    strata_stock_mappings = replace(strata_stock_mappings, -1 => default_index_stock)
-    aggregate_stock_mappings = replace(aggregate_stock_mappings, -1 => default_index_stock)
+    strata_stock_mappings = [get(strata_stock_mappings_dict, i, default_index_strata_stock)  for i in 1:ns(strata)]
+    strata_flow_mappings =  [get(strata_flow_mappings_dict, i, default_index_strata_flow)  for i in 1:nf(strata)]
+    strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, default_index_strata_dyvar)  for i in 1:nvb(strata)]
+    strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i, default_index_strata_param)  for i in 1:np(strata)]
+    strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i, default_index_strata_sum)  for i in 1:nsv(strata)]
 
-    strata_flow_mappings = replace(strata_flow_mappings, -1 => default_index_flow)
-    aggregate_flow_mappings = replace(aggregate_flow_mappings, -1 => default_index_flow)
+    aggregate_stock_mappings = [get(aggregate_stock_mappings_dict, i, default_index_aggregate_stock)  for i in 1:ns(aggregate)]
+    aggregate_flow_mappings =  [get(aggregate_flow_mappings_dict, i, default_index_aggregate_flow)  for i in 1:nf(aggregate)]
+    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, default_index_aggregate_dyvar)  for i in 1:nvb(aggregate)]
+    aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i, default_index_aggregate_param)  for i in 1:np(aggregate)]
+    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i, default_index_aggregate_sum)  for i in 1:nsv(aggregate)]
+    
 
-    strata_dyvar_mappings = replace(strata_dyvar_mappings, -1 => default_index_dyvar)
-    aggregate_dyvar_mappings = replace(aggregate_dyvar_mappings, -1 => default_index_dyvar)
+    # strata_stock_mappings = replace(strata_stock_mappings, 0 => default_index_strata_stock)
+    # aggregate_stock_mappings = replace(aggregate_stock_mappings, 0 => default_index_aggregate_stock)
 
-    strata_param_mappings = replace(strata_param_mappings, -1 => default_index_param)
-    aggregate_param_mappings = replace(aggregate_param_mappings, -1 => default_index_param)
+    # strata_flow_mappings = replace(strata_flow_mappings, 0 => default_index_strata_flow)
+    # aggregate_flow_mappings = replace(aggregate_flow_mappings, -1 => default_index_aggregate_flow)
 
-    strata_sum_mappings = replace(strata_sum_mappings, -1 => default_index_sum)
-    aggregate_sum_mappings = replace(aggregate_sum_mappings, -1 => default_index_sum)
+    # strata_dyvar_mappings = replace(strata_dyvar_mappings, -1 => default_index_strata_dyvar)
+    # aggregate_dyvar_mappings = replace(aggregate_dyvar_mappings, -1 => default_index_aggregate_dyvar)
+
+    # strata_param_mappings = replace(strata_param_mappings, -1 => default_index_strata_param)
+    # aggregate_param_mappings = replace(aggregate_param_mappings, -1 => default_index_aggregate_param)
+
+    # strata_sum_mappings = replace(strata_sum_mappings, -1 => default_index_strata_sum)
+    # aggregate_sum_mappings = replace(aggregate_sum_mappings, -1 => default_index_aggregate_sum)
 
 
 
