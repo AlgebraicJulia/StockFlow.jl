@@ -1208,8 +1208,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # ...in the type schema, you can replace it with an underscore?
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), aggregate_all_names)
 
-    println(strata_all_names)
-    println(strata_snames)
+    # println(strata_all_names)
+    # println(strata_snames)
 
 
     # use 0 for uninitialized, -1 for map to default
@@ -1233,8 +1233,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     
 
                     # for (s,t) in current_strata_dict
-                    println(keys(current_aggregate_dict))
-                    println(strata_stock_mappings_dict)
+                    # println(keys(current_aggregate_dict))
+                    # println(strata_stock_mappings_dict)
                     @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_aggregate_dict)))
                     merge!(strata_stock_mappings_dict, current_aggregate_dict)
                     #     if strata_stock_mappings[s] != 0
@@ -1435,26 +1435,46 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
 
-    println(strata_stock_mappings)
-    println(aggregate_stock_mappings)
+    # println(strata_stock_mappings)
+    # println(aggregate_stock_mappings)
 
-    println(strata_flow_mappings)
-    println(aggregate_flow_mappings)
+    # println(strata_flow_mappings)
+    # println(aggregate_flow_mappings)
 
-    println(strata_dyvar_mappings)
-    println(aggregate_dyvar_mappings)
+    # println(strata_dyvar_mappings)
+    # println(aggregate_dyvar_mappings)
 
-    println(strata_param_mappings)
-    println(aggregate_param_mappings)
+    # println(strata_param_mappings)
+    # println(aggregate_param_mappings)
 
-    println(strata_sum_mappings)
-    println(aggregate_sum_mappings)
+    # println(strata_sum_mappings)
+    # println(aggregate_sum_mappings)
 
 
     # TODO: Once over at the end to convert placeholders.
 
     # s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
     # return s
+
+
+    # Ok this is where we pull out the magic to infer links.
+    #
+    #  A <- C -> B
+    #  ||        ||
+    #  v         v
+    #  A'<- C'-> B'
+    #
+    # implies
+    #
+    #  A <- C -> B
+    #  ||  ||    ||
+    #  v    v    v
+    #  A'<- C'-> B'
+
+
+
+
+    
 end
 
 
