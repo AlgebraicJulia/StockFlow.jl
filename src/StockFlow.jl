@@ -640,25 +640,25 @@ outflows(p::AbstractStockAndFlowStructure,s) = subpart(p,incident(p,s,:os),:ofn)
 instock(p::AbstractStockAndFlowStructure,f) = subpart(p,incident(p,f,:ifn),:is)
 
 # TODO: add assertion that the length(outstock)=1
-""" return stocks of flow index f flow out """
+""" return stocks that flow index f flow out from """
 outstock(p::AbstractStockAndFlowStructure,f) = subpart(p,incident(p,f,:ofn),:os)
-""" return stocks of sum variable index sv link to"""
+""" return stocks that sum variable index sv link to """
 stockssv(p::AbstractStockAndFlow0,sv) = subpart(p,incident(p,sv,:lssv),:lss)
-""" return stocks of auxiliary variable index v link to """
+""" return stocks that auxiliary variable index v link to """
 stocksv(p::AbstractStockAndFlowStructure,v) = subpart(p,incident(p,v,:lvv),:lvs)
-""" return sum variables of auxiliary variable index v link to """
+""" return sum variables that auxiliary variable index v link to """
 svsv(p::AbstractStockAndFlowStructure,v) = subpart(p,incident(p,v,:lsvv),:lsvsv)
-""" return sum auxiliary variables a stock s link """
+""" return sum auxiliary variables that stock s links to """
 svsstock(p::AbstractStockAndFlowStructure,s) = subpart(p,incident(p,s,:lss),:lssv)
-""" return auxiliary variables a stock s link """
+""" return auxiliary variables that stock s links to """
 vsstock(p::AbstractStockAndFlowStructure,s) = subpart(p,incident(p,s,:lvs),:lvv)
-""" return auxiliary variables a sum auxiliary variable link """
+""" return auxiliary variables that sum auxiliary variable sv links to """
 vssv(p::AbstractStockAndFlowStructure,sv) = subpart(p,incident(p,sv,:lsvsv),:lsvv)
 
 
-""" return auxiliary variable's source auxiliary variables that is linked to """
+""" return auxiliary variable's source auxiliary variables that it links to """
 vtgt(p::AbstractStockAndFlowStructureF,v) = subpart(p,incident(p,v,:lvsrc),:lvtgt)
-""" return auxiliary variable's target auxiliary variables that links to """
+""" return auxiliary variable's target auxiliary variables it links to """
 vsrc(p::AbstractStockAndFlowStructureF,v) = subpart(p,incident(p,v,:lvtgt),:lvsrc)
 """ return auxiliary variable's source constant parameters """
 vpsrc(p::AbstractStockAndFlowStructureF,v) = subpart(p,incident(p,v,:lpvv),:lpvp)

@@ -37,6 +37,9 @@ function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructure)
     return s
 end
 
+"""
+Return stock names as Symbol, along with the linked flows and sum variables
+"""
 function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     s=[]
     
@@ -63,6 +66,9 @@ function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     return s
 end
 
+"""
+Return flow names as Symbol, along with the linked flow variables
+"""
 function extracFlowsStructureAndFlatten(p::AbstractStockAndFlowStructure)
     f=[]
     
@@ -82,6 +88,9 @@ function extracFlowsStructureAndFlatten(p::AbstractStockAndFlowStructure)
     return f
 end
 
+"""
+Return parameter names as Symbol
+"""
 function extracPsStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     pns=[]
     
@@ -116,6 +125,9 @@ function extracSumVStructureAndFlatten(p::AbstractStockAndFlowStructure)
     return sv
 end
 
+"""
+Return sum variable names as Symbol, along with the linked dynamic variables
+"""
 function extracSumVStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     sv=[]
     
@@ -130,6 +142,9 @@ function extracSumVStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     return sv
 end
 
+"""
+Return a Tuple of Vectors of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
+"""
 function args_vname(p::AbstractStockAndFlowStructureF,v)
     srcsv=map(i->(flattenTupleNames(sname(p,i))),stocksv(p,v))
     srcsvv=map(i->(flattenTupleNames(svname(p,i))),svsv(p,v))
@@ -148,11 +163,19 @@ function args_vnamexxxx(p::AbstractStockAndFlowStructureF,v)
     return (srcsv,srcsvv,srcpv,srcvv)
 end
 
+"""
+    args(p::AbstractStockAndFlowStructureF,v)
+Return a Vector of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
+"""
 function args(p::AbstractStockAndFlowStructureF,v)
     (srcsv,srcsvv,srcpv,srcvv)=args_vname(p,v)
     return vcat(srcsv,srcsvv,srcpv,srcvv)
 end
 
+"""
+    args(p::AbstractStockAndFlowF,v)
+Return a Vector of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
+"""
 function args(p::AbstractStockAndFlowF,v)
     (srcsv,srcsvv,srcpv,srcvv)=args_vname(p,v)
        
@@ -169,6 +192,9 @@ function args(p::AbstractStockAndFlowF,v)
     return srcs
 end
 
+"""
+Return dynamic variable definitions as Vector with elements of form :dv => [:arg1, :arg2]
+"""
 extracVStructureAndFlatten(p::AbstractStockAndFlowStructureF) = begin
 
     vs=[]
@@ -184,6 +210,9 @@ extracVStructureAndFlatten(p::AbstractStockAndFlowStructureF) = begin
     
 end
 
+"""
+Convert dynamic variable names to Symbol, convert all operators to a single operator if they are equal else throw an error, and  
+"""
 extracVAndAttrStructureAndFlatten(p::AbstractStockAndFlowF) = begin
 
     vs=[]
@@ -208,6 +237,9 @@ function rebuildStratifiedModelByFlattenSymbols(p::AbstractStockAndFlowStructure
     return StockAndFlowStructure(s,f,sv)
 end
 
+"""
+Return a new stock flow with flattened names, operators and positions from the old
+"""
 function rebuildStratifiedModelByFlattenSymbols(p::AbstractStockAndFlowF)
     s=extracStocksStructureAndFlatten(p)
     pr=extracPsStructureAndFlatten(p)
@@ -218,7 +250,6 @@ function rebuildStratifiedModelByFlattenSymbols(p::AbstractStockAndFlowF)
     return StockAndFlowF(s,pr,v,f,sv)
 end
 
-
 function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructure,v)   
     s=extracStocksStructureAndFlatten(p)
     f=extracFlowsStructureAndFlatten(p)
@@ -227,6 +258,13 @@ function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructure,v)
     return StockAndFlow(s,f,v,sv)
 end
 
+"""
+Return a new stock flow with flattened names, operators and positions from an AbstractStockAndFlowStructureF.
+Need to provide dynamic variable definitions, eg
+```julia
+convertSystemStructureToStockFlow(MyStockFlowStructure, (:v_prevalence=>(:I,:N,:/),:v_meanInfectiousContactsPerS=>(:c,:v_prevalence,:*)))
+```
+"""
 function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructureF,v)   
     s=extracStocksStructureAndFlatten(p)
     pr=extracPsStructureAndFlatten(p)
@@ -245,6 +283,9 @@ function convertStockFlowToSystemStructure(p::AbstractStockAndFlow)
     return StockAndFlowStructure(s,f,sv)
 end
 
+""" 
+Return a new StockAndFlowStructureF with flattened names, operators and positions from an AbstractStockAndFlowF.
+"""
 function convertStockFlowToSystemStructure(p::AbstractStockAndFlowF)
     
     s=extracStocksStructureAndFlatten(p)
