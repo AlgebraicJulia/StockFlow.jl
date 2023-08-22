@@ -236,15 +236,6 @@ function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructureF,v)
     return StockAndFlowF(s,pr,v,f,sv)
 end
 
-
-function convertStockFlowToSystemStructure(p::AbstractStockAndFlow)
-    
-    s=extracStocksStructureAndFlatten(p)
-    f=extracFlowsStructureAndFlatten(p)
-    sv=extracSumVStructureAndFlatten(p)
-    return StockAndFlowStructure(s,f,sv)
-end
-
 function convertStockFlowToSystemStructure(p::AbstractStockAndFlowF)
     
     s=extracStocksStructureAndFlatten(p)

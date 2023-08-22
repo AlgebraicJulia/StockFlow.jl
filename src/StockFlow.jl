@@ -149,25 +149,10 @@ end
 end
 
 @abstract_acset_type AbstractStockAndFlowStructure <: AbstractStockAndFlow0
-@acset_type StockAndFlowStructureUntyped(TheoryStockAndFlowStructure, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlowStructure
 # constrains the attributes data type to be:
 # 1. InitialValue: Real
 # 2. Name: Symbol
 # Note: those three (or any subgroups) attributes' datatype can be defined by the users. See the example of the PetriNet which allows the Reactionrate and Concentration defined by the users
-const StockAndFlowStructure = StockAndFlowStructureUntyped{Symbol}
-
-
-###### TODO #### delete??
-# define the schema of a general stock and flow diagram
-@present TheoryStockAndFlow <: TheoryStockAndFlowStructure begin
-# Attributes:
-  FuncDynam::AttrType
-  funcDynam::Attr(V, FuncDynam)
-end
-
-@abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlowStructure
-@acset_type StockAndFlowUntyped(TheoryStockAndFlow, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlow
-const StockAndFlow = StockAndFlowUntyped{Symbol,Function}
 
 
 """ define the schema of a general stock and flow diagram """
@@ -747,11 +732,6 @@ outflowsAll(p::AbstractStockAndFlowStructure) = [((outflows(p, s) for s in 1:ns(
 
 
 """ 
-    funcDynam(p::AbstractStockAndFlow,v)
-return the functions of variables give index v """
-funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
-
-""" 
     funcDynam(sf::AbstractStockAndFlowF,v)
 return the functions of variables give index v """
 funcDynam(sf::AbstractStockAndFlowF,v) = begin
@@ -774,14 +754,14 @@ end
 """ return the auxiliary variable's index that related to the flow with index of f """
 flowVariableIndex(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
 """ return the functions (not substitutes the function of sum variables yet) of flow index f """
-funcFlowRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF},f)=funcDynam(p,flowVariableIndex(p,f))
+funcFlowRaw(p::AbstractStockAndFlowF,f)=funcDynam(p,flowVariableIndex(p,f))
 """ return the LVector of pairs: fname => function (raw: not substitutes the function of sum variables yet) """
-funcFlowsRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
+funcFlowsRaw(p::AbstractStockAndFlowF) = begin
   fnames = [fname(p, f) for f in 1:nf(p)]
   LVector(;[(fnames[f]=>funcFlowRaw(p, f)) for f in 1:nf(p)]...)
 end
 """ generate the function substituting sum variables in with flow index fn """
-funcFlow(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}, fn) = begin
+funcFlow(pn::AbstractStockAndFlowF, fn) = begin
     func=funcFlowRaw(pn,fn)
     f(u,p,t) = begin
         uN=funcSVs(pn)
@@ -789,7 +769,7 @@ funcFlow(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}, fn) = begin
     end
 end
 """ return the LVector of pairs: fname => function (with function of sum variables substitue in) """
-funcFlows(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF})=begin
+funcFlows(p::AbstractStockAndFlowF)=begin
     fnames = [fname(p, f) for f in 1:nf(p)]
     LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
 end
@@ -816,14 +796,7 @@ end
 ####################### functions of composition of stock and flow diagram####################
 # Note: the compositional functions currently are only implemented for the StockFlow diagram (including both structure and functions)
 
-# given a stock and flow diagram in schema "StockAndFlow", return a stock and flow diagram in schema "StockAndFlow0"
-object_shift_right(p::StockAndFlowStructure) = begin
-    s = snames(p)
-    sv = svnames(p)
-    ssv = map(y->map(x->(sname(p,y),x),svname(p,svsstock(p,y))),collect(1:ns(p)))
-    ssv = vcat(ssv...)
-    StockAndFlow0(s,sv,ssv)
-end
+
 
 # create open acset, as the structured cospan
 const OpenStockAndFlowStructureFOb, OpenStockAndFlowStructureF = OpenACSetTypes(StockAndFlowStructureFUntyped,StockAndFlowUntyped0)
@@ -834,7 +807,7 @@ foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 
 ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
 
-leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowStructureF,StockAndFlowF}) = begin
+leg(a::StockAndFlow0, x::Union{StockAndFlowStructureF,StockAndFlowF}) = begin
     if ns(a)>0 # if have stocks
       ϕs = ntcomponent(snames(a), snames(x))
     else
@@ -858,20 +831,11 @@ leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowSt
     result
 end
 
-Open(p::StockAndFlow, feet...) = begin
-  legs = map(x->leg(x, p), feet)
-  OpenStockAndFlow{Symbol,Function}(p, legs...)
-end
-
 Open(p::StockAndFlowF, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenStockAndFlowF{Symbol,Symbol,Int8}(p, legs...)
 end
 
-Open(p::StockAndFlowStructure, feet...) = begin
-  legs = map(x->leg(x, p), feet)
-  OpenStockAndFlowStructure{Symbol}(p, legs...)
-end
 
 
 ############# functions of generating ODEs ###############
@@ -949,7 +913,7 @@ end
 #end
 
 
-vectorfield(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
+vectorfield(pn::AbstractStockAndFlowF) = begin
   ϕ=funcFlows(pn)
   tm = TransitionMatrices(pn)
   f(du,u,p,t) = begin
