@@ -1477,6 +1477,39 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     
 end
 
+"""
+    infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, necMaps :: Dict{Symbol, Vector{Int64}})
+
+Infer LS, I, O, LV, LSV, LVV, LPV mappings for an ACSetTransformation.
+Returns dictionary of Symbols to lists of indices, corresponding to an ACSetTransformation argument.
+If there exist no such mappings (eg, no LVV), that pairing will not be included in the returned dictionary.
+
+If A <- C -> B, and we have A -> A' and B -> B' and a unique C' such that A' <- C' -> B', we can assume C -> C'.
+
+:S => [2,4,1,3], :F => [1,2,4,3], ...
+
+necMaps must contain keys S, F, SV, P, V
+"""
+function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, necMaps :: Dict{Symbol, Vector{Int64}})
+    # baby oh baby, prepare for disappointment
+    # - Joel Vinesauce
+
+    # So unfortunately, from what I understand, in the current setup, there isn't a nice way to get the relevant ordered pairs (or triples, in some cases, if we care about operation or position)
+    # as such we need to do this trash
+    # TODO: NOT THIS
+
+    # sfsrc_links = get_links(sfsrc)
+    # sftgt_links = get_links(sftgt)
+
+    for (i, (lss, lssv)) in enumerate(zip(get_lss(sfsrc), get_lssv(sfsrc)))
+        
+
+
+
+
+
+end
+
 
 end
 

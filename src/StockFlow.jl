@@ -9,12 +9,14 @@ funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMa
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
-vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!
+vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
+get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links
+
 
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets
-using Catlab.GATs.Presentations
+using Catlab.Present
 using Catlab.Theories
 using LabelledArrays
 using LinearAlgebra: mul!
@@ -28,6 +30,24 @@ const FK_SVVARIABLE_NAME=:SVV_NONE #fake name of the auxiliary variables that li
 
 +(f::Function, g::Function) = (x...) -> f(x...) + g(x...)
 -(f::Function, g::Function) = (x...) -> f(x...) - g(x...)
+
+#[:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]
+get_lss(sf::StockAndFlowF) = collect(keys(sf.parts[:lss].m))
+get_lssv(sf::StockAndFlowF) = collect(keys(sf.parts[:lssv].m))
+get_lsvsv(sf::StockAndFlowF) = collect(keys(sf.parts[:lsvsv].m))
+get_lsvv(sf::StockAndFlowF) = collect(keys(sf.parts[:lsvv].m))
+get_lvs(sf::StockAndFlowF) = collect(keys(sf.parts[:lvs].m))
+get_lvv(sf::StockAndFlowF) = collect(keys(sf.parts[:lvv].m))
+get_is(sf::StockAndFlowF) = collect(keys(sf.parts[:is].m))
+get_ifn(sf::StockAndFlowF) = collect(keys(sf.parts[:ifn].m))
+get_os(sf::StockAndFlowF) = collect(keys(sf.parts[:os].m))
+get_ofn(sf::StockAndFlowF) = collect(keys(sf.parts[:ofn].m))
+get_lpvp(sf::StockAndFlowF) = collect(keys(sf.parts[:lpvp].m))
+get_lpvv(sf::StockAndFlowF) = collect(keys(sf.parts[:lpvv].m))
+get_lvsrc(sf::StockAndFlowF) = collect(keys(sf.parts[:lvsrc].m))
+get_lvtgt(sf::StockAndFlowF) = collect(keys(sf.parts[:lvtgt].m))
+
+get_links(sf::StockAndFlowF) = Dict(map(x -> x => get_part(sf, x), [:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]))
 
 
 vectorify(n::Vector) = collect(n)
