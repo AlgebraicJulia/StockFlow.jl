@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet
+export @stock_and_flow, @foot, @feet, @stratify
 
 using ..StockFlow
 using MLStyle
@@ -1039,22 +1039,22 @@ function interpret_stratification_notation(mapping_pair::Expr)
     @match mapping_pair begin
 
         :(_ => $t <= _) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(TEMP_STRAT_DEFAULT => t)) # match literal underscores to act as defaults (temporarily map to TEMP_STRAT_DEFAULT)
-        :(_, => $t <= $a) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(a => t))
-        :(_, => $t <= $a, $(atail...)) => return (Dict(TEMP_STRAT_DEFAULT => t), push!(Dict(as => t for as in atail), a => t))
+        :(_ => $t <= $a) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(a => t))
+        :(_ => $t <= $a, $(atail...)) => return (Dict(TEMP_STRAT_DEFAULT => t), push!(Dict(as => t for as in atail), a => t))
 
 
         :($s => $t <= _) => return (Dict(s => t), Dict(TEMP_STRAT_DEFAULT => t))
         :($s => $t <= $a) => return (Dict(s => t), Dict(s => t))
-        :($s, => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
+        :($s => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
 
 
-        :($(shead...), $s => $t <= _) => return (push!(Dict(ss => $t for ss in shead), s => t), Dict(TEMP_STRAT_DEFAULT => t))
-        :($(shead...), $s => $t <= $a) => return (push!(Dict(ss => $t for ss in shead), s => t), Dict(a => t))
+        :($(shead...), $s => $t <= _) => return (push!(Dict(ss => t for ss in shead), s => t), Dict(TEMP_STRAT_DEFAULT => t))
+        :($(shead...), $s => $t <= $a) => return (push!(Dict(ss => t for ss in shead), s => t), Dict(a => t))
 
 
         # The most annoying case. :($(shead...), $s => $t <= $a, $(atail...))
         # basically just gave up here, if you can figure out a way to match it, godspeed.
-        if mapping_pair.head == :tuple => begin
+        if mapping_pair.head == :tuple end => begin
             
             svec::Vector{Symbol} = []
             sdict::Dict{Symbol, Symbol} = Dict() # I don't think I need to initialize this here, but makes scope less ambiguous.
@@ -1063,35 +1063,34 @@ function interpret_stratification_notation(mapping_pair::Expr)
             t_val = :NONE # this should never, ever be used.  Just need to initialize with something.
 
             for val in mapping_pair.args
-                val::Symbol && !found_t => push!(svec, val)
-                val::Expr => begin # found the s => t <= a
-                    @match val begin
-                        :($s => $t <= $a) => begin
-                            push!(svec, val)
-                            sdict = (prevs => t for prevs in svec)
+                @match val begin # TODO: determine if there are more cases to deal with here
+                    val::Symbol && if !found_t end => push!(svec, val)
+                    val::Symbol && if found_t end => push!(adict, val => t_val)
+                    :($s => $t <= $a) => begin
+                        push!(svec, val)
+                        sdict = (prevs => t for prevs in svec)
 
-                            t_val = t
-                            found_t = true
+                        t_val = t
+                        found_t = true
 
-                            push!(a_dict, a => t)
-                        end
-                        _ => error("Unknown expression found in stratification notation: $val")
+                        push!(a_dict, a => t)
+
                     end
-                val::Symbol && found_t => push!(adict, val => t_val)
-
+                    _ => error("Unknown expression found in stratification notation: $val")
                 end
-                _ => error("Unknown type found in stratification notation: $val of type $(typeof(val))")
+                    # val::Expr => begin # found the s => t <= a
+                    #     @match val begin
+                            
+                    # end
+
             end
-
             return (sdict, adict)
-            
-            
+                # _ => error("Unknown type found in stratification notation: $val of type $(typeof(val))")
         end
-
-        _ => error("Unknown line format found in stratification notation.")
-
+        _ => error("Unknown line format found in stratification notation.") 
     end
 end
+
 
 """
 Take 5 dictionaries:
@@ -1104,16 +1103,32 @@ da: new aggregate, aggregate symbol => type symbol
 
 convert ds to strata index => type index, da to aggregate index => type index
 """
-function substitute_symbols(s, t, a, ds, da)
+function substitute_symbols(s, t, a, ds, da) # TODO: add assert that all symbols in s,t and a are in ds and da
     new_strata_dict = Dict(s[strata_symbol], t[type_symbol] for (strata_symbol, type_symbol) in ds)
     new_aggregate_dict = Dict(s[aggregate_symbol], t[type_symbol] for (aggregate_symbol, type_symbol) in da)
     return new_strata_dict, new_aggregate_dict
 end
 
 
+# TODO: the following
+"""
+    @stratify (strata, type, aggregate) begin ... end
 
-""" @stratify (strata, type, aggregate) begin ... end """
-macro stratify(sf, block)
+    Ok, so the general idea here is:
+    1. Grab all names from strata, type and aggregate, and create dictionaries which map them to their indices
+    2. Initialize an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate
+    3. iterate over each line in the block
+        3a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
+        3b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
+        3c. Insert type index value into aggregate/strata index values.
+    4. Do a once over of the arrays and replace wildcard values, ensure there are no zeroes remaining
+    5. Do some magic to infer LS, LSV, etc.
+    6. Deal with attributes
+    7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
+    8. Return pullback
+
+"""
+macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     @assert sf.head == :tuple && length(sf.args) == 3
     @assert all(x -> x ∈ names(Main), sf.args) # Maybe want it to be not just in Main?
@@ -1123,7 +1138,7 @@ macro stratify(sf, block)
 
     Base.remove_linenums!(block)
 
-       
+    # STEP 1 and 2
        
     strata_snames = Dict(S => i for (i, S) in enumerate(snames(strata)))
     strata_svnames = Dict(S => i for (i, S) in enumerate(svnames(strata)))
@@ -1158,41 +1173,220 @@ macro stratify(sf, block)
     aggregate_sum_mappings::Vector{Int} = zeros(Int, nsv(aggregate))
 
 
+    strata_all_names = merge(strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames)
+    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), strata_all_names)
+
+    type_all_names = merge(type_snames, type_svnames, type_vnames, type_fnames, type_pnames)
+    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), type_all_names)
+
+    aggregate_all_names = merge(aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames)
+    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), aggregate_all_names)
+
+    # Inserting the symbol for wildcard into each dictionary
+    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1), strata_all_names)))
+    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1), type_all_names)))
+    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1), aggregate_all_names)))
+
 
     # use 0 for uninitialized, -1 for map to default
     # indices start at 1, so both these are clearly placeholder values.
 
-    default_index = 0
+    default_index_stock = 0
+    default_index_flow = 0
+    default_index_dyvar = 0
+    default_index_param = 0
+    default_index_sum = 0
 
-    
 
+    # STEP 3
+
+    # TODO: Extract this stuff out to reuse code instead of copy-pasting functions
     current_phase = (_, _) -> ()
     for statement in statements
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = 
+                current_phase = p -> begin
+                    
+                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
+                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_snames, type_snames, aggregate_snames, current_strata_symbol_dict, current_aggregate_symbol_dict)
+
+
+                    
+
+                    for (s,i) in current_strata_dict
+                        if strata_stock_mappings[s] != 0
+                            error("Strata stock at index $s has already been assigned!")
+                        else
+                            strata_stock_mappings[s] = t
+                        end
+                    end
+
+                    for (s,i) in current_aggregate_dict
+                        if aggregate_stock_mappings[s] != 0
+                            error("Aggregate stock at index $s has already been assigned!")
+                        else
+                            aggregate_stock_mappings[s] = t
+                        end
+                    end
+                end
             end
             QuoteNode(:parameters) => begin
-                current_phase = p -> parse_param!(params, p)
+                current_phase = p -> begin                
+                    
+                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
+                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_pnames, type_pnames, aggregate_pnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
+
+
+
+                    for (s,i) in current_strata_dict
+                        if strata_parameter_mappings[s] != 0
+                            error("Strata parameter at index $s has already been assigned!")
+                        else
+                            strata_param_mappings[s] = t
+                        end
+                    end
+
+                    for (s,i) in current_aggregate_dict
+                        if aggregate_parameter_mappings[s] != 0
+                            error("Aggregate parameter at index $s has already been assigned!")
+                        else
+                            aggregate_param_mappings[s] = t
+                        end
+                    end
+                end
             end
             QuoteNode(:dynamic_variables) => begin
-                current_phase = d -> parse_dyvar!(dyvars, d)
-            end
+                    current_phase = p -> begin                
+                    
+                     
+                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
+                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_vnames, type_vnames, aggregate_vnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
+
+
+                    
+                    for (s,i) in current_strata_dict
+                        if strata_dyvar_mappings[s] != 0
+                            error("Strata dyvar at index $s has already been assigned!")
+                        else
+                            strata_dyvar_mappings[s] = t
+                        end
+                    end
+
+                    for (s,i) in current_aggregate_dict
+                        if aggregate_dyvar_mappings[s] != 0
+                            error("Aggregate dyvar at index $s has already been assigned!")
+                        else
+                            aggregate_dyvar_mappings[s] = t
+                        end
+                    end
+                end
+            end            
             QuoteNode(:flows) => begin
-                current_phase = f -> parse_flow!(flows, f)
-            end
+                current_phase = p -> begin                
+                        
+                        
+                 
+                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
+                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_fnames, type_fnames, aggregate_fnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
+
+
+                    for (s,i) in current_strata_dict
+                        if strata_flow_mappings[s] != 0
+                            error("Strata flow at index $s has already been assigned!")
+                        else
+                            strata_flow_mappings[s] = t
+                        end
+                    end
+
+                    for (s,i) in current_aggregate_dict
+                        if aggregate_flow_mappings[s] != 0
+                            error("Aggregate flow at index $s has already been assigned!")
+                        else
+                            aggregate_flow_mappings[s] = t
+                        end
+                    end
+                end
+            end                    
+                  
             QuoteNode(:sums) => begin
-                current_phase = s -> parse_sum!(sums, s)
-            end
+                current_phase = p -> begin                
+
+                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
+                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_svnames, type_svnames, aggregate_svnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
+                    
+                    for (s,i) in current_strata_dict
+                        if strata_sum_mappings[s] != 0
+                            error("Strata sum at index $s has already been assigned!")
+                        else
+                            strata_sum_mappings[s] = t
+                        end
+                    end
+                    
+                    for (s,i) in current_aggregate_dict
+                        if aggregate_sum_mappings[s] != 0
+                            error("Aggregate sum at index $s has already been assigned!")
+                        else
+                            aggregate_sum_mappings[s] = t
+                        end
+                    end
+                end
+            end                    
+
+
             QuoteNode(kw) =>
-                error("Unknown block type for Stock and Flow syntax: " * String(kw))
+                error("Unknown block type for stratify syntax: " * String(kw))
             _ => current_phase(statement)
         end
     end
 
-    s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
+    # STEP 4
+
+    # TODO: Add assert that there are no zeros in any of these lists
+
+
+    strata_stock_mappings = replace(strata_stock_mappings, -1 => default_index_stock)
+    aggregate_stock_mappings = replace(aggregate_stock_mappings, -1 => default_index_stock)
+
+    strata_flow_mappings = replace(strata_flow_mappings, -1 => default_index_flow)
+    aggregate_flow_mappings = replace(aggregate_flow_mappings, -1 => default_index_flow)
+
+    strata_dyvar_mappings = replace(strata_dyvar_mappings, -1 => default_index_dyvar)
+    aggregate_dyvar_mappings = replace(aggregate_dyvar_mappings, -1 => default_index_dyvar)
+
+    strata_param_mappings = replace(strata_param_mappings, -1 => default_index_param)
+    aggregate_param_mappings = replace(aggregate_param_mappings, -1 => default_index_param)
+
+    strata_sum_mappings = replace(strata_sum_mappings, -1 => default_index_sum)
+    aggregate_sum_mappings = replace(aggregate_sum_mappings, -1 => default_index_sum)
+
+
+
+    println(strata_stock_mappings)
+    printn(aggregate_stock_mappings)
+
+    println(strata_flow_mappings)
+    println(aggregate_flow_mappings)
+
+    println(strata_dyvar_mappings)
+    println(aggregate_dyvar_mappings)
+
+    println(strata_param_mappings)
+    println(aggregate_param_mappings)
+
+    println(strata_sum_mappings)
+    println(aggregate_sum_mappings)
+
+
+    # TODO: Once over at the end to convert placeholders.
+
+    # s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
     return s
 end
 
 
 end
+
+
+
+
+  
