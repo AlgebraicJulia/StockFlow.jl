@@ -1173,13 +1173,19 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_sum_mappings::Vector{Int} = zeros(Int, nsv(aggregate))
 
 
-    strata_all_names = merge(strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames)
+
+    strata_all_names = [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames]
+
+    # println(strata_all_names)
+
+
     @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), strata_all_names)
 
-    type_all_names = merge(type_snames, type_svnames, type_vnames, type_fnames, type_pnames)
+    type_all_names = [type_snames, type_svnames, type_vnames, type_fnames, type_pnames]
+
     @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), type_all_names)
 
-    aggregate_all_names = merge(aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames)
+    aggregate_all_names = [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames]
     @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), aggregate_all_names)
 
     # Inserting the symbol for wildcard into each dictionary
@@ -1202,7 +1208,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     # TODO: Extract this stuff out to reuse code instead of copy-pasting functions
     current_phase = (_, _) -> ()
-    for statement in statements
+    for statement in block.args
         @match statement begin
             QuoteNode(:stocks) => begin
                 current_phase = p -> begin
@@ -1362,7 +1368,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
     println(strata_stock_mappings)
-    printn(aggregate_stock_mappings)
+    println(aggregate_stock_mappings)
 
     println(strata_flow_mappings)
     println(aggregate_flow_mappings)
@@ -1380,7 +1386,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # TODO: Once over at the end to convert placeholders.
 
     # s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
-    return s
+    # return s
 end
 
 
