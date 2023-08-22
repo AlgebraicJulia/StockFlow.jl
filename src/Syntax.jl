@@ -1030,6 +1030,169 @@ function match_foot_format(footblock::Expr)
     end
 end
 
+const TEMP_STRAT_DEFAULT = :UNDERSCORE
+
+"""
+Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
+"""
+function interpret_stratification_notation(mapping_pair::Expr)
+    @match mapping_pair begin
+
+        :(_ => $t <= _) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(TEMP_STRAT_DEFAULT => t)) # match literal underscores to act as defaults (temporarily map to TEMP_STRAT_DEFAULT)
+        :(_, => $t <= $a) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(a => t))
+        :(_, => $t <= $a, $(atail...)) => return (Dict(TEMP_STRAT_DEFAULT => t), push!(Dict(as => t for as in atail), a => t))
+
+
+        :($s => $t <= _) => return (Dict(s => t), Dict(TEMP_STRAT_DEFAULT => t))
+        :($s => $t <= $a) => return (Dict(s => t), Dict(s => t))
+        :($s, => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
+
+
+        :($(shead...), $s => $t <= _) => return (push!(Dict(ss => $t for ss in shead), s => t), Dict(TEMP_STRAT_DEFAULT => t))
+        :($(shead...), $s => $t <= $a) => return (push!(Dict(ss => $t for ss in shead), s => t), Dict(a => t))
+
+
+        # The most annoying case. :($(shead...), $s => $t <= $a, $(atail...))
+        # basically just gave up here, if you can figure out a way to match it, godspeed.
+        if mapping_pair.head == :tuple => begin
+            
+            svec::Vector{Symbol} = []
+            sdict::Dict{Symbol, Symbol} = Dict() # I don't think I need to initialize this here, but makes scope less ambiguous.
+            adict::Dict{Symbol, Symbol} = Dict()
+            found_t = false
+            t_val = :NONE # this should never, ever be used.  Just need to initialize with something.
+
+            for val in mapping_pair.args
+                val::Symbol && !found_t => push!(svec, val)
+                val::Expr => begin # found the s => t <= a
+                    @match val begin
+                        :($s => $t <= $a) => begin
+                            push!(svec, val)
+                            sdict = (prevs => t for prevs in svec)
+
+                            t_val = t
+                            found_t = true
+
+                            push!(a_dict, a => t)
+                        end
+                        _ => error("Unknown expression found in stratification notation: $val")
+                    end
+                val::Symbol && found_t => push!(adict, val => t_val)
+
+                end
+                _ => error("Unknown type found in stratification notation: $val of type $(typeof(val))")
+            end
+
+            return (sdict, adict)
+            
+            
+        end
+
+        _ => error("Unknown line format found in stratification notation.")
+
+    end
+end
+
+"""
+Take 5 dictionaries:
+s: strata dict, symbol => index
+t: type dict, symbol => index
+a: aggregate dict, symbol => index
+
+ds: new strata, strata symbol => type symbol
+da: new aggregate, aggregate symbol => type symbol
+
+convert ds to strata index => type index, da to aggregate index => type index
+"""
+function substitute_symbols(s, t, a, ds, da)
+    new_strata_dict = Dict(s[strata_symbol], t[type_symbol] for (strata_symbol, type_symbol) in ds)
+    new_aggregate_dict = Dict(s[aggregate_symbol], t[type_symbol] for (aggregate_symbol, type_symbol) in da)
+    return new_strata_dict, new_aggregate_dict
+end
+
+
+
+""" @stratify (strata, type, aggregate) begin ... end """
+macro stratify(sf, block)
+
+    @assert sf.head == :tuple && length(sf.args) == 3
+    @assert all(x -> x ∈ names(Main), sf.args) # Maybe want it to be not just in Main?
+
+    strata, type, aggregate = map(x -> getfield(Main, x), sf.args) # Attempting to be clever and get around an eval call
+    @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, [strata, type, aggregate]) # Unsure if we want to be more or less strict with the type check
+
+    Base.remove_linenums!(block)
+
+       
+       
+    strata_snames = Dict(S => i for (i, S) in enumerate(snames(strata)))
+    strata_svnames = Dict(S => i for (i, S) in enumerate(svnames(strata)))
+    strata_vnames = Dict(S => i for (i, S) in enumerate(vnames(strata)))
+    strata_fnames = Dict(S => i for (i, S) in enumerate(fnames(strata)))
+    strata_pnames = Dict(S => i for (i, S) in enumerate(pnames(strata)))
+
+    strata_stock_mappings::Vector{Int} = zeros(Int, ns(strata))
+    strata_flow_mappings::Vector{Int} = zeros(Int, nf(strata))
+    strata_dyvar_mappings::Vector{Int} = zeros(Int, nvb(strata))
+    strata_param_mappings::Vector{Int} = zeros(Int, np(strata))
+    strata_sum_mappings::Vector{Int} = zeros(Int, nsv(strata))
+
+
+    type_snames = Dict(S => i for (i, S) in enumerate(snames(type)))
+    type_svnames = Dict(S => i for (i, S) in enumerate(svnames(type)))
+    type_vnames = Dict(S => i for (i, S) in enumerate(vnames(type)))
+    type_fnames = Dict(S => i for (i, S) in enumerate(fnames(type)))
+    type_pnames = Dict(S => i for (i, S) in enumerate(pnames(type)))
+
+
+    aggregate_snames = Dict(S => i for (i, S) in enumerate(snames(aggregate)))
+    aggregate_svnames = Dict(S => i for (i, S) in enumerate(svnames(aggregate)))
+    aggregate_vnames = Dict(S => i for (i, S) in enumerate(vnames(aggregate)))
+    aggregate_fnames = Dict(S => i for (i, S) in enumerate(fnames(aggregate)))
+    aggregate_pnames = Dict(S => i for (i, S) in enumerate(pnames(aggregate)))
+
+    aggregate_stock_mappings::Vector{Int} = zeros(Int, ns(aggregate))
+    aggregate_flow_mappings::Vector{Int} = zeros(Int, nf(aggregate))
+    aggregate_dyvar_mappings::Vector{Int} = zeros(Int, nvb(aggregate))
+    aggregate_param_mappings::Vector{Int} = zeros(Int, np(aggregate))
+    aggregate_sum_mappings::Vector{Int} = zeros(Int, nsv(aggregate))
+
+
+
+    # use 0 for uninitialized, -1 for map to default
+    # indices start at 1, so both these are clearly placeholder values.
+
+    default_index = 0
+
+    
+
+    current_phase = (_, _) -> ()
+    for statement in statements
+        @match statement begin
+            QuoteNode(:stocks) => begin
+                current_phase = 
+            end
+            QuoteNode(:parameters) => begin
+                current_phase = p -> parse_param!(params, p)
+            end
+            QuoteNode(:dynamic_variables) => begin
+                current_phase = d -> parse_dyvar!(dyvars, d)
+            end
+            QuoteNode(:flows) => begin
+                current_phase = f -> parse_flow!(flows, f)
+            end
+            QuoteNode(:sums) => begin
+                current_phase = s -> parse_sum!(sums, s)
+            end
+            QuoteNode(kw) =>
+                error("Unknown block type for Stock and Flow syntax: " * String(kw))
+            _ => current_phase(statement)
+        end
+    end
+
+    s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
+    return s
+end
 
 
 end
