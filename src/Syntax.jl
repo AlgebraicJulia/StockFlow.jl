@@ -1106,7 +1106,7 @@ convert ds to strata index => type index, da to aggregate index => type index
 """
 function substitute_symbols(s, t, a, ds, da) # TODO: add assert that all symbols in s,t and a are in ds and da
 
-    map(x -> println(x), [s, t, a, ds, da])
+    # map(x -> println(x), [s, t, a, ds, da])
 
     new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
     new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
@@ -1418,6 +1418,30 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i, default_index_aggregate_sum)  for i in 1:nsv(aggregate)]
     
 
+
+    nothing_function = x -> nothing
+    no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
+    
+    strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)
+    strata_inferred_links = infer_links(strata, type, strata_necmaps)
+
+    strata_to_type = ACSetTransformation(strata, no_attribute_type; strata..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+
+    
+    aggregate_necmaps = Dict(:S => aggregate_stock_mappings, :F => aggregate_flow_mappings, :V => aggregate_dyvar_mappings, :P => aggregate_param_mappings, :SV => aggregate_sum_mappings)
+    aggregate_inferred_links = infer_links(aggregate, type, aggregate_necmaps)
+
+    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate..., aggregate_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+
+    
+
+
+    pullback_model = pullback(strata_to_type, aggregate_to_type) |> apex |> rebuildStratifiedModelByFlattenSymbols;
+
+    return pullback_model
+
+
+
     # strata_stock_mappings = replace(strata_stock_mappings, 0 => default_index_strata_stock)
     # aggregate_stock_mappings = replace(aggregate_stock_mappings, 0 => default_index_aggregate_stock)
 
@@ -1478,7 +1502,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 end
 
 """
-    infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, necMaps :: Dict{Symbol, Vector{Int64}})
+    infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
 
 Infer LS, I, O, LV, LSV, LVV, LPV mappings for an ACSetTransformation.
 Returns dictionary of Symbols to lists of indices, corresponding to an ACSetTransformation argument.
@@ -1490,7 +1514,7 @@ If A <- C -> B, and we have A -> A' and B -> B' and a unique C' such that A' <- 
 
 necMaps must contain keys S, F, SV, P, V
 """
-function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, necMaps :: Dict{Symbol, Vector{Int64}})
+function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
     # baby oh baby, prepare for disappointment
     # - Joel Vinesauce
 
@@ -1501,11 +1525,124 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, necMaps :: 
     # sfsrc_links = get_links(sfsrc)
     # sftgt_links = get_links(sftgt)
 
-    for (i, (lss, lssv)) in enumerate(zip(get_lss(sfsrc), get_lssv(sfsrc)))
+    stockmaps = NecMaps[:S]
+    flowmaps = NecMaps[:F]
+    summaps = NecMaps[:SV]
+    parammaps = NecMaps[:P]
+    dyvarmaps = NecMaps[:V]
+
+    lsmaps = zeros(Int, nls(sfsrc))
+    imaps = zeros(Int, ni(sfsrc))
+    omaps = zeros(Int, no(sfsrc))
+    lvmaps = zeros(Int, nlv(sfsrc))
+    lsvmaps = zeros(Int, nlsv(sfsrc))
+    lvvmaps = zeros(Int, nlvv(sfsrc))
+    lpvmaps = zeros(Int, nlpv(sfsrc))
+
+
+
+
+    LS_tgt = Dict((lss, lssv) => i for (i, (lss, lssv)) in enumerate(zip(get_lss(sftgt), get_lssv(sftgt))))
+
+    for (i, (lss, lssv)) in enumerate(zip(get_lss(sfsrc), get_lssv(sfsrc))) # remember, this is ordered.
+ 
+        println(stockmaps)
+        println(summaps)
+        println(lss)
+        println(lssv)
+
+        stock_mapped_index = stockmaps[lss]
+        sum_mapped_index = summaps[lssv]
+
+        println(LS_tgt)
+        lsmap = LS_tgt[(stock_mapped_index, sum_mapped_index)]
+
+        lsmaps[i] = lsmap
+    end
+
+    # println(lsmaps)
+
+    I_tgt = collect((is, ifn) => i for (i, (is, ifn)) in enumerate(zip(get_is(sftgt), get_ifn(sftgt))))
+
+    for (i, (is, ifn)) in enumerate(zip(get_is(sfsrc), get_ifn(sfsrc))) # remember, this is ordered.
+ 
+
+        stock_mapped_index = stockmaps[is]
+        flow_mapped_index = flowmaps[ifn]
+
+        imap = I_tgt[(stock_mapped_index, flow_mapped_index)]
+
+        imaps[i] = imap
+    end
+
+
+
+    O_tgt = collect((os, ofn) => i for (i, (os, ofn)) in enumerate(zip(get_os(sftgt), get_ofn(sftgt))))
+
+    for (i, (os, ofn)) in enumerate(zip(get_os(sfsrc), get_ofn(sfsrc))) # remember, this is ordered.
+ 
+
+        stock_mapped_index = stockmaps[os]
+        flow_mapped_index = flowmaps[ofn]
+
+        omap = O_tgt[(stock_mapped_index, flow_mapped_index)]
+
+        omaps[i] = omap
+    end
+
         
+    LV_tgt = collect((lvs, lvv) => i for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sftgt), get_lvv(sftgt))))
+
+    for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sfsrc), get_lvv(sfsrc))) 
+
+        stock_mapped_index = stockmaps[lvs]
+        dyvar_mapped_index = dyvarmaps[lvv]
+
+        lvmap = LV_tgt[(stock_mapped_index, dyvar_mapped_index)]
+
+        lvmaps[i] = lvmap
+    end
 
 
+    LSV_tgt = collect((lsvsv, lsvv) => i for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sftgt), get_lsvv(sftgt))))
 
+    for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sfsrc), get_lsvv(sfsrc)))
+
+        sum_mapped_index = summaps[lsvsv]
+        dyvar_mapped_index = dyvarmaps[lsvv]
+
+        lsvmap = LSV_tgt[(sum_mapped_index, dyvar_mapped_index)]
+
+        lsvmaps[i] = lsvmap
+    end
+
+
+    LVV_tgt = collect((lvsrc, lvtgt) => i for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sftgt), get_lvtgt(sftgt))))
+
+    for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sfsrc), get_lvtgt(sfsrc)))
+
+        dyvar_mapped_index_1 = dyvarmaps[lvsrc]
+        dyvar_mapped_index_2 = dyvarmaps[lvtgt]
+
+        lvvmap = LVV_tgt[(dyvar_mapped_index_1, dyvar_mapped_index_2)]
+
+        lvvmaps[i] = lvvmap
+    end
+
+
+    LPV_tgt = collect((lpvp, lpvv) => i for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lpvp(sftgt), get_lpvv(sftgt))))
+
+    for (i, (lpvp, lpvv)) in enumerate(zip(get_lpvp(sfsrc), get_lpvv(sfsrc)))
+
+        param_mapped_index = parammaps[lpvp]
+        dyvar_mapped_index = dyvarmaps[lpvv]
+
+        lpvmap = LPV_tgt[(param_mapped_index, dyvar_mapped_index)]
+
+        lpvmaps[i] = lpvmap
+    end
+
+    return Dict(:LS => lsmaps, :LSV => lsvmaps, :LV => lvmaps, :I => imaps, :O => omaps, :LPV => lpvmaps, :LVV => lvvmaps)
 
 
 end
