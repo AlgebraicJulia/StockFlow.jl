@@ -1044,7 +1044,7 @@ function interpret_stratification_notation(mapping_pair::Expr)
 
 
         :($s => $t <= _) => return (Dict(s => t), Dict(TEMP_STRAT_DEFAULT => t))
-        :($s => $t <= $a) => return (Dict(s => t), Dict(s => t))
+        :($s => $t <= $a) => return (Dict(s => t), Dict(a => t))
         :($s => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
 
 
@@ -1067,13 +1067,13 @@ function interpret_stratification_notation(mapping_pair::Expr)
                     val::Symbol && if !found_t end => push!(svec, val)
                     val::Symbol && if found_t end => push!(adict, val => t_val)
                     :($s => $t <= $a) => begin
-                        push!(svec, val)
-                        sdict = (prevs => t for prevs in svec)
+                        push!(svec, s)
+                        sdict = Dict(prevs => t for prevs in svec)
 
                         t_val = t
                         found_t = true
 
-                        push!(a_dict, a => t)
+                        push!(adict, a => t)
 
                     end
                     _ => error("Unknown expression found in stratification notation: $val")
@@ -1104,8 +1104,11 @@ da: new aggregate, aggregate symbol => type symbol
 convert ds to strata index => type index, da to aggregate index => type index
 """
 function substitute_symbols(s, t, a, ds, da) # TODO: add assert that all symbols in s,t and a are in ds and da
-    new_strata_dict = Dict(s[strata_symbol], t[type_symbol] for (strata_symbol, type_symbol) in ds)
-    new_aggregate_dict = Dict(s[aggregate_symbol], t[type_symbol] for (aggregate_symbol, type_symbol) in da)
+
+    map(x -> println(x), [s, t, a, ds, da])
+
+    new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
+    new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
     return new_strata_dict, new_aggregate_dict
 end
 
@@ -1129,6 +1132,7 @@ end
 
 """
 macro stratify(sf, block) # Trying to be very vigilant about catching errors.
+
 
     @assert sf.head == :tuple && length(sf.args) == 3
     @assert all(x -> x ∈ names(Main), sf.args) # Maybe want it to be not just in Main?
@@ -1219,7 +1223,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
                     
 
-                    for (s,i) in current_strata_dict
+                    for (s,t) in current_strata_dict
                         if strata_stock_mappings[s] != 0
                             error("Strata stock at index $s has already been assigned!")
                         else
@@ -1227,13 +1231,14 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                         end
                     end
 
-                    for (s,i) in current_aggregate_dict
-                        if aggregate_stock_mappings[s] != 0
+                    for (a,t) in current_aggregate_dict
+                        if aggregate_stock_mappings[a] != 0
                             error("Aggregate stock at index $s has already been assigned!")
                         else
-                            aggregate_stock_mappings[s] = t
+                            aggregate_stock_mappings[a] = t
                         end
                     end
+
                 end
             end
             QuoteNode(:parameters) => begin
@@ -1244,19 +1249,19 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
 
-                    for (s,i) in current_strata_dict
-                        if strata_parameter_mappings[s] != 0
+                    for (s,t) in current_strata_dict
+                        if strata_param_mappings[s] != 0
                             error("Strata parameter at index $s has already been assigned!")
                         else
                             strata_param_mappings[s] = t
                         end
                     end
 
-                    for (s,i) in current_aggregate_dict
-                        if aggregate_parameter_mappings[s] != 0
+                    for (a,t) in current_aggregate_dict
+                        if aggregate_param_mappings[a] != 0
                             error("Aggregate parameter at index $s has already been assigned!")
                         else
-                            aggregate_param_mappings[s] = t
+                            aggregate_param_mappings[a] = t
                         end
                     end
                 end
@@ -1270,7 +1275,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
                     
-                    for (s,i) in current_strata_dict
+                    for (s,t) in current_strata_dict
                         if strata_dyvar_mappings[s] != 0
                             error("Strata dyvar at index $s has already been assigned!")
                         else
@@ -1278,11 +1283,11 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                         end
                     end
 
-                    for (s,i) in current_aggregate_dict
-                        if aggregate_dyvar_mappings[s] != 0
+                    for (a,t) in current_aggregate_dict
+                        if aggregate_dyvar_mappings[a] != 0
                             error("Aggregate dyvar at index $s has already been assigned!")
                         else
-                            aggregate_dyvar_mappings[s] = t
+                            aggregate_dyvar_mappings[a] = t
                         end
                     end
                 end
@@ -1296,7 +1301,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_fnames, type_fnames, aggregate_fnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
 
-                    for (s,i) in current_strata_dict
+                    for (s,t) in current_strata_dict
                         if strata_flow_mappings[s] != 0
                             error("Strata flow at index $s has already been assigned!")
                         else
@@ -1304,11 +1309,11 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                         end
                     end
 
-                    for (s,i) in current_aggregate_dict
-                        if aggregate_flow_mappings[s] != 0
+                    for (a,t) in current_aggregate_dict
+                        if aggregate_flow_mappings[a] != 0
                             error("Aggregate flow at index $s has already been assigned!")
                         else
-                            aggregate_flow_mappings[s] = t
+                            aggregate_flow_mappings[a] = t
                         end
                     end
                 end
@@ -1320,7 +1325,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_svnames, type_svnames, aggregate_svnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
                     
-                    for (s,i) in current_strata_dict
+                    for (s,t) in current_strata_dict
                         if strata_sum_mappings[s] != 0
                             error("Strata sum at index $s has already been assigned!")
                         else
@@ -1328,11 +1333,11 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                         end
                     end
                     
-                    for (s,i) in current_aggregate_dict
-                        if aggregate_sum_mappings[s] != 0
+                    for (a,t) in current_aggregate_dict
+                        if aggregate_sum_mappings[a] != 0
                             error("Aggregate sum at index $s has already been assigned!")
                         else
-                            aggregate_sum_mappings[s] = t
+                            aggregate_sum_mappings[a] = t
                         end
                     end
                 end
