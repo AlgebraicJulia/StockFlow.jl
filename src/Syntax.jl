@@ -1108,13 +1108,90 @@ da: new aggregate, aggregate symbol => type symbol
 
 convert ds to strata index => type index, da to aggregate index => type index
 """
-function substitute_symbols(s, t, a, ds, da) # TODO: add assert that all symbols in s,t and a are in ds and da
+function substitute_symbols(s, t, a, ds, da, wildcard=true) # TODO: add assert that all symbols in s,t and a are in ds and da (and that wildcards have at least one match, maybe?)
 
     # map(x -> println(x), [s, t, a, ds, da])
+    if !wildcard
+        new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
+        new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
+        return new_strata_dict, new_aggregate_dict
+    else
 
-    new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
-    new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
-    return new_strata_dict, new_aggregate_dict
+        @assert(allequal(values(s)) && allequal(values(a) && pairs(s)[1].second == pairs(a)[1].second)) # just checking that all values in both dictionaries are the same.
+        # can't take union and check all equal in case they share indices.  TODO: find a better way to do this.
+
+        # (they're all equal because each time this function is called, it's another line, each of which has its own type value)
+
+        t_original_value::Int = only(values(merge(new_strata_dict, new_aggregate_dict))) # since I did the check above, can just merge with no issues.
+        t_val_string = string(t_original_value) # the merge probably isn't necessary.  Used on the off chance one of them has no mapping to t.
+        # though in that case, the product would be 0, so the other would need to have no mappings as well.
+
+
+        if '*' ∈ t_val_string
+            t_match_string = findfirst(x -> length(x) != 0, split(t_val_string, '*')) # Yeah, limitation on the * right now is that it just cuts off before and after that bit
+            # so, you can't match f_*death*, it'd just match something that includes f_
+            # If we wanted we could implement full-blow regex but that seems like overkill.
+            # intention is just to be able to grab the middle of a word, like *death*.
+            if isnothing(t_match_string) # whole symbol only consisted of some amount of *
+                if length(t) == 1
+                    type_index = only(values(t))
+                else # I can't think of any other cirucmstance where a * match would have a sane answer.  If len t is 0, you shouldn't be here at all.  If len t > 1, it's ambiguous what the match is
+                    error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
+                end
+            else
+                type_index = only(filter(((key, value)) ->  occursin(t_match_string, string(key)), t)).second
+            end
+        else
+            type_index = t_original_value
+        end
+
+        new_strata_dict = Dict()
+
+        for strata_key::Symbol in keys(ds)
+            strata_key_string = string(strata_key)
+
+            if '*' ∈ strata_key_string
+                strata_match_string = findfirst(x -> length(x) != 0, split(t_val_string, '*'))
+                if isnothing(strata_match_string) # whole symbol only consisted of some amount of *
+                    if length(s) == 1
+                        push!(new_strata_dict, s[strata_key] => type_index)
+                    else
+                        error("Length of strata dictionary s $(length(s)) has ambiguous match on $strata_match_string")
+                    end
+                else
+                    push!(new_strata_dict, [s[key] => type_index for key in filter(((key, value)) -> occursin(strata_key_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
+                end
+            end
+        end
+
+        new_aggregate_dict = Dict()
+
+
+
+        for aggregate_key::Symbol in keys(ds)
+            aggregate_key_string = string(aggregate_key)
+
+            if '*' ∈ aggregate_key_string
+                aggregate_match_string = findfirst(x -> length(x) != 0, split(t_val_string, '*'))
+                if isnothing(aggregate_match_string) # whole symbol only consisted of some amount of *
+                    if length(a) == 1
+                        push!(new_aggregate_dict, a[aggregate_key] => type_index)
+                    else
+                        error("Length of aggregate dictionary a $(length(a)) has ambiguous match on $aggregate_match_string")
+                    end
+                else
+                    push!(new_aggregate_dict, [a[key] => type_index for key in filter(((key, value)) -> occursin(aggregate_key_string, string(key)), a)]...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
+                end
+            end
+        end
+
+        return new_strata_dict, new_aggregate_dict
+        
+        
+                
+            
+
+    end
 end
 
 
@@ -1239,8 +1316,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     # for (s,t) in current_strata_dict
                     # println(keys(current_aggregate_dict))
                     # println(strata_stock_mappings_dict)
-                    @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_strata_dict)))
-                    merge!(strata_stock_mappings_dict, current_strata_dict)
+                    @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
+                    merge!(strata_stock_mappings_dict, current_strata_dict) # accumulate dictionary keys
                     #     if strata_stock_mappings[s] != 0
                     #         error("Strata stock at index $s has already been assigned!")
                     #     else
