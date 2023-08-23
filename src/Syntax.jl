@@ -1037,6 +1037,12 @@ end
 
 const TEMP_STRAT_DEFAULT = :_
 const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
+const STRICT_MATCHES = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
+# :stocks
+# Ξf_death => f_death <= fdeath
+# Ξ => f_id <= fid
+#
+# would throw an error if true, wouldn't if false.
 
 """
 Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
@@ -1114,17 +1120,20 @@ function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_pr
     else
 
         @assert(allequal([values(da)..., values(ds)...])) # just checking that all values in both dictionaries are the same.
-        # can't take union and check all equal in case they share indices.
+        # can't take union and check all equal in case they share keys.
 
 
         t_original_value::Symbol = only(Set(values(merge(ds, da)))) # since I did the check above, can just merge with no issues.
-        t_val_string = string(t_original_value) # the merge probably isn't necessary.  Used on the off chance one of them has no mapping to t.
+        # the merge probably isn't necessary.  Used on the off chance one of them has no mapping to t.
         # though in that case, the product would be 0, so the other would need to have no mappings as well.
+        t_val_string = string(t_original_value)
+
 
         if startswith(t_val_string, issubstr_prefix)
             t_match_string = chopprefix(t_val_string, issubstr_prefix)
 
             if isempty(t_match_string) # whole symbol only consisted of Ξ
+                # this bit really isn't necessary, as it's covered by the type_index = only(filter... bit below
                 if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
                     # TODO: Probably not that.  bit important the placeholder value is in the dict though.
                     type_index = 1 # if there's only one, then the index has to be 1.
@@ -1180,12 +1189,19 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 
     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict)
     
-    @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
-    merge!(strata_mappings, current_strata_dict) # accumulate dictionary keys
+    if STRICT_MATCHES
+        @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
+        merge!(strata_mappings, current_strata_dict) # accumulate dictionary keys
 
 
-    @assert (all(x -> x ∉ keys(aggregate_mappings), keys(current_aggregate_dict)))
-    merge!(aggregate_mappings, current_aggregate_dict)
+        @assert (all(x -> x ∉ keys(aggregate_mappings), keys(current_aggregate_dict)))
+        merge!(aggregate_mappings, current_aggregate_dict)
+
+    else # at this point Ξ is just a better _
+        mergewith!((x, y) -> x, strata_mappings, current_strata_dict) # alternatively, can use only ∘ first
+        mergewith!((x, y) -> x, aggregate_mappings, current_aggregate_dict)
+    end
+
 end
 
 
