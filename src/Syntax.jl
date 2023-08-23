@@ -1083,14 +1083,9 @@ function interpret_stratification_notation(mapping_pair::Expr)
                     end
                     _ => error("Unknown expression found in stratification notation: $val")
                 end
-                    # val::Expr => begin # found the s => t <= a
-                    #     @match val begin
-                            
-                    # end
 
             end
             return (sdict, adict)
-                # _ => error("Unknown type found in stratification notation: $val of type $(typeof(val))")
         end
         _ => error("Unknown line format found in stratification notation.") 
     end
@@ -1111,7 +1106,6 @@ convert ds to strata index => type index, da to aggregate index => type index
 function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TODO: add assert that all symbols in s,t and a are in ds and da (and that wildcards have at least one match, maybe?)
     #TODO: pick a better delimiter.  In my current setup, needs to be a valid ascii character which can be used as an identifier.
 
-    # map(x -> println(x), [s, t, a, ds, da])
     if !wildcard
         new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
         new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
@@ -1136,15 +1130,18 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
             t_match_index = findfirst(x -> length(x) != 0, t_matches)
 
 
-            # t_match_string = findfirst(x -> length(x) != 0, split(t_val_string, delimiter)) # Yeah, limitation on the * right now is that it just cuts off before and after that bit
-            # so, you can't match f_*death*, it'd just match something that includes f_
-            # If we wanted we could implement full-blow regex but that seems like overkill.
+            # Yeah, limitation on the Ξ right now is that it just cuts off before and after that bit
+            # so, you can't match f_ΞdeathΞ, it'd just match something that includes f_
+            # If we wanted we could implement full-blown regex but that seems like overkill.
             # intention is just to be able to grab the middle of a word, like *death*.
-            if isnothing(t_match_index) # whole symbol only consisted of some amount of *
+
+            #TODO: treat Ξ as a prefix only.  None of this splitting stuff, just grab everything after the first Ξ.
+
+            if isnothing(t_match_index) # whole symbol only consisted of some amount of Ξ
                 if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
                     # TODO: Probably not that.  bit important the placeholder value is in the dict though.
                     type_index = only(symdiff(values(t), [-1]))
-                else # I can't think of any other cirucmstance where a * match would have a sane answer.  If len t is 0, you shouldn't be here at all.  If len t > 1, it's ambiguous what the match is
+                else # I can't think of any other cirucmstance where a Ξ match would have a sane answer.  If len t is 0 or 1, you shouldn't be here at all.  If len t > 2, it's ambiguous what the match is
                     println(t)
                     error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
                 end
@@ -1162,32 +1159,20 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
             strata_key_string = string(strata_key)
 
             
-            # println(strata_key_string)
-            # println(strata_key_string |> length)
+
             if delimiter ∈ strata_key_string
 
                 strata_matches = split(strata_key_string, delimiter)
-                # println(strata_matches)
-                # println("ABOVE")
+
                 strata_match_index = findfirst(x -> length(x) != 0, strata_matches)
 
-                # println(strata_match_string)
-                # println(length(strata_match_string))
 
                 if isnothing(strata_match_index) # whole symbol only consisted of some amount of delimiter
                     push!(new_strata_dict, [s[key] => type_index for key in keys(s)]...)
-                #     if length(s) == 1
-                #         push!(new_strata_dict, s[strata_key] => type_index)
-                #     else
-                #         error("Length of strata dictionary s $(length(s)) has ambiguous match on $strata_match_string")
-                #     end
+
                 else
-                    # println(strata_key_string)
-                    # println(length(strata_key_string))
-                    # println(strata_key ∈ keys(s))
-                    # println(s)
+
                     strata_match_string = strata_matches[strata_match_index]
-                    # println(strata_match_string)
                     push!(new_strata_dict, [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
                 end
             else
@@ -1207,14 +1192,9 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
                 aggregate_match_index = findfirst(x -> length(x) != 0, aggregate_matches)
 
                 
-                # aggregate_match_string = findfirst(x -> length(x) != 0, split(t_val_string, delimiter))
                 if isnothing(aggregate_match_index) # whole symbol only consisted of some amount of delimiter
                     push!(new_aggregate_dict, [a[key] => type_index for key in keys(a)]...)
-                #     if length(a) == 1
-                #         push!(new_aggregate_dict, a[aggregate_key] => type_index)
-                #     else
-                #         error("Length of aggregate dictionary a $(length(a)) has ambiguous match on $aggregate_match_string")
-                #     end
+
                 else
                     aggregate_match_string = aggregate_matches[aggregate_match_index]
                     push!(new_aggregate_dict, [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
@@ -1310,7 +1290,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     strata_all_names = [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames]
 
-    # println(strata_all_names)
 
 
     @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), strata_all_names)
@@ -1328,8 +1307,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # ...in the type schema, you can replace it with an underscore?
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), aggregate_all_names)
 
-    # println(strata_all_names)
-    # println(strata_snames)
 
 
     # use 0 for uninitialized, -1 for map to default
@@ -1351,29 +1328,12 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
                     
-
-                    # for (s,t) in current_strata_dict
-                    # println(keys(current_aggregate_dict))
-                    # println(strata_stock_mappings_dict)
                     @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
                     merge!(strata_stock_mappings_dict, current_strata_dict) # accumulate dictionary keys
-                    #     if strata_stock_mappings[s] != 0
-                    #         error("Strata stock at index $s has already been assigned!")
-                    #     else
-                    #         strata_stock_mappings[s] = t
-                    #     end
-                    # end
+ 
 
                     @assert (all(x -> x ∉ keys(aggregate_stock_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_stock_mappings_dict, current_aggregate_dict)
-
-                    # for (a,t) in current_aggregate_dict
-                    #     if aggregate_stock_mappings[a] != 0
-                    #         error("Aggregate stock at index $s has already been assigned!")
-                    #     else
-                    #         aggregate_stock_mappings[a] = t
-                    #     end
-                    # end
 
                 end
             end
@@ -1389,22 +1349,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     @assert (all(x -> x ∉ keys(aggregate_param_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_param_mappings_dict, current_aggregate_dict)
 
-
-                    # for (s,t) in current_strata_dict
-                    #     if strata_param_mappings[s] != 0
-                    #         error("Strata parameter at index $s has already been assigned!")
-                    #     else
-                    #         strata_param_mappings[s] = t
-                    #     end
-                    # end
-
-                    # for (a,t) in current_aggregate_dict
-                    #     if aggregate_param_mappings[a] != 0
-                    #         error("Aggregate parameter at index $s has already been assigned!")
-                    #     else
-                    #         aggregate_param_mappings[a] = t
-                    #     end
-                    # end
                 end
             end
             QuoteNode(:dynamic_variables) => begin
@@ -1420,21 +1364,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     @assert (all(x -> x ∉ keys(aggregate_dyvar_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_dyvar_mappings_dict, current_aggregate_dict)
                     
-                    # for (s,t) in current_strata_dict
-                    #     if strata_dyvar_mappings[s] != 0
-                    #         error("Strata dyvar at index $s has already been assigned!")
-                    #     else
-                    #         strata_dyvar_mappings[s] = t
-                    #     end
-                    # end
-
-                    # for (a,t) in current_aggregate_dict
-                    #     if aggregate_dyvar_mappings[a] != 0
-                    #         error("Aggregate dyvar at index $s has already been assigned!")
-                    #     else
-                    #         aggregate_dyvar_mappings[a] = t
-                    #     end
-                    # end
                 end
             end            
             QuoteNode(:flows) => begin
@@ -1451,21 +1380,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     @assert (all(x -> x ∉ keys(aggregate_flow_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_flow_mappings_dict, current_aggregate_dict)
 
-                    # for (s,t) in current_strata_dict
-                    #     if strata_flow_mappings[s] != 0
-                    #         error("Strata flow at index $s has already been assigned!")
-                    #     else
-                    #         strata_flow_mappings[s] = t
-                    #     end
-                    # end
-
-                    # for (a,t) in current_aggregate_dict
-                    #     if aggregate_flow_mappings[a] != 0
-                    #         error("Aggregate flow at index $s has already been assigned!")
-                    #     else
-                    #         aggregate_flow_mappings[a] = t
-                    #     end
-                    # end
                 end
             end                    
                   
@@ -1481,22 +1395,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
                     @assert (all(x -> x ∉ keys(aggregate_sum_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_sum_mappings_dict, current_aggregate_dict)
-                    
-                    # for (s,t) in current_strata_dict
-                    #     if strata_sum_mappings[s] != 0
-                    #         error("Strata sum at index $s has already been assigned!")
-                    #     else
-                    #         strata_sum_mappings[s] = t
-                    #     end
-                    # end
-                    
-                    # for (a,t) in current_aggregate_dict
-                    #     if aggregate_sum_mappings[a] != 0
-                    #         error("Aggregate sum at index $s has already been assigned!")
-                    #     else
-                    #         aggregate_sum_mappings[a] = t
-                    #     end
-                    # end
+               
                 end
             end                    
 
@@ -1509,12 +1408,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     # STEP 4
 
-
-    # println(strata_stock_mappings)
-    # println("I'm sorry.")
-
-    # println(strata_param_mappings_dict)
-    # println("HOSE")
 
     default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : 0
     default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : 0
@@ -1546,10 +1439,25 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     nothing_function = x -> nothing
     no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
     
+
+
+  
+    # Ok this is where we pull out the magic to infer links.
+    #
+    #  A <- C -> B
+    #  ||        ||
+    #  v         v
+    #  A'<- C'-> B'
+    #
+    # implies
+    #
+    #  A <- C -> B
+    #  ||  ||    ||
+    #  v    v    v
+    #  A'<- C'-> B'
+
     strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)
-    # for d in strata_necmaps
-    #     println(d)
-    # end
+
     
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
 
@@ -1570,58 +1478,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
 
-    # strata_stock_mappings = replace(strata_stock_mappings, 0 => default_index_strata_stock)
-    # aggregate_stock_mappings = replace(aggregate_stock_mappings, 0 => default_index_aggregate_stock)
 
-    # strata_flow_mappings = replace(strata_flow_mappings, 0 => default_index_strata_flow)
-    # aggregate_flow_mappings = replace(aggregate_flow_mappings, -1 => default_index_aggregate_flow)
-
-    # strata_dyvar_mappings = replace(strata_dyvar_mappings, -1 => default_index_strata_dyvar)
-    # aggregate_dyvar_mappings = replace(aggregate_dyvar_mappings, -1 => default_index_aggregate_dyvar)
-
-    # strata_param_mappings = replace(strata_param_mappings, -1 => default_index_strata_param)
-    # aggregate_param_mappings = replace(aggregate_param_mappings, -1 => default_index_aggregate_param)
-
-    # strata_sum_mappings = replace(strata_sum_mappings, -1 => default_index_strata_sum)
-    # aggregate_sum_mappings = replace(aggregate_sum_mappings, -1 => default_index_aggregate_sum)
-
-
-
-    # println(strata_stock_mappings)
-    # println(aggregate_stock_mappings)
-
-    # println(strata_flow_mappings)
-    # println(aggregate_flow_mappings)
-
-    # println(strata_dyvar_mappings)
-    # println(aggregate_dyvar_mappings)
-
-    # println(strata_param_mappings)
-    # println(aggregate_param_mappings)
-
-    # println(strata_sum_mappings)
-    # println(aggregate_sum_mappings)
-
-
-    # TODO: Once over at the end to convert placeholders.
-
-    # s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
-    # return s
-
-
-    # Ok this is where we pull out the magic to infer links.
-    #
-    #  A <- C -> B
-    #  ||        ||
-    #  v         v
-    #  A'<- C'-> B'
-    #
-    # implies
-    #
-    #  A <- C -> B
-    #  ||  ||    ||
-    #  v    v    v
-    #  A'<- C'-> B'
 
 
 
@@ -1642,16 +1499,8 @@ If A <- C -> B, and we have A -> A' and B -> B' and a unique C' such that A' <- 
 
 necMaps must contain keys S, F, SV, P, V
 """
-function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
-    # baby oh baby, prepare for disappointment
-    # - Joel Vinesauce
+function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}}) # TODO: break these down into multiple functions.
 
-    # So unfortunately, from what I understand, in the current setup, there isn't a nice way to get the relevant ordered pairs (or triples, in some cases, if we care about operation or position)
-    # as such we need to do this trash
-    # TODO: NOT THIS
-
-    # sfsrc_links = get_links(sfsrc)
-    # sftgt_links = get_links(sftgt)
 
     stockmaps = NecMaps[:S]
     flowmaps = NecMaps[:F]
@@ -1674,33 +1523,24 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
     for (i, (lss, lssv)) in enumerate(zip(get_lss(sfsrc), get_lssv(sfsrc))) # remember, this is ordered.
  
-        # println(stockmaps)
-        # println(summaps)
-        # println(lss)
-        # println(lssv)
 
         stock_mapped_index = stockmaps[lss]
         sum_mapped_index = summaps[lssv]
 
-        # println(LS_tgt)
         lsmap = LS_tgt[(stock_mapped_index, sum_mapped_index)]
 
         lsmaps[i] = lsmap
     end
 
-    # println(lsmaps)
 
     # TODO: Order is and ifn correctly (doesn't matter, but they're backwards right now)
     # Same with outflows
 
     I_tgt = Dict((is, ifn) => i for (i, (is, ifn)) in enumerate(zip(get_is(sftgt), get_ifn(sftgt))))
-    # println(collect((zip(get_is(sfsrc), get_ifn(sfsrc)))))
-    # println("Yes")
 
     for (i, (is, ifn)) in enumerate(zip(get_is(sfsrc), get_ifn(sfsrc))) 
  
-        # println(is, ifn)
-        # println(flowmaps)
+
 
         stock_mapped_index = stockmaps[is]
         flow_mapped_index = flowmaps[ifn]
