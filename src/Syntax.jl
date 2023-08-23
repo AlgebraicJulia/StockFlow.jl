@@ -1174,6 +1174,19 @@ function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_pr
     end
 end
 
+function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
+    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
+    
+    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict)
+    
+    @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
+    merge!(strata_mappings, current_strata_dict) # accumulate dictionary keys
+
+
+    @assert (all(x -> x ∉ keys(aggregate_mappings), keys(current_aggregate_dict)))
+    merge!(aggregate_mappings, current_aggregate_dict)
+end
+
 
 # TODO: the following
 """
@@ -1282,82 +1295,21 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     for statement in block.args
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = p -> begin
-                    
-                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
-                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_snames, type_snames, aggregate_snames, current_strata_symbol_dict, current_aggregate_symbol_dict)
-
-
-                    
-                    @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
-                    merge!(strata_stock_mappings_dict, current_strata_dict) # accumulate dictionary keys
- 
-
-                    @assert (all(x -> x ∉ keys(aggregate_stock_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(aggregate_stock_mappings_dict, current_aggregate_dict)
-
-                end
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_snames, type_snames, aggregate_snames, strata_stock_mappings_dict, aggregate_stock_mappings_dict)
             end
             QuoteNode(:parameters) => begin
-                current_phase = p -> begin                
-                    
-                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
-                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_pnames, type_pnames, aggregate_pnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
-
-                    @assert (all(x -> x ∉ keys(strata_param_mappings_dict), keys(current_strata_dict)))
-                    merge!(strata_param_mappings_dict, current_strata_dict)
-
-                    @assert (all(x -> x ∉ keys(aggregate_param_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(aggregate_param_mappings_dict, current_aggregate_dict)
-
-                end
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_pnames, type_pnames, aggregate_pnames, strata_param_mappings_dict, aggregate_param_mappings_dict)
+                println(aggregate_param_mappings_dict)
             end
             QuoteNode(:dynamic_variables) => begin
-                    current_phase = p -> begin                
-                    
-                     
-                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
-                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_vnames, type_vnames, aggregate_vnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
-
-                    @assert (all(x -> x ∉ keys(strata_dyvar_mappings_dict), keys(current_strata_dict)))
-                    merge!(strata_dyvar_mappings_dict, current_strata_dict)
-
-                    @assert (all(x -> x ∉ keys(aggregate_dyvar_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(aggregate_dyvar_mappings_dict, current_aggregate_dict)
-                    
-                end
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict)
             end            
             QuoteNode(:flows) => begin
-                current_phase = p -> begin                
-                        
-                        
-                 
-                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
-                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_fnames, type_fnames, aggregate_fnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
-
-                    @assert (all(x -> x ∉ keys(strata_flow_mappings_dict), keys(current_strata_dict)))
-                    merge!(strata_flow_mappings_dict, current_strata_dict)
-
-                    @assert (all(x -> x ∉ keys(aggregate_flow_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(aggregate_flow_mappings_dict, current_aggregate_dict)
-
-                end
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_fnames, type_fnames, aggregate_fnames, strata_flow_mappings_dict, aggregate_flow_mappings_dict)
             end                    
                   
             QuoteNode(:sums) => begin
-                current_phase = p -> begin                
-
-                    current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
-                    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_svnames, type_svnames, aggregate_svnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
-                    
-
-                    @assert (all(x -> x ∉ keys(strata_sum_mappings_dict), keys(current_strata_dict)))
-                    merge!(strata_sum_mappings_dict, current_strata_dict)
-
-                    @assert (all(x -> x ∉ keys(aggregate_sum_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(aggregate_sum_mappings_dict, current_aggregate_dict)
-               
-                end
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict)
             end                    
 
 
