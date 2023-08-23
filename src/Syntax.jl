@@ -1125,18 +1125,21 @@ function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_pr
         if startswith(t_val_string, issubstr_prefix)
             t_match_string = chopprefix(t_val_string, issubstr_prefix)
 
-            if isempty(t_match_string) # whole symbol only consisted of Ξ
-                # this bit really isn't necessary, as it's covered by the type_index = only(filter... bit below
-                if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
-                    # TODO: Probably not that.  bit important the placeholder value is in the dict though.
-                    type_index = 1 # if there's only one, then the index has to be 1.
-                else # I can't think of any other cirucmstance where a Ξ match would have a sane answer.  If len t is 0 or 1, you shouldn't be here at all.  If len t > 2, it's ambiguous what the match is
-                    # Maybe where we're taking product?
-                    error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
-                end
-            else
+            # Removing the following so you can have a default Ξ, though it needs to be last, and all others need to be assigned.
+            # The main reason you'd want to do it is if a type sf name is too long.
+
+            # if isempty(t_match_string) # whole symbol only consisted of Ξ
+            #     # this bit really isn't necessary, as it's covered by the type_index = only(filter... bit below
+            #     if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
+            #         # TODO: Probably not that.  bit important the placeholder value is in the dict though.
+            #         type_index = 1 # if there's only one, then the index has to be 1.
+            #     else # I can't think of any other cirucmstance where a Ξ match would have a sane answer.  If len t is 0 or 1, you shouldn't be here at all.  If len t > 2, it's ambiguous what the match is
+            #         # Maybe where we're taking product?
+            #         error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
+            #     end
+            # else
                 type_index = only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second # grab the only t value with t_match_string as a substring (there could be multiple, in which case throw error)
-            end
+            # end
         else
             type_index = t[t_original_value]
         end
