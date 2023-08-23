@@ -1036,7 +1036,7 @@ function match_foot_format(footblock::Expr)
 end
 
 const ISSUB_DEFAULT = "Ξ"
-const TEMP_STRAT_DEFAULT = :_
+const USE_ISSUB = true
 const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
 const STRICT_MATCHES = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
 # :stocks
@@ -1051,17 +1051,9 @@ Take an expression of the form a1, ..., => t <= s1, ..., where every element is 
 function interpret_stratification_notation(mapping_pair::Expr)
     @match mapping_pair begin
 
-        :(_ => $t <= _) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(TEMP_STRAT_DEFAULT => t)) # match literal underscores to act as defaults (temporarily map to TEMP_STRAT_DEFAULT)
-        :(_ => $t <= $a) => return (Dict(TEMP_STRAT_DEFAULT => t), Dict(a => t))
-        :(_ => $t <= $a, $(atail...)) => return (Dict(TEMP_STRAT_DEFAULT => t), push!(Dict(as => t for as in atail), a => t))
 
-
-        :($s => $t <= _) => return (Dict(s => t), Dict(TEMP_STRAT_DEFAULT => t))
         :($s => $t <= $a) => return (Dict(s => t), Dict(a => t))
         :($s => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
-
-
-        :($(shead...), $s => $t <= _) => return (push!(Dict(ss => t for ss in shead), s => t), Dict(TEMP_STRAT_DEFAULT => t))
         :($(shead...), $s => $t <= $a) => return (push!(Dict(ss => t for ss in shead), s => t), Dict(a => t))
 
 
@@ -1188,7 +1180,7 @@ end
 function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
 
-    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict ; use_substr_prefix=true, issubstr_prefix=ISSUB_DEFAULT)
+    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES
         @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
@@ -1281,28 +1273,22 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
     strata_all_names = [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames]
-
-
-
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), strata_all_names)
-
     type_all_names = [type_snames, type_svnames, type_vnames, type_fnames, type_pnames]
-
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), type_all_names)
-
     aggregate_all_names = [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames]
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), aggregate_all_names)
 
-    # Inserting the symbol for use_substr_prefix into each dictionary
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), strata_all_names)
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), type_all_names) # TODO: Make this do something?  Maybe if there's only one stock, flow, etc.
-    # ...in the type schema, you can replace it with an underscore?
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), aggregate_all_names)
+    all_names =  [strata_all_names..., type_all_names..., aggregate_all_names...]
+
+    if USE_ISSUB
+        @assert all(ks -> all(k -> !startswith(string(k), ISSUB_DEFAULT), values(ks)), all_names) # ensure that no name in stockflows start with prefix used to identify substrings
+    end
+
+    @assert(allunique(strata_all_names) && allunique(type_all_names) && allunique(aggregate_all_names)) # ensure names in each stockflow are unique within themselves.
+    # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
+    
 
 
 
-    # use 0 for uninitialized, -1 for map to default
-    # indices start at 1, so both these are clearly placeholder values.
+    # use 0 for uninitialized
 
 
 
@@ -1352,30 +1338,30 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # If there's a _, map all unmapped stocks to that.
     # Otherwise, if there's only a single value in type, map to that.
     # Otherwise, map 0 to 0 and get an error, since you need to define that mapping
-    default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : one_type_stock
-    default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : one_type_flow
-    default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : one_type_dyvar
-    default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : one_type_param
-    default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : one_type_sum
+    # default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : one_type_stock
+    # default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : one_type_flow
+    # default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : one_type_dyvar
+    # default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : one_type_param
+    # default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : one_type_sum
 
-    default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : one_type_stock
-    default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : one_type_flow
-    default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : one_type_dyvar
-    default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : one_type_param
-    default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : one_type_sum
+    # default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : one_type_stock
+    # default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : one_type_flow
+    # default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : one_type_dyvar
+    # default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : one_type_param
+    # default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : one_type_sum
 
 
-    strata_stock_mappings = [get(strata_stock_mappings_dict, i, default_index_strata_stock)  for i in 1:ns(strata)]
-    strata_flow_mappings =  [get(strata_flow_mappings_dict, i, default_index_strata_flow)  for i in 1:nf(strata)]
-    strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, default_index_strata_dyvar)  for i in 1:nvb(strata)]
-    strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i, default_index_strata_param)  for i in 1:np(strata)]
-    strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i, default_index_strata_sum)  for i in 1:nsv(strata)]
+    strata_stock_mappings = [get(strata_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(strata)]
+    strata_flow_mappings =  [get(strata_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(strata)]
+    strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, one_type_dyvar)  for i in 1:nvb(strata)]
+    strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i, one_type_param)  for i in 1:np(strata)]
+    strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i, one_type_sum)  for i in 1:nsv(strata)]
 
-    aggregate_stock_mappings = [get(aggregate_stock_mappings_dict, i, default_index_aggregate_stock)  for i in 1:ns(aggregate)]
-    aggregate_flow_mappings =  [get(aggregate_flow_mappings_dict, i, default_index_aggregate_flow)  for i in 1:nf(aggregate)]
-    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, default_index_aggregate_dyvar)  for i in 1:nvb(aggregate)]
-    aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i, default_index_aggregate_param)  for i in 1:np(aggregate)]
-    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i, default_index_aggregate_sum)  for i in 1:nsv(aggregate)]
+    aggregate_stock_mappings = [get(aggregate_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(aggregate)]
+    aggregate_flow_mappings =  [get(aggregate_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(aggregate)]
+    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, one_type_dyvar)  for i in 1:nvb(aggregate)]
+    aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i, one_type_param)  for i in 1:np(aggregate)]
+    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i, one_type_sum)  for i in 1:nsv(aggregate)]
     
 
 
