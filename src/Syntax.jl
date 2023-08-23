@@ -108,6 +108,10 @@ export @stock_and_flow, @foot, @feet, @stratify
 using ..StockFlow
 using MLStyle
 import Base.get
+import Catlab.CategoricalAlgebra.CSets.ACSetTransformation
+import Catlab.CategoricalAlgebra.Limits.pullback
+import Catlab.CategoricalAlgebra.FreeDiagrams.apex
+
 
 """
     stock_and_flow(block :: Expr)
@@ -1235,8 +1239,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     # for (s,t) in current_strata_dict
                     # println(keys(current_aggregate_dict))
                     # println(strata_stock_mappings_dict)
-                    @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(strata_stock_mappings_dict, current_aggregate_dict)
+                    @assert (all(x -> x ∉ keys(strata_stock_mappings_dict), keys(current_strata_dict)))
+                    merge!(strata_stock_mappings_dict, current_strata_dict)
                     #     if strata_stock_mappings[s] != 0
                     #         error("Strata stock at index $s has already been assigned!")
                     #     else
@@ -1263,8 +1267,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_pnames, type_pnames, aggregate_pnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
-                    @assert (all(x -> x ∉ keys(strata_param_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(strata_param_mappings_dict, current_aggregate_dict)
+                    @assert (all(x -> x ∉ keys(strata_param_mappings_dict), keys(current_strata_dict)))
+                    merge!(strata_param_mappings_dict, current_strata_dict)
 
                     @assert (all(x -> x ∉ keys(aggregate_param_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_param_mappings_dict, current_aggregate_dict)
@@ -1294,8 +1298,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_vnames, type_vnames, aggregate_vnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
-                    @assert (all(x -> x ∉ keys(strata_dyvar_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(strata_dyvar_mappings_dict, current_aggregate_dict)
+                    @assert (all(x -> x ∉ keys(strata_dyvar_mappings_dict), keys(current_strata_dict)))
+                    merge!(strata_dyvar_mappings_dict, current_strata_dict)
 
                     @assert (all(x -> x ∉ keys(aggregate_dyvar_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_dyvar_mappings_dict, current_aggregate_dict)
@@ -1325,8 +1329,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(p)
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_fnames, type_fnames, aggregate_fnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
 
-                    @assert (all(x -> x ∉ keys(strata_flow_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(strata_flow_mappings_dict, current_aggregate_dict)
+                    @assert (all(x -> x ∉ keys(strata_flow_mappings_dict), keys(current_strata_dict)))
+                    merge!(strata_flow_mappings_dict, current_strata_dict)
 
                     @assert (all(x -> x ∉ keys(aggregate_flow_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_flow_mappings_dict, current_aggregate_dict)
@@ -1356,8 +1360,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
                     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_svnames, type_svnames, aggregate_svnames, current_strata_symbol_dict, current_aggregate_symbol_dict)
                     
 
-                    @assert (all(x -> x ∉ keys(strata_sum_mappings_dict), keys(current_aggregate_dict)))
-                    merge!(strata_sum_mappings_dict, current_aggregate_dict)
+                    @assert (all(x -> x ∉ keys(strata_sum_mappings_dict), keys(current_strata_dict)))
+                    merge!(strata_sum_mappings_dict, current_strata_dict)
 
                     @assert (all(x -> x ∉ keys(aggregate_sum_mappings_dict), keys(current_aggregate_dict)))
                     merge!(aggregate_sum_mappings_dict, current_aggregate_dict)
@@ -1392,6 +1396,10 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     # println(strata_stock_mappings)
     # println("I'm sorry.")
+
+    println(strata_param_mappings_dict)
+    println("HOSE")
+
     default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : 0
     default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : 0
     default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : 0
@@ -1423,15 +1431,19 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
     
     strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)
+    for d in strata_necmaps
+        println(d)
+    end
+    
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
 
-    strata_to_type = ACSetTransformation(strata, no_attribute_type; strata..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+    strata_to_type = ACSetTransformation(strata, no_attribute_type; strata_necmaps..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
 
     
     aggregate_necmaps = Dict(:S => aggregate_stock_mappings, :F => aggregate_flow_mappings, :V => aggregate_dyvar_mappings, :P => aggregate_param_mappings, :SV => aggregate_sum_mappings)
     aggregate_inferred_links = infer_links(aggregate, type, aggregate_necmaps)
 
-    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate..., aggregate_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate_necmaps..., aggregate_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
 
     
 
@@ -1562,13 +1574,21 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
     # println(lsmaps)
 
-    I_tgt = collect((is, ifn) => i for (i, (is, ifn)) in enumerate(zip(get_is(sftgt), get_ifn(sftgt))))
+    # TODO: Order is and ifn correctly (doesn't matter, but they're backwards right now)
+    # Same with outflows
 
-    for (i, (is, ifn)) in enumerate(zip(get_is(sfsrc), get_ifn(sfsrc))) # remember, this is ordered.
+    I_tgt = Dict((is, ifn) => i for (i, (is, ifn)) in enumerate(zip(get_is(sftgt), get_ifn(sftgt))))
+    println(collect((zip(get_is(sfsrc), get_ifn(sfsrc)))))
+    println("Yes")
+
+    for (i, (is, ifn)) in enumerate(zip(get_is(sfsrc), get_ifn(sfsrc))) 
  
+        println(is, ifn)
+        println(flowmaps)
 
         stock_mapped_index = stockmaps[is]
         flow_mapped_index = flowmaps[ifn]
+
 
         imap = I_tgt[(stock_mapped_index, flow_mapped_index)]
 
@@ -1577,9 +1597,9 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
 
 
-    O_tgt = collect((os, ofn) => i for (i, (os, ofn)) in enumerate(zip(get_os(sftgt), get_ofn(sftgt))))
+    O_tgt = Dict((os, ofn) => i for (i, (os, ofn)) in enumerate(zip(get_os(sftgt), get_ofn(sftgt))))
 
-    for (i, (os, ofn)) in enumerate(zip(get_os(sfsrc), get_ofn(sfsrc))) # remember, this is ordered.
+    for (i, (os, ofn)) in enumerate(zip(get_os(sfsrc), get_ofn(sfsrc)))
  
 
         stock_mapped_index = stockmaps[os]
@@ -1591,7 +1611,7 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     end
 
         
-    LV_tgt = collect((lvs, lvv) => i for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sftgt), get_lvv(sftgt))))
+    LV_tgt = Dict((lvs, lvv) => i for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sftgt), get_lvv(sftgt))))
 
     for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sfsrc), get_lvv(sfsrc))) 
 
@@ -1604,7 +1624,7 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     end
 
 
-    LSV_tgt = collect((lsvsv, lsvv) => i for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sftgt), get_lsvv(sftgt))))
+    LSV_tgt = Dict((lsvsv, lsvv) => i for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sftgt), get_lsvv(sftgt))))
 
     for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sfsrc), get_lsvv(sfsrc)))
 
@@ -1617,7 +1637,7 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     end
 
 
-    LVV_tgt = collect((lvsrc, lvtgt) => i for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sftgt), get_lvtgt(sftgt))))
+    LVV_tgt = Dict((lvsrc, lvtgt) => i for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sftgt), get_lvtgt(sftgt))))
 
     for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sfsrc), get_lvtgt(sfsrc)))
 
@@ -1630,7 +1650,7 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     end
 
 
-    LPV_tgt = collect((lpvp, lpvv) => i for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lpvp(sftgt), get_lpvv(sftgt))))
+    LPV_tgt = Dict((lpvp, lpvv) => i for (i, (lpvp, lpvv)) in enumerate(zip(get_lpvp(sftgt), get_lpvv(sftgt))))
 
     for (i, (lpvp, lpvv)) in enumerate(zip(get_lpvp(sfsrc), get_lpvv(sfsrc)))
 
