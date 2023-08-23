@@ -1036,6 +1036,7 @@ function match_foot_format(footblock::Expr)
 end
 
 const TEMP_STRAT_DEFAULT = :_
+const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
 
 """
 Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
@@ -1103,7 +1104,7 @@ da: new aggregate, aggregate symbol => type symbol
 
 convert ds to strata index => type index, da to aggregate index => type index
 """
-function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_prefix='Ξ') # TODO: add assert that all symbols in s,t and a are in ds and da (and that use_substr_prefixs have at least one match, maybe?)
+function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_prefix="Ξ") # TODO: add assert that all symbols in s,t and a are in ds and da (and that use_substr_prefixs have at least one match, maybe?)
     #TODO: pick a better issubstr_prefix.  In my current setup, needs to be a valid ascii character which can be used as an identifier.
 
     if !use_substr_prefix # this bit isn't necessary, as it's covered by the else block, but it's way simpler, and there may be cases where we don't want to check for substrings
@@ -1121,7 +1122,7 @@ function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_pr
         # though in that case, the product would be 0, so the other would need to have no mappings as well.
 
         if startswith(t_val_string, issubstr_prefix)
-            t_match_string = chop(t_val_string, head=length(issubstr_prefix), tail=0)
+            t_match_string = chopprefix(t_val_string, issubstr_prefix)
 
             if isempty(t_match_string) # whole symbol only consisted of Ξ
                 if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
@@ -1146,7 +1147,7 @@ function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_pr
             strata_key_string = string(strata_key)
 
             if startswith(strata_key_string, issubstr_prefix)
-                strata_match_string = chop(strata_key_string, head=length(issubstr_prefix), tail=0)
+                strata_match_string = chopprefix(strata_key_string, issubstr_prefix)
                 push!(new_strata_dict, [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
                 # above includes case where strata_match_string is empty string, in which case everything will match.
             else
@@ -1159,8 +1160,8 @@ function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_pr
         for aggregate_key::Symbol in keys(da)
             aggregate_key_string = string(aggregate_key)
 
-            if issubstr_prefix ∈ aggregate_key_string
-                aggregate_match_string = chop(aggregate_key_string, head=length(issubstr_prefix), tail=0)
+            if startswith(aggregate_key_string, issubstr_prefix)
+                aggregate_match_string = chopprefix(aggregate_key_string, issubstr_prefix)
                 push!(new_aggregate_dict, [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
             else
                 push!(new_aggregate_dict, a[aggregate_key] => type_index)
@@ -1319,19 +1320,32 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     end
 
     # STEP 4
+    if !STRICT_MAPPINGS
+        one_type_stock = length(snames(type)) == 1 ? 1 : 0
+        one_type_flow = length(fnames(type)) == 1 ? 1 : 0
+        one_type_dyvar = length(vnames(type)) == 1 ? 1 : 0
+        one_type_param = length(pnames(type)) == 1 ? 1 : 0
+        one_type_sum = length(svnames(type)) == 1 ? 1 : 0
+    else
+        one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
+    end
 
 
-    default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : 0
-    default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : 0
-    default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : 0
-    default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : 0
-    default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : 0
 
-    default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : 0
-    default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : 0
-    default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : 0
-    default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : 0
-    default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : 0
+    # If there's a _, map all unmapped stocks to that.
+    # Otherwise, if there's only a single value in type, map to that.
+    # Otherwise, map 0 to 0 and get an error, since you need to define that mapping
+    default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : one_type_stock
+    default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : one_type_flow
+    default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : one_type_dyvar
+    default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : one_type_param
+    default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : one_type_sum
+
+    default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : one_type_stock
+    default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : one_type_flow
+    default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : one_type_dyvar
+    default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : one_type_param
+    default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : one_type_sum
 
 
     strata_stock_mappings = [get(strata_stock_mappings_dict, i, default_index_strata_stock)  for i in 1:ns(strata)]
@@ -1390,6 +1404,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     
 end
+
+
 
 """
 With all these arguments makes you wonder if it's worth factoring it out at all.
