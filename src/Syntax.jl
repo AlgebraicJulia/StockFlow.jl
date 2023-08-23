@@ -1397,8 +1397,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # println(strata_stock_mappings)
     # println("I'm sorry.")
 
-    println(strata_param_mappings_dict)
-    println("HOSE")
+    # println(strata_param_mappings_dict)
+    # println("HOSE")
 
     default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : 0
     default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : 0
@@ -1431,9 +1431,9 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
     
     strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)
-    for d in strata_necmaps
-        println(d)
-    end
+    # for d in strata_necmaps
+    #     println(d)
+    # end
     
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
 
@@ -1558,15 +1558,15 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
     for (i, (lss, lssv)) in enumerate(zip(get_lss(sfsrc), get_lssv(sfsrc))) # remember, this is ordered.
  
-        println(stockmaps)
-        println(summaps)
-        println(lss)
-        println(lssv)
+        # println(stockmaps)
+        # println(summaps)
+        # println(lss)
+        # println(lssv)
 
         stock_mapped_index = stockmaps[lss]
         sum_mapped_index = summaps[lssv]
 
-        println(LS_tgt)
+        # println(LS_tgt)
         lsmap = LS_tgt[(stock_mapped_index, sum_mapped_index)]
 
         lsmaps[i] = lsmap
@@ -1578,13 +1578,13 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     # Same with outflows
 
     I_tgt = Dict((is, ifn) => i for (i, (is, ifn)) in enumerate(zip(get_is(sftgt), get_ifn(sftgt))))
-    println(collect((zip(get_is(sfsrc), get_ifn(sfsrc)))))
-    println("Yes")
+    # println(collect((zip(get_is(sfsrc), get_ifn(sfsrc)))))
+    # println("Yes")
 
     for (i, (is, ifn)) in enumerate(zip(get_is(sfsrc), get_ifn(sfsrc))) 
  
-        println(is, ifn)
-        println(flowmaps)
+        # println(is, ifn)
+        # println(flowmaps)
 
         stock_mapped_index = stockmaps[is]
         flow_mapped_index = flowmaps[ifn]
