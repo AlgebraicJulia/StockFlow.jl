@@ -1191,14 +1191,15 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
         merge!(aggregate_mappings, current_aggregate_dict)
 
     else # at this point Ξ is just a better _
-        mergewith!((x, y) -> x, strata_mappings, current_strata_dict) # alternatively, can use only ∘ first
+        mergewith!((x, y) -> x, strata_mappings, current_strata_dict) # alternatively, can use: only ∘ first
         mergewith!((x, y) -> x, aggregate_mappings, current_aggregate_dict)
     end
 
 end
 
 
-# TODO: the following
+const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
+const STRICT_MATCHES = false
 """
     @stratify (strata, type, aggregate) begin ... end
 
@@ -1207,15 +1208,16 @@ end
     2. iterate over each line in the block
         2a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
         2b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
-        2c. Accumulate respective dictionaries
-    3. Initialize an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate
-    4. Insert into arrays all (nonuse_substr_prefix)
-    5. Do a once over of the arrays and replace use_substr_prefix values, replacing all 0s with index for use_substr_prefix, ensure there are no zeroes remaining
-    6. Do some magic to infer LS, LSV, etc.
-    7. Deal with attributes
-    8. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
-    9. Return pullback
-
+            2bα. Map symbols without ISSUB_DEFAULT to Int
+            2bβ. If applicable, for symbols with ISSUB_DEFAULT as a prefix, find all matching symbols in the symbol dictionaries, and map all those
+        2c. Accumulate respective dictionaries (optionally, only allow first match vs throw an error (STRICT_MATCHES = false vs true))
+    3. Create an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate.   Insert into arrays all values from the two Int => Int dictionaries
+        3a. If STRICT_MAPPINGS = false, if there only exists one option in type to map to, and it hasn't been explicitly specified, add it.  If STRICT_MAPPINGS = true and it hasn't been specified, throw an error.
+    4. Do a once-over of arrays and ensure there aren't any zeroes (unmapped values) remaining
+    5. Deal with attributes (create a copy of type sf with attributes mapped to nothing)
+    6. Infer LS, LSV, etc.
+    7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
+    8. Return pullback (with flattened attributes)
 """
 macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
@@ -1228,7 +1230,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     Base.remove_linenums!(block)
 
-    # STEP 1 and 2
+    # STEP 1
        
     strata_snames = Dict(S => i for (i, S) in enumerate(snames(strata)))
     strata_svnames = Dict(S => i for (i, S) in enumerate(svnames(strata)))
@@ -1284,17 +1286,11 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     @assert(allunique(strata_all_names) && allunique(type_all_names) && allunique(aggregate_all_names)) # ensure names in each stockflow are unique within themselves.
     # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
-    
-
-
 
     # use 0 for uninitialized
 
+    # STEP 2
 
-
-    # STEP 3
-
-    # TODO: Extract this stuff out to reuse code instead of copy-pasting functions
     current_phase = (_, _) -> ()
     for statement in block.args
         @match statement begin
@@ -1322,7 +1318,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
         end
     end
 
-    # STEP 4
+    # STEP 3
     if !STRICT_MAPPINGS
         one_type_stock = length(snames(type)) == 1 ? 1 : 0
         one_type_flow = length(fnames(type)) == 1 ? 1 : 0
@@ -1335,42 +1331,30 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
 
-    # If there's a _, map all unmapped stocks to that.
-    # Otherwise, if there's only a single value in type, map to that.
-    # Otherwise, map 0 to 0 and get an error, since you need to define that mapping
-    # default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : one_type_stock
-    # default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : one_type_flow
-    # default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : one_type_dyvar
-    # default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : one_type_param
-    # default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : one_type_sum
-
-    # default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : one_type_stock
-    # default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : one_type_flow
-    # default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : one_type_dyvar
-    # default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : one_type_param
-    # default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : one_type_sum
-
-
-    strata_stock_mappings = [get(strata_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(strata)]
-    strata_flow_mappings =  [get(strata_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(strata)]
+    strata_stock_mappings::Vector{Int} = [get(strata_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(strata)]
+    strata_flow_mappings::Vector{Int} =  [get(strata_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(strata)]
     strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, one_type_dyvar)  for i in 1:nvb(strata)]
     strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i, one_type_param)  for i in 1:np(strata)]
     strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i, one_type_sum)  for i in 1:nsv(strata)]
 
-    aggregate_stock_mappings = [get(aggregate_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(aggregate)]
-    aggregate_flow_mappings =  [get(aggregate_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(aggregate)]
+    aggregate_stock_mappings::Vector{Int} = [get(aggregate_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(aggregate)]
+    aggregate_flow_mappings::Vector{Int} =  [get(aggregate_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(aggregate)]
     aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, one_type_dyvar)  for i in 1:nvb(aggregate)]
     aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i, one_type_param)  for i in 1:np(aggregate)]
     aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i, one_type_sum)  for i in 1:nsv(aggregate)]
     
+    all_mappings = [strata_stock_mappings..., strata_flow_mappings..., strata_dyvar_mappings..., strata_param_mappings..., strata_sum_mappings..., aggregate_stock_mappings..., aggregate_flow_mappings..., aggregate_dyvar_mappings..., aggregate_param_mappings..., aggregate_sum_mappings...]
+
+    # STEP 4
+    @assert(all(x -> x != 0, all_mappings))
 
 
+    # STEP 5
     nothing_function = x -> nothing
     no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
     
 
 
-  
     # Ok this is where we pull out the magic to infer links.
     #
     #  A <- C -> B
@@ -1385,22 +1369,19 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     #  v    v    v
     #  A'<- C'-> B'
 
-    strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)
-
-    
+    # STEP 6/7
+    strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)    
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
-
     strata_to_type = ACSetTransformation(strata, no_attribute_type; strata_necmaps..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
 
     
     aggregate_necmaps = Dict(:S => aggregate_stock_mappings, :F => aggregate_flow_mappings, :V => aggregate_dyvar_mappings, :P => aggregate_param_mappings, :SV => aggregate_sum_mappings)
     aggregate_inferred_links = infer_links(aggregate, type, aggregate_necmaps)
-
     aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate_necmaps..., aggregate_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
 
     
 
-
+    # STEP 8
     pullback_model = pullback(strata_to_type, aggregate_to_type) |> apex |> rebuildStratifiedModelByFlattenSymbols;
 
     return pullback_model
