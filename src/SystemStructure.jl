@@ -154,15 +154,6 @@ function args_vname(p::AbstractStockAndFlowStructureF,v)
     return (srcsv,srcsvv,srcpv,srcvv)
 end
 
-function args_vnamexxxx(p::AbstractStockAndFlowStructureF,v)
-    srcsv=map(i->Symbol(join(sname(p,i))),stocksv(p,v))
-    srcsvv=map(i->Symbol(join(svname(p,i))),svsv(p,v))
-    srcpv=map(i->Symbol(join(pname(p,i))),vpsrc(p,v))
-    srcvv=map(i->Symbol(join(vname(p,i))),vsrc(p,v))
-
-    return (srcsv,srcsvv,srcpv,srcvv)
-end
-
 """
     args(p::AbstractStockAndFlowStructureF,v)
 Return a Vector of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
