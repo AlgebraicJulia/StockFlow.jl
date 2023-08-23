@@ -1134,21 +1134,23 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
 
             t_matches = split(t_val_string, delimiter)
             t_match_index = findfirst(x -> length(x) != 0, t_matches)
-            t_match_string = t_matches[t_match_index]
 
 
-            t_match_string = findfirst(x -> length(x) != 0, split(t_val_string, delimiter)) # Yeah, limitation on the * right now is that it just cuts off before and after that bit
+            # t_match_string = findfirst(x -> length(x) != 0, split(t_val_string, delimiter)) # Yeah, limitation on the * right now is that it just cuts off before and after that bit
             # so, you can't match f_*death*, it'd just match something that includes f_
             # If we wanted we could implement full-blow regex but that seems like overkill.
             # intention is just to be able to grab the middle of a word, like *death*.
-            if isnothing(t_match_string) # whole symbol only consisted of some amount of *
-                if length(t) == 1
-                    type_index = only(values(t))
+            if isnothing(t_match_index) # whole symbol only consisted of some amount of *
+                if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
+                    # TODO: Probably not that.  bit important the placeholder value is in the dict though.
+                    type_index = only(symdiff(values(t), [-1]))
                 else # I can't think of any other cirucmstance where a * match would have a sane answer.  If len t is 0, you shouldn't be here at all.  If len t > 1, it's ambiguous what the match is
+                    println(t)
                     error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
                 end
             else
-                type_index = t[only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second]
+                t_match_string = t_matches[t_match_index]
+                type_index = only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second
             end
         else
             type_index = t[t_original_value]
@@ -1158,13 +1160,15 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
 
         for strata_key::Symbol in keys(ds)
             strata_key_string = string(strata_key)
-            println(strata_key_string)
-            println(strata_key_string |> length)
+
+            
+            # println(strata_key_string)
+            # println(strata_key_string |> length)
             if delimiter ∈ strata_key_string
 
                 strata_matches = split(strata_key_string, delimiter)
-                println(strata_matches)
-                println("ABOVE")
+                # println(strata_matches)
+                # println("ABOVE")
                 strata_match_index = findfirst(x -> length(x) != 0, strata_matches)
 
                 # println(strata_match_string)
@@ -1178,11 +1182,12 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
                 #         error("Length of strata dictionary s $(length(s)) has ambiguous match on $strata_match_string")
                 #     end
                 else
-                    println(strata_key_string)
-                    println(length(strata_key_string))
-                    println(strata_key ∈ keys(s))
-                    println(s)
+                    # println(strata_key_string)
+                    # println(length(strata_key_string))
+                    # println(strata_key ∈ keys(s))
+                    # println(s)
                     strata_match_string = strata_matches[strata_match_index]
+                    # println(strata_match_string)
                     push!(new_strata_dict, [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
                 end
             else
