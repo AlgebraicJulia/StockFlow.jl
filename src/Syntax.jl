@@ -1176,7 +1176,7 @@ end
 
 function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
-    
+
     current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict)
     
     @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
@@ -1299,7 +1299,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
             end
             QuoteNode(:parameters) => begin
                 current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_pnames, type_pnames, aggregate_pnames, strata_param_mappings_dict, aggregate_param_mappings_dict)
-                println(aggregate_param_mappings_dict)
             end
             QuoteNode(:dynamic_variables) => begin
                 current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict)
@@ -1389,15 +1388,25 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     return pullback_model
 
-
-
-
-
-
-
-
     
 end
+
+"""
+With all these arguments makes you wonder if it's worth factoring it out at all.
+"""
+function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector)
+    tgt = Dict((hom1′, hom2′) => i for (i, (hom1′, hom2′)) in enumerate(zip(f1(sftgt), f2(sftgt)))) # Could also make this a 2D vector
+
+    for (i, (hom1, hom2)) in enumerate(zip(f1(sfsrc), f2(sfsrc)))
+        mapped_index1 = map1[hom1]
+        mapped_index2 = map2[hom2]
+
+        linkmap = tgt[(mapped_index1, mapped_index2)]
+        destination_vector[i] = linkmap # updated
+    end
+end
+
+
 
 """
     infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
@@ -1430,106 +1439,13 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     lpvmaps = zeros(Int, nlpv(sfsrc))
 
 
-
-
-    LS_tgt = Dict((lss, lssv) => i for (i, (lss, lssv)) in enumerate(zip(get_lss(sftgt), get_lssv(sftgt))))
-
-    for (i, (lss, lssv)) in enumerate(zip(get_lss(sfsrc), get_lssv(sfsrc))) # remember, this is ordered.
- 
-
-        stock_mapped_index = stockmaps[lss]
-        sum_mapped_index = summaps[lssv]
-
-        lsmap = LS_tgt[(stock_mapped_index, sum_mapped_index)]
-
-        lsmaps[i] = lsmap
-    end
-
-
-    # TODO: Order is and ifn correctly (doesn't matter, but they're backwards right now)
-    # Same with outflows
-
-    I_tgt = Dict((is, ifn) => i for (i, (is, ifn)) in enumerate(zip(get_is(sftgt), get_ifn(sftgt))))
-
-    for (i, (is, ifn)) in enumerate(zip(get_is(sfsrc), get_ifn(sfsrc))) 
- 
-
-
-        stock_mapped_index = stockmaps[is]
-        flow_mapped_index = flowmaps[ifn]
-
-
-        imap = I_tgt[(stock_mapped_index, flow_mapped_index)]
-
-        imaps[i] = imap
-    end
-
-
-
-    O_tgt = Dict((os, ofn) => i for (i, (os, ofn)) in enumerate(zip(get_os(sftgt), get_ofn(sftgt))))
-
-    for (i, (os, ofn)) in enumerate(zip(get_os(sfsrc), get_ofn(sfsrc)))
- 
-
-        stock_mapped_index = stockmaps[os]
-        flow_mapped_index = flowmaps[ofn]
-
-        omap = O_tgt[(stock_mapped_index, flow_mapped_index)]
-
-        omaps[i] = omap
-    end
-
-        
-    LV_tgt = Dict((lvs, lvv) => i for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sftgt), get_lvv(sftgt))))
-
-    for (i, (lvs, lvv)) in enumerate(zip(get_lvs(sfsrc), get_lvv(sfsrc))) 
-
-        stock_mapped_index = stockmaps[lvs]
-        dyvar_mapped_index = dyvarmaps[lvv]
-
-        lvmap = LV_tgt[(stock_mapped_index, dyvar_mapped_index)]
-
-        lvmaps[i] = lvmap
-    end
-
-
-    LSV_tgt = Dict((lsvsv, lsvv) => i for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sftgt), get_lsvv(sftgt))))
-
-    for (i, (lsvsv, lsvv)) in enumerate(zip(get_lsvsv(sfsrc), get_lsvv(sfsrc)))
-
-        sum_mapped_index = summaps[lsvsv]
-        dyvar_mapped_index = dyvarmaps[lsvv]
-
-        lsvmap = LSV_tgt[(sum_mapped_index, dyvar_mapped_index)]
-
-        lsvmaps[i] = lsvmap
-    end
-
-
-    LVV_tgt = Dict((lvsrc, lvtgt) => i for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sftgt), get_lvtgt(sftgt))))
-
-    for (i, (lvsrc, lvtgt)) in enumerate(zip(get_lvsrc(sfsrc), get_lvtgt(sfsrc)))
-
-        dyvar_mapped_index_1 = dyvarmaps[lvsrc]
-        dyvar_mapped_index_2 = dyvarmaps[lvtgt]
-
-        lvvmap = LVV_tgt[(dyvar_mapped_index_1, dyvar_mapped_index_2)]
-
-        lvvmaps[i] = lvvmap
-    end
-
-
-    LPV_tgt = Dict((lpvp, lpvv) => i for (i, (lpvp, lpvv)) in enumerate(zip(get_lpvp(sftgt), get_lpvv(sftgt))))
-
-    for (i, (lpvp, lpvv)) in enumerate(zip(get_lpvp(sfsrc), get_lpvv(sfsrc)))
-
-        param_mapped_index = parammaps[lpvp]
-        dyvar_mapped_index = dyvarmaps[lpvv]
-
-        lpvmap = LPV_tgt[(param_mapped_index, dyvar_mapped_index)]
-
-        lpvmaps[i] = lpvmap
-    end
+    infer_particular_link!(sfsrc, sftgt, get_lss, get_lssv, stockmaps, summaps, lsmaps) # LS
+    infer_particular_link!(sfsrc, sftgt, get_ifn, get_is, flowmaps, stockmaps, imaps) # I
+    infer_particular_link!(sfsrc, sftgt, get_ofn, get_os, flowmaps, stockmaps, omaps) # O
+    infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps) # LV
+    infer_particular_link!(sfsrc, sftgt, get_lsvsv, get_lsvv, summaps, dyvarmaps, lsvmaps) # LSV
+    infer_particular_link!(sfsrc, sftgt, get_lvsrc, get_lvtgt, dyvarmaps, dyvarmaps, lvvmaps) # LVV
+    infer_particular_link!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps) # LPV
 
     return Dict(:LS => lsmaps, :LSV => lsvmaps, :LV => lvmaps, :I => imaps, :O => omaps, :LPV => lpvmaps, :LVV => lvvmaps)
 
