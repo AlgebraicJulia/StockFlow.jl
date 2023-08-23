@@ -1103,78 +1103,52 @@ da: new aggregate, aggregate symbol => type symbol
 
 convert ds to strata index => type index, da to aggregate index => type index
 """
-function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TODO: add assert that all symbols in s,t and a are in ds and da (and that wildcards have at least one match, maybe?)
-    #TODO: pick a better delimiter.  In my current setup, needs to be a valid ascii character which can be used as an identifier.
+function substitute_symbols(s, t, a, ds, da; use_substr_prefix=true, issubstr_prefix='Ξ') # TODO: add assert that all symbols in s,t and a are in ds and da (and that use_substr_prefixs have at least one match, maybe?)
+    #TODO: pick a better issubstr_prefix.  In my current setup, needs to be a valid ascii character which can be used as an identifier.
 
-    if !wildcard
+    if !use_substr_prefix # this bit isn't necessary, as it's covered by the else block, but it's way simpler, and there may be cases where we don't want to check for substrings
         new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
         new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
         return new_strata_dict, new_aggregate_dict
     else
 
-        @assert(allequal(values(ds)) && allequal(values(da)) && (first(values(ds)) == first(values(da)))) # just checking that all values in both dictionaries are the same.
-        # can't take union and check all equal in case they share indices.  TODO: find a better way to do this.
-
-        # (they're all equal because each time this function is called, it's another line, each of which has its own type value)
-
+        @assert(allequal([values(da)..., values(ds)...])) # just checking that all values in both dictionaries are the same.
+        # can't take union and check all equal in case they share indices.
 
 
         t_original_value::Symbol = only(Set(values(merge(ds, da)))) # since I did the check above, can just merge with no issues.
         t_val_string = string(t_original_value) # the merge probably isn't necessary.  Used on the off chance one of them has no mapping to t.
         # though in that case, the product would be 0, so the other would need to have no mappings as well.
 
+        if startswith(t_val_string, issubstr_prefix)
+            t_match_string = chop(t_val_string, head=length(issubstr_prefix), tail=0)
 
-        if delimiter ∈ t_val_string
-
-            t_matches = split(t_val_string, delimiter)
-            t_match_index = findfirst(x -> length(x) != 0, t_matches)
-
-
-            # Yeah, limitation on the Ξ right now is that it just cuts off before and after that bit
-            # so, you can't match f_ΞdeathΞ, it'd just match something that includes f_
-            # If we wanted we could implement full-blown regex but that seems like overkill.
-            # intention is just to be able to grab the middle of a word, like *death*.
-
-            #TODO: treat Ξ as a prefix only.  None of this splitting stuff, just grab everything after the first Ξ.
-
-            if isnothing(t_match_index) # whole symbol only consisted of some amount of Ξ
+            if isempty(t_match_string) # whole symbol only consisted of Ξ
                 if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
                     # TODO: Probably not that.  bit important the placeholder value is in the dict though.
-                    type_index = only(symdiff(values(t), [-1]))
+                    type_index = 1 # if there's only one, then the index has to be 1.
                 else # I can't think of any other cirucmstance where a Ξ match would have a sane answer.  If len t is 0 or 1, you shouldn't be here at all.  If len t > 2, it's ambiguous what the match is
-                    println(t)
+                    # Maybe where we're taking product?
                     error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
                 end
             else
-                t_match_string = t_matches[t_match_index]
-                type_index = only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second
+                type_index = only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second # grab the only t value with t_match_string as a substring (there could be multiple, in which case throw error)
             end
         else
             type_index = t[t_original_value]
         end
+
+
 
         new_strata_dict = Dict()
 
         for strata_key::Symbol in keys(ds)
             strata_key_string = string(strata_key)
 
-            
-
-            if delimiter ∈ strata_key_string
-
-                strata_matches = split(strata_key_string, delimiter)
-
-                strata_match_index = findfirst(x -> length(x) != 0, strata_matches)
-
-
-                if isnothing(strata_match_index) # whole symbol only consisted of some amount of delimiter
-                    push!(new_strata_dict, [s[key] => type_index for key in keys(s)]...)
-
-                else
-
-                    strata_match_string = strata_matches[strata_match_index]
-                    push!(new_strata_dict, [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
-                end
+            if startswith(strata_key_string, issubstr_prefix)
+                strata_match_string = chop(strata_key_string, head=length(issubstr_prefix), tail=0)
+                push!(new_strata_dict, [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
+                # above includes case where strata_match_string is empty string, in which case everything will match.
             else
                 push!(new_strata_dict, s[strata_key] => type_index)
             end
@@ -1182,23 +1156,12 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
 
         new_aggregate_dict = Dict()
 
-
-
         for aggregate_key::Symbol in keys(da)
             aggregate_key_string = string(aggregate_key)
 
-            if delimiter ∈ aggregate_key_string
-                aggregate_matches = split(aggregate_key_string, delimiter)
-                aggregate_match_index = findfirst(x -> length(x) != 0, aggregate_matches)
-
-                
-                if isnothing(aggregate_match_index) # whole symbol only consisted of some amount of delimiter
-                    push!(new_aggregate_dict, [a[key] => type_index for key in keys(a)]...)
-
-                else
-                    aggregate_match_string = aggregate_matches[aggregate_match_index]
-                    push!(new_aggregate_dict, [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
-                end
+            if issubstr_prefix ∈ aggregate_key_string
+                aggregate_match_string = chop(aggregate_key_string, head=length(issubstr_prefix), tail=0)
+                push!(new_aggregate_dict, [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
             else
                 push!(new_aggregate_dict, a[aggregate_key] => type_index)
             end
@@ -1207,8 +1170,6 @@ function substitute_symbols(s, t, a, ds, da; wildcard=true, delimiter='Ξ') # TO
         return new_strata_dict, new_aggregate_dict
         
         
-                
-            
 
     end
 end
@@ -1225,8 +1186,8 @@ end
         2b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
         2c. Accumulate respective dictionaries
     3. Initialize an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate
-    4. Insert into arrays all (nonwildcard)
-    5. Do a once over of the arrays and replace wildcard values, replacing all 0s with index for wildcard, ensure there are no zeroes remaining
+    4. Insert into arrays all (nonuse_substr_prefix)
+    5. Do a once over of the arrays and replace use_substr_prefix values, replacing all 0s with index for use_substr_prefix, ensure there are no zeroes remaining
     6. Do some magic to infer LS, LSV, etc.
     7. Deal with attributes
     8. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
@@ -1301,7 +1262,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_all_names = [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames]
     @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x) && allunique(x), aggregate_all_names)
 
-    # Inserting the symbol for wildcard into each dictionary
+    # Inserting the symbol for use_substr_prefix into each dictionary
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), strata_all_names)
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), type_all_names) # TODO: Make this do something?  Maybe if there's only one stock, flow, etc.
     # ...in the type schema, you can replace it with an underscore?
