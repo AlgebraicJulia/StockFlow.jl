@@ -1035,6 +1035,7 @@ function match_foot_format(footblock::Expr)
     end
 end
 
+const ISSUB_DEFAULT = "Ξ"
 const TEMP_STRAT_DEFAULT = :_
 const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
 const STRICT_MATCHES = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
@@ -1187,7 +1188,7 @@ end
 function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
 
-    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict)
+    current_strata_dict, current_aggregate_dict = substitute_symbols(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict ; use_substr_prefix=true, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES
         @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
