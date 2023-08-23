@@ -1238,15 +1238,11 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     strata_fnames = Dict(S => i for (i, S) in enumerate(fnames(strata)))
     strata_pnames = Dict(S => i for (i, S) in enumerate(pnames(strata)))
 
-
-
-
     type_snames = Dict(S => i for (i, S) in enumerate(snames(type)))
     type_svnames = Dict(S => i for (i, S) in enumerate(svnames(type)))
     type_vnames = Dict(S => i for (i, S) in enumerate(vnames(type)))
     type_fnames = Dict(S => i for (i, S) in enumerate(fnames(type)))
     type_pnames = Dict(S => i for (i, S) in enumerate(pnames(type)))
-
 
     aggregate_snames = Dict(S => i for (i, S) in enumerate(snames(aggregate)))
     aggregate_svnames = Dict(S => i for (i, S) in enumerate(svnames(aggregate)))
@@ -1255,24 +1251,18 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_pnames = Dict(S => i for (i, S) in enumerate(pnames(aggregate)))
 
 
-
-
     strata_stock_mappings_dict::Dict{Int, Int} = Dict()
     strata_flow_mappings_dict::Dict{Int, Int} = Dict()
     strata_dyvar_mappings_dict::Dict{Int, Int} = Dict()
     strata_param_mappings_dict::Dict{Int, Int} = Dict()
     strata_sum_mappings_dict::Dict{Int, Int} = Dict()
     
-
     aggregate_stock_mappings_dict::Dict{Int, Int} = Dict()
     aggregate_flow_mappings_dict::Dict{Int, Int} = Dict()
     aggregate_dyvar_mappings_dict::Dict{Int, Int} = Dict()
     aggregate_param_mappings_dict::Dict{Int, Int} = Dict()
     aggregate_sum_mappings_dict::Dict{Int, Int} = Dict()
     
-    
-
-
 
     strata_all_names = [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames]
     type_all_names = [type_snames, type_svnames, type_vnames, type_fnames, type_pnames]
@@ -1287,10 +1277,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     @assert(allunique(strata_all_names) && allunique(type_all_names) && allunique(aggregate_all_names)) # ensure names in each stockflow are unique within themselves.
     # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
 
-    # use 0 for uninitialized
-
     # STEP 2
-
     current_phase = (_, _) -> ()
     for statement in block.args
         @match statement begin
@@ -1310,8 +1297,6 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
             QuoteNode(:sums) => begin
                 current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict)
             end                    
-
-
             QuoteNode(kw) =>
                 error("Unknown block type for stratify syntax: " * String(kw))
             _ => current_phase(statement)
@@ -1320,7 +1305,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
     # STEP 3
     if !STRICT_MAPPINGS
-        one_type_stock = length(snames(type)) == 1 ? 1 : 0
+        one_type_stock = length(snames(type)) == 1 ? 1 : 0 # if there is only one stock, it needs to have index 1
         one_type_flow = length(fnames(type)) == 1 ? 1 : 0
         one_type_dyvar = length(vnames(type)) == 1 ? 1 : 0
         one_type_param = length(pnames(type)) == 1 ? 1 : 0
@@ -1329,9 +1314,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
         one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
     end
 
-
-
-    strata_stock_mappings::Vector{Int} = [get(strata_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(strata)]
+    strata_stock_mappings::Vector{Int} = [get(strata_stock_mappings_dict, i, one_type_stock)  for i in 1:ns(strata)] # if key isn't in dictionary, returns one_type_stock
     strata_flow_mappings::Vector{Int} =  [get(strata_flow_mappings_dict, i, one_type_flow)  for i in 1:nf(strata)]
     strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, one_type_dyvar)  for i in 1:nvb(strata)]
     strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i, one_type_param)  for i in 1:np(strata)]
@@ -1352,10 +1335,9 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # STEP 5
     nothing_function = x -> nothing
     no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
-    
 
-
-    # Ok this is where we pull out the magic to infer links.
+    # STEP 6/7 
+    # This is where we pull out the magic to infer links.
     #
     #  A <- C -> B
     #  ||        ||
@@ -1368,8 +1350,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     #  ||  ||    ||
     #  v    v    v
     #  A'<- C'-> B'
-
-    # STEP 6/7
+    #
     strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)    
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
     strata_to_type = ACSetTransformation(strata, no_attribute_type; strata_necmaps..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
