@@ -2,6 +2,7 @@ using Test
 
 using StockFlow
 using StockFlow.Syntax
+using StockFlow.Syntax.Stratify
 using StockFlow.PremadeModels
 
 using Catlab.WiringDiagrams
@@ -272,10 +273,6 @@ end)
     @test aged_weight == age_weight_2
     @test aged_weight == age_weight_3
     @test aged_weight == age_weight_4
-    
-    
-    
-
 end
 
 

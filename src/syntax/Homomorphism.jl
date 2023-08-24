@@ -1,16 +1,18 @@
 module Homomorphism
 
+export @homomorphism
+
+
 using ...StockFlow
 using MLStyle
 using ..Syntax
 
-using Catlab.CategoricalAlgebra.FinCats
+using Catlab.CategoricalAlgebra
 
 import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links
 
 
 
-export @homomorphism
 
 """
 I mean, may as well.  Comes for free after doing the stratification work.  Just need to parse the notation somewhat differently.
