@@ -336,8 +336,7 @@ function composition_zip(large::StockAndFlow0, small::StockAndFlow0, name_modifi
         new_small = deepcopy(small)
 
         name_modification_function(new_small, stock) 
-        set_snames!(new_small, stock) # everything except the stock can be renamed.  The stock needs the same name as the stock in large.
-        # using set_snames! instead of set_sname! because set_sname! is currently bugged.
+        set_sname!(new_small, 1, stock) # everything except the stock can be renamed.  The stock needs the same name as the stock in large.
 
         open_large = Open(new_large, new_foot)
         open_small = Open(new_small, new_foot)
