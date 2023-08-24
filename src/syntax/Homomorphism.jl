@@ -111,7 +111,7 @@ macro homomorphism(sf, block) begin
     src_inferred_links = infer_links(sfsrc, sftgt, src_necmaps)
     src_to_tgt = ACSetTransformation(sfsrc, no_attribute_tgt; src_necmaps..., src_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
 
-    @assert is_natural(src_to_tgt)
+    @assert is_natural(src_to_tgt) # unfortunately, at this point, all the attributes will be nothing.
 
     return src_to_tgt
 

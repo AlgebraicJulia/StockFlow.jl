@@ -7,6 +7,8 @@ flattenTupleNames(sn::Symbol)=sn
 flattenTupleNames(sn::SubArray{Symbol})=sn
 flattenTupleNames(sn::SubArray)=map(y->Symbol(foldr(string,map(x->string(x), y))),sn)
 
+flattenTupleNames(sn::Vector{Tuple})=Symbol([flattenTupleNames(x) for x in sn]...) # This became necessary after the update
+
 
 function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructure)
     s=[]

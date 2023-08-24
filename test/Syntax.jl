@@ -5,7 +5,7 @@ using StockFlow.Syntax
 using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
 
 @testset "Straification DSL" begin
-    include("StratifyDSL.jl")
+    include("Stratify.jl")
 end
 
 @testset "is_binop_or_unary recognises binops" begin
