@@ -2,6 +2,10 @@ export convertStockFlowToSystemStructure, convertSystemStructureToStockFlow, reb
 extracStocksStructureAndFlatten,extracFlowsStructureAndFlatten,extracSumVStructureAndFlatten,extracVStructureAndFlatten,extracPsStructureAndFlatten,
 extracVAndAttrStructureAndFlatten, extracVStructureAndFlatten, args_vname, args, add_prefix!, add_suffix!
 
+using Catlab.Programs.RelationalPrograms
+using Catlab.WiringDiagrams.WiringDiagramAlgebras
+using Catlab.CategoricalAlgebra.FreeDiagrams
+
 flattenTupleNames(sn::Tuple)=Symbol(foldr(string,map(x->string(x), sn)))
 flattenTupleNames(sn::Symbol)=sn
 flattenTupleNames(sn::SubArray{Symbol})=sn
@@ -311,4 +315,37 @@ function add_prefix!(sf::AbstractStockAndFlow0, prefix)
     return sf
 end
 
+"""
+    composition_zip(large, small, name_modification_function=add_suffix!)
+Small must only have one stock
+Composes each stock of large with a copy of small
+"""
+function composition_zip(large::StockAndFlow0, small::StockAndFlow0, name_modification_function=add_suffix!)
 
+    @assert(length(snames(small)) == 1)
+
+    uwd = @relation (Stock,) begin
+        Large(Stock)
+        Small(Stock)
+    end
+
+    new_large = deepcopy(large) # I think this technically isn't necessary
+
+    for stock in snames(large)
+        new_foot = foot(stock, (), ())
+        new_small = deepcopy(small)
+
+        name_modification_function(new_small, stock) 
+        set_snames!(new_small, stock) # everything except the stock can be renamed.  The stock needs the same name as the stock in large.
+        # using set_snames! instead of set_sname! because set_sname! is currently bugged.
+
+        open_large = Open(new_large, new_foot)
+        open_small = Open(new_small, new_foot)
+
+        new_large = apex(oapply(uwd, [open_large, open_small])) # accumulates
+
+    end
+
+    return new_large
+
+end
