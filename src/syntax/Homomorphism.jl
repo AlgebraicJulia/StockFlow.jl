@@ -164,7 +164,6 @@ function substitute_symbols_homomorphism(s, t, ds ; use_substr_prefix=true, issu
 
     if !use_substr_prefix # this bit isn't necessary, as it's covered by the else block, but it's way simpler, and there may be cases where we don't want to check for substrings
         new_src_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
-        # new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
         return new_src_dict
     else
 
@@ -176,8 +175,7 @@ function substitute_symbols_homomorphism(s, t, ds ; use_substr_prefix=true, issu
 
 
         if startswith(t_val_string, issubstr_prefix)
-            t_match_string = chopprefix(t_val_string, issubstr_prefix)
-            tgt_index = only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second # grab the only t value with t_match_string as a substring (there could be multiple, in which case throw error)
+            error("Wildcard matching on type not allowed!")
         else
             tgt_index = t[t_original_value]
         end

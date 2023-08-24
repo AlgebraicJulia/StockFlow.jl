@@ -1033,13 +1033,13 @@ function match_foot_format(footblock::Expr)
     end
 end
 
-const ISSUB_DEFAULT = "Ξ"
+const ISSUB_DEFAULT = "_"
 const USE_ISSUB = true
 const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
 const STRICT_MATCHES = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
 # :stocks
-# Ξf_death => f_death <= fdeath
-# Ξ => f_id <= fid
+# _f_death => f_death <= fdeath
+# _ => f_id <= fid
 #
 # would throw an error if true, wouldn't if false.
 
@@ -1101,7 +1101,7 @@ da: new aggregate, aggregate symbol => type symbol
 
 convert ds to strata index => type index, da to aggregate index => type index
 """
-function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=true, issubstr_prefix="Ξ") # TODO: add assert that all symbols in s,t and a are in ds and da (and that use_substr_prefixs have at least one match, maybe?)
+function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=true, issubstr_prefix="_") # TODO: add assert that all symbols in s,t and a are in ds and da (and that use_substr_prefixs have at least one match, maybe?)
     #TODO: pick a better issubstr_prefix.  In my current setup, needs to be a valid ascii character which can be used as an identifier.
     # TODO: generalize.  Make a single function which can be used by multiple DSL
 
@@ -1122,23 +1122,7 @@ function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=tr
 
 
         if startswith(t_val_string, issubstr_prefix)
-            t_match_string = chopprefix(t_val_string, issubstr_prefix)
-
-            # Removing the following so you can have a default Ξ, though it needs to be last, and all others need to be assigned.
-            # The main reason you'd want to do it is if a type sf name is too long.
-
-            # if isempty(t_match_string) # whole symbol only consisted of Ξ
-            #     # this bit really isn't necessary, as it's covered by the type_index = only(filter... bit below
-            #     if length(t) == 2 # 2 BECAUSE :_ => -1 IS IN HERE!!!
-            #         # TODO: Probably not that.  bit important the placeholder value is in the dict though.
-            #         type_index = 1 # if there's only one, then the index has to be 1.
-            #     else # I can't think of any other cirucmstance where a Ξ match would have a sane answer.  If len t is 0 or 1, you shouldn't be here at all.  If len t > 2, it's ambiguous what the match is
-            #         # Maybe where we're taking product?
-            #         error("Length of type dictionary t $(length(t)) has ambiguous match on $t_val_string")
-            #     end
-            # else
-                type_index = only(filter(((key, value),) ->  occursin(t_match_string, string(key)), t)).second # grab the only t value with t_match_string as a substring (there could be multiple, in which case throw error)
-            # end
+            error("Wildcard matching on type not allowed!") # just disallowing it now.  Prevents stupid mistakes.  Only benefit, really, is that the last value can be a _ instead of fully writing it out.
         else
             type_index = t[t_original_value]
         end
@@ -1192,7 +1176,7 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
         @assert (all(x -> x ∉ keys(aggregate_mappings), keys(current_aggregate_dict)))
         merge!(aggregate_mappings, current_aggregate_dict)
 
-    else # at this point Ξ is just a better _
+    else 
         mergewith!((x, y) -> x, strata_mappings, current_strata_dict) # alternatively, can use: only ∘ first
         mergewith!((x, y) -> x, aggregate_mappings, current_aggregate_dict)
     end
@@ -1200,8 +1184,6 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 end
 
 
-const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
-const STRICT_MATCHES = false
 """
     @stratify (strata, type, aggregate) begin ... end
 
