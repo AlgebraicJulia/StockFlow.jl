@@ -103,14 +103,12 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, @stratify, @homomorphism
+export @stock_and_flow, @foot, @feet, @stratify
 
 using ..StockFlow
 using MLStyle
 import Base.get
-import Catlab.CategoricalAlgebra.CSets.ACSetTransformation
-import Catlab.CategoricalAlgebra.Limits.pullback
-import Catlab.CategoricalAlgebra.FreeDiagrams.apex
+using Catlab.CategoricalAlgebra
 
 
 """
@@ -1441,7 +1439,7 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
 end
 
-include("syntax/homomorphism.jl")
+include("syntax/Homomorphism.jl")
 
 
 
