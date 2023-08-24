@@ -291,9 +291,33 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i, one_type_sum)  for i in 1:nsv(aggregate)]
     
     all_mappings = [strata_stock_mappings..., strata_flow_mappings..., strata_dyvar_mappings..., strata_param_mappings..., strata_sum_mappings..., aggregate_stock_mappings..., aggregate_flow_mappings..., aggregate_dyvar_mappings..., aggregate_param_mappings..., aggregate_sum_mappings...]
+    
+    strata_mappings = [strata_stock_mappings => snames(strata), strata_flow_mappings => fnames(strata), strata_dyvar_mappings => vnames(strata), strata_param_mappings => pnames(strata), strata_sum_mappings => svnames(strata)]
+    aggregate_mappings = [aggregate_stock_mappings => snames(aggregate), aggregate_flow_mappings => fnames(aggregate), aggregate_dyvar_mappings => vnames(aggregate), aggregate_param_mappings => pnames(aggregate), aggregate_sum_mappings => svnames(aggregate)]
+
+
+    #unmapped: 
+    for (ints, dicts) in strata_mappings
+        for (i, val) in enumerate(ints)
+            if val == 0
+                println("UNMAPPED IN STRATA:")
+                println(dicts[i])
+            end
+        end
+    end
+    for (ints, dicts) in aggregate_mappings
+        for (i, val) in enumerate(ints)
+            if val == 0
+                println("UNMAPPED IN AGGREGATE:")
+                println(dicts[i])
+            end
+        end
+    end
+    
 
     # STEP 4
-    @assert(all(x -> x != 0, all_mappings))
+    @assert all(x -> x != 0, all_mappings) 
+    #  "Unmapped: Strata: $([key for (key, _) in filter(((key, value),) -> value == 0, strata_mappings_dicts)])\nAggregate: $([key for (key, _) in filter(((key, value),) -> value == 0, aggregate_mappings_dicts)])"
 
 
     # STEP 5
