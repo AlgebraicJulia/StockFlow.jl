@@ -1033,10 +1033,10 @@ function match_foot_format(footblock::Expr)
     end
 end
 
-const ISSUB_DEFAULT = "_"
-const USE_ISSUB = true
-const STRICT_MAPPINGS = false # whether you need to include all, or if you can infer those which only have one thing to map to.
-const STRICT_MATCHES = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
+ISSUB_DEFAULT::String = "_"
+USE_ISSUB::Bool = true
+STRICT_MAPPINGS::Bool = false # whether you need to include all, or if you can infer those which only have one thing to map to.
+STRICT_MATCHES::Bool = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
 # :stocks
 # _f_death => f_death <= fdeath
 # _ => f_id <= fid
