@@ -238,7 +238,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
         @assert all(ks -> all(k -> !startswith(string(k), ISSUB_DEFAULT), values(ks)), all_names) # ensure that no name in stockflows start with prefix used to identify substrings
     end
 
-    @assert(allunique(strata_all_names) && allunique(type_all_names) && allunique(aggregate_all_names)) # ensure names in each stockflow are unique within themselves.
+    @assert(all(map(x -> allunique(x), strata_all_names)) && all(map(x -> allunique(x), type_all_names)) && all(map(x -> allunique(x), aggregate_all_names))) # ensure names in each stockflow are unique within themselves.
     # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
 
     # STEP 2
