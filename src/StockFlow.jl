@@ -592,7 +592,7 @@ set_pnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :pname, n
 
 
 # Could pull out the right side into another function
-set_sname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :sname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
+set_sname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :sname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(snames(p))])
 set_fname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :fname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(fnames(p))])
 set_svname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :svname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(svnames(p))])
 set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :vname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
