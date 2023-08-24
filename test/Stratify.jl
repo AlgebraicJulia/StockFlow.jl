@@ -204,17 +204,77 @@ age_weight_2 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
 
     :sums
     N => N <= N
+end)
+#########################################
+
+
+age_weight_3 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
+    :stocks
+    _ => pop <= _
+
+    :flows
+    f_NewBorn => f_birth <= f_NB
+    _Death => f_death <= _Death
+    _id => f_aging <= _aging
+    _Becoming => f_fstOrder <= _id
+
+    :dynamic_variables
+    v_NewBorn => v_birth <= v_NB
+    _Death => v_death <= _Death
+    _id  => v_aging <= _aging
+    _Becoming => v_fstOrder <= _id
+
+    :parameters
+    μ => μ <= μ
+    _δ => δ <= _δ
+    rage => rage <= rageCA, rageAS
+    _ => rFstOrder <= _
+
+    :sums
+    _ => N <= _
+
 
 end) 
 
     
+age_weight_4 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
 
+
+    :flows
+    _MATCHESNOTHING => f_birth <= _ALSOMATCHESNOTHING
+    _New => f_birth <= _N
+    _id => f_aging <= _aging
+    _Death => f_death <= _Death
+    _ => f_fstOrder <= _
+    # everything has matched at this point, so the following are ignored.  Keys must exist, unless matching on _.  It can optionally throw an error with STRICT_MATCHES = true
+    _ => f_fstOrder <= _
+    f_DeathNormalWeight => f_fstOrder <= _aging
+
+    :parameters
+    μ => μ <= μ
+    _δ => δ <= _δ
+    rage => rage <= rageCA, rageAS
+    _ => rFstOrder <= _
+
+    _foo => rage <= _baz # would error if just did foo, as opposed to _foo.
+
+
+    :dynamic_variables
+    v_NewBorn => v_birth <= v_NB
+    _Death => v_death <= _Death
+    _id  => v_aging <= _aging
+    _ => v_fstOrder <= _
+
+
+
+end) 
 
 
 
 @testset "Pullback computed in standard way is equal to DSL pullbacks" begin
     @test aged_weight == age_weight_2
-    
+    @test aged_weight == age_weight_3
+    @test aged_weight == age_weight_4
     
     
     

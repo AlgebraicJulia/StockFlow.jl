@@ -160,7 +160,7 @@ end
 
 
 
-function substitute_symbols_homomorphism(s, t, ds ; use_substr_prefix=true, issubstr_prefix="Ξ")
+function substitute_symbols_homomorphism(s, t, ds ; use_substr_prefix=true, issubstr_prefix="_")
 
     if !use_substr_prefix # this bit isn't necessary, as it's covered by the else block, but it's way simpler, and there may be cases where we don't want to check for substrings
         new_src_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
@@ -189,7 +189,12 @@ function substitute_symbols_homomorphism(s, t, ds ; use_substr_prefix=true, issu
 
             if startswith(src_key_string, issubstr_prefix)
                 src_match_string = chopprefix(src_key_string, issubstr_prefix)
-                push!(new_src_dict, [s[key] => tgt_index for (key,_) in filter(((key, value),) -> occursin(src_match_string, string(key)), s)]...) 
+                matches = [s[key] => tgt_index for (key,_) in filter(((key, value),) -> occursin(src_match_string, string(key)), s)]
+                if length(matches) != 0
+                    push!(new_src_dict, matches...)
+                else
+                    println("Warning, no substring matches found on $(aggregate_match_string)")
+                end
             else
                 push!(new_src_dict, s[src_key] => tgt_index)
             end

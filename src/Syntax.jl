@@ -1136,8 +1136,13 @@ function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=tr
 
             if startswith(strata_key_string, issubstr_prefix)
                 strata_match_string = chopprefix(strata_key_string, issubstr_prefix)
-                push!(new_strata_dict, [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)]...) # setting type_index as the mapping for all keys which have strata_key_string as a substring
+                matches = [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)] # setting type_index as the mapping for all keys which have strata_key_string as a substring
                 # above includes case where strata_match_string is empty string, in which case everything will match.
+                if length(matches) != 0
+                    push!(new_strata_dict, matches...)
+                else
+                    println("Warning, no substring matches found on $(strata_match_string)")
+                end
             else
                 push!(new_strata_dict, s[strata_key] => type_index)
             end
@@ -1150,7 +1155,12 @@ function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=tr
 
             if startswith(aggregate_key_string, issubstr_prefix)
                 aggregate_match_string = chopprefix(aggregate_key_string, issubstr_prefix)
-                push!(new_aggregate_dict, [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
+                matches = [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]
+                if length(matches) != 0
+                    push!(new_aggregate_dict, matches...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
+                else
+                    println("Warning, no substring matches found on $(aggregate_match_string)")
+                end
             else
                 push!(new_aggregate_dict, a[aggregate_key] => type_index)
             end
