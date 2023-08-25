@@ -1148,7 +1148,7 @@ function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_su
             if startswith(skey, issubstr_prefix)
                 match_string = chopprefix(skey, issubstr_prefix)
                 mapped_matches = Dict(invalue => t[value] for (inkey, invalue) ∈ substring_matches_keys(s, match_string))
-                merge!(master_dict, mapped_matches)
+                mergewith!((x...) -> first(x), master_dict, mapped_matches) # keeps first match
             else
                 push!(master_dict, s[key] => t[value])
             end
@@ -1176,12 +1176,13 @@ function iterate_stockflow_quoteblocks(lines::Vector, fun)
             end                    
             QuoteNode(:sums) => begin
                 current_phase = sv -> fun(sv, :sums)
+            end
             QuoteNode(kw) =>
                 error("Unknown block type for stockflow quoteblock syntax: " * String(kw))
             _ => current_phase(statement)
         end
     end
-
+end
 
 
 include("syntax/Homomorphism.jl")

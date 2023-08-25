@@ -1,9 +1,17 @@
+using Pkg;
+Pkg.activate(".")
+
 using Test
 
 using StockFlow
 using StockFlow.Syntax
 using StockFlow.Syntax.Stratify
+
+using StockFlow.Syntax.Stratify: interpret_stratification_notation
+
 using StockFlow.PremadeModels
+
+
 
 using Catlab.WiringDiagrams
 using Catlab.ACSets
@@ -273,6 +281,14 @@ end)
     @test aged_weight == age_weight_2
     @test aged_weight == age_weight_3
     @test aged_weight == age_weight_4
+end
+
+@testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
+    @test interpret_stratification_notation(:(A => B <= C)) == (Dict(:A => :B), Dict(:C => :B))
+    @test interpret_stratification_notation(:(A1, A2 => B <= C)) == (Dict(:A1 => :B, :A2 => :B), Dict(:C => :B))
+    @test interpret_stratification_notation(:(A => B <= C1, C2)) == (Dict(:A => :B), Dict(:C1 => :B, :C2 => :B))
+    @test interpret_stratification_notation(:(A1, A2 => B <= C1, C2))  == (Dict(:A1 => :B, :A2 => :B), Dict(:C1 => :B, :C2 => :B))
+    @test interpret_stratification_notation(:(_ => B <= _)) == (Dict(:_ => :B), Dict(:_ => :B))
 end
 
 
