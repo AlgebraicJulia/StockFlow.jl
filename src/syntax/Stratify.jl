@@ -28,7 +28,7 @@ function interpret_stratification_notation(mapping_pair::Expr)
             @match mapping_pair.args[middle_index] begin
                 :($stail => $t <= $ahead) => begin
                     sdict = push!(Dict(ss => t for ss in mapping_pair.args[1:middle_index-1]), stail => t)
-                    adict =  push!(Dict(ss => t for as in mapping_pair.args[middle_index:end]), ahead => t)
+                    adict =  push!(Dict(as => t for as in mapping_pair.args[middle_index+1:end]), ahead => t)
                     return (sdict, adict)
                 end
                 _ => "Unknown format found for match; middle three values formatted incorrectly."
