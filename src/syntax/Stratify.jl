@@ -8,6 +8,8 @@ import Base.get
 using Catlab.CategoricalAlgebra
 import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links
 
+RETURN_HOMS = false
+
 
 """
 Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
@@ -363,8 +365,11 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     # STEP 8
     pullback_model = pullback(strata_to_type, aggregate_to_type) |> apex |> rebuildStratifiedModelByFlattenSymbols;
 
-    return pullback_model
-
+    if RETURN_HOMS
+        return pullback_model, strata_to_type, aggregate_to_type
+    else
+        return pullback_model
+    end
     
 end
 
