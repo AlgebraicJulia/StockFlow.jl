@@ -6,7 +6,7 @@ using ..Syntax
 using MLStyle
 import Base.get
 using Catlab.CategoricalAlgebra
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks
 
 
 RETURN_HOMS = false
@@ -274,5 +274,60 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     end
     
 end
+
+
+
+
+
+
+# macro n-stratify (sf, block)
+#     @assert sf.head == tuple
+#     @assert all(x -> x ∈ names(Main), sf.args) "Stockflows not in Main namespace!  Did you forget to define them?  If doing it at runtime, need an @eval call on stratify!"
+
+#     sfs_all = map(x -> getfield(Main, x), sf.args)
+
+#     @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, sfs_all)
+
+
+#     sfs = sfs_all[1:(length(sfs_all)-1)]
+#     type = sfs_all[last]
+
+#     Base.remove_linenums!(block)
+
+#     sf_snames = map(x => Dict(S => i for (i, S) in enumerate(snames(x))), sfs)::Vector{Dict{Symbol, Int}}
+#     sf_svnames = map(x => Dict(S => i for (i, S) in enumerate(svnames(x))), sfs)
+#     sf_vnames = map(x => Dict(S => i for (i, S) in enumerate(vnames(x))), sfs)
+#     sf_fnames = map(x => Dict(S => i for (i, S) in enumerate(fnames(x))), sfs)
+#     sf_pnames = map(x => Dict(S => i for (i, S) in enumerate(pnames(x))), sfs)
+
+
+#     type_snames = Dict(S => i for (i, S) in enumerate(snames(type)))
+#     type_svnames = Dict(S => i for (i, S) in enumerate(svnames(type)))
+#     type_vnames = Dict(S => i for (i, S) in enumerate(vnames(type)))
+#     type_fnames = Dict(S => i for (i, S) in enumerate(fnames(type)))
+#     type_pnames = Dict(S => i for (i, S) in enumerate(pnames(type)))
+
+
+    
+#     sf_all_names = [[snames(sf), svnames(sf), vnames(sf), fnames(sf), pnames(sf)] for sf in sfs]
+#     type_all_names = [snames(type), svnames(type), vnames(type), fnames(type), pnames(type)]
+
+#     @assert all(map(x -> allunique(x), type_all_names)) "Not all names in type model are unique!"
+#     @assert all(all(map(x -> allunique(x), sf)) for sf in sf_all_names)
+
+
+# # @assert all(map(x -> allunique(x),))
+
+
+# end
+
+
+
+
+
+
+
+
+
 
 end
