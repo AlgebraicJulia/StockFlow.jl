@@ -1,6 +1,6 @@
 module Homomorphism
 
-export @homomorphism
+export @hom
 
 
 using ...StockFlow
@@ -9,7 +9,7 @@ using ..Syntax
 
 using Catlab.CategoricalAlgebra
 
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols
 
 
 
@@ -29,7 +29,7 @@ end
 
 
 """
-macro homomorphism(sf, block) begin
+macro hom(sf, block) begin
     @assert sf.head == :tuple && length(sf.args) == 2
     @assert all(x -> x ∈ names(Main), sf.args)
 
@@ -129,7 +129,7 @@ end
 function read_homomorphism_line_and_update_dictionaries!(line::Expr, src_names::Dict{Symbol, Int}, tgt_names::Dict{Symbol, Int}, src_mappings::Dict{Int, Int})
     current_src_symbol_dict = interpret_homomorphism_notation(line) 
 
-    current_src_dict = substitute_symbols_homomorphism(src_names, tgt_names, current_src_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
+    current_src_dict = substitute_symbols(src_names, tgt_names, current_src_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES
         @assert (all(x -> x ∉ keys(src_mappings), keys(current_src_dict))) # check that we're not overwriting a value which has already been assigned
@@ -155,59 +155,5 @@ function interpret_homomorphism_notation(mapping_pair::Expr)
 end
 
 
-
-
-
-
-
-
-
-function substitute_symbols_homomorphism(s, t, ds ; use_substr_prefix=true, issubstr_prefix="_")
-
-    if !use_substr_prefix # this bit isn't necessary, as it's covered by the else block, but it's way simpler, and there may be cases where we don't want to check for substrings
-        new_src_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
-        return new_src_dict
-    else
-
-        @assert(allequal(values(ds)))
-
-
-        t_original_value::Symbol = only(Set(values(ds))) 
-        t_val_string = string(t_original_value)
-
-
-        if startswith(t_val_string, issubstr_prefix)
-            error("Wildcard matching on type not allowed!")
-        else
-            tgt_index = t[t_original_value]
-        end
-
-
-
-        new_src_dict = Dict()
-
-        for src_key::Symbol in keys(ds)
-            src_key_string = string(src_key)
-
-            if startswith(src_key_string, issubstr_prefix)
-                src_match_string = chopprefix(src_key_string, issubstr_prefix)
-                matches = [s[key] => tgt_index for (key,_) in filter(((key, value),) -> occursin(src_match_string, string(key)), s)]
-                if length(matches) != 0
-                    push!(new_src_dict, matches...)
-                else
-                    println("Warning, no substring matches found on $(aggregate_match_string)")
-                end
-            else
-                push!(new_src_dict, s[src_key] => tgt_index)
-            end
-        end
-
-        return new_src_dict
-
-    
-        
-
-    end
-end
 
 end

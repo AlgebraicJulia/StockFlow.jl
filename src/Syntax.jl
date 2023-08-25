@@ -1105,6 +1105,62 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
 end
 
+"""
+S₁ => I₁
+S₂ => I₂
+S₁ => S₂
+
+⊢
+
+I₁ => I₂
+
+"""
+function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U})::Dict{U, U}  where {T, U}
+    @assert allunique(values(src))
+
+    @assert all(x -> x ∈ keys(mapping), key(src))
+    @assert all(x -> x ∈ keys(tgt), values(mapping))
+
+    return Dict(src[key] => tgt[value] for (key, value) in mapping)
+
+
+end
+
+
+function substring_matches_keys(d::Dict, substr)::Dict
+    return filter(((key, _),) -> occursin(substr, string(key)), d) # eliminate string(key)?  Do it outside?
+end
+
+function string_indexed_dict(d::Dict{T,V})::Dict{String, Pair{T, V}}  where {T, V}
+    @assert hasmethod(string, (T,))
+    return Dict(string(key) => key => value for (key, value) ∈ d)
+end
+
+
+# s: Symbol => Int, t: Symbol => Int, m: Symbol => Symbol
+function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_substr_prefix::Bool=true, issubstr_prefix::String="_",)::Dict{U, W} where {T, U, V, W}
+    if !use_substr_prefix
+        return connect_by_value(src=s, mapping=m, tgt=t)::Dict{U, W}
+    else
+        master_dict::Dict{U,W} = Dict()
+        m_string = string_indexed_dict(m)
+        for (skey, (key, value)) in m_string
+            if startswith(skey, issubstr_prefix)
+                match_string = chopprefix(skey, issubstr_prefix)
+                mapped_matches = Dict(invalue => t[value] for (inkey, invalue) ∈ substring_matches_keys(s, match_string))
+                merge!(master_dict, mapped_matches)
+            else
+                push!(master_dict, s[key] => t[value])
+            end
+        end
+        return master_dict
+    end
+end
+
+
+
+
+
 include("syntax/Homomorphism.jl")
 include("syntax/Stratify.jl")
 
