@@ -29,7 +29,7 @@ end
 
 
 """
-macro hom(sf, block) begin
+macro hom(sf, block)
     @assert sf.head == :tuple && length(sf.args) == 2
     @assert all(x -> x ∈ names(Main), sf.args)
 
@@ -58,23 +58,23 @@ macro hom(sf, block) begin
     src_sum_mappings_dict::Dict{Int, Int} = Dict()
     
 
-  current_phase = (_, _) -> ()
+    current_phase = (_, _) -> ()
     for statement in block.args
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = p -> read_homomorphism_line_and_update_dictionaries!(p, src_snames, tgt_snames, src_stock_mappings_dict)
+                current_phase = s -> read_homomorphism_line_and_update_dictionaries!(s, src_snames, tgt_snames, src_stock_mappings_dict)
             end
             QuoteNode(:parameters) => begin
                 current_phase = p -> read_homomorphism_line_and_update_dictionaries!(p, src_pnames, tgt_pnames, src_param_mappings_dict)
             end
             QuoteNode(:dynamic_variables) => begin
-                current_phase = p -> read_homomorphism_line_and_update_dictionaries!(p, src_vnames, tgt_vnames, src_dyvar_mappings_dict)
+                current_phase = v -> read_homomorphism_line_and_update_dictionaries!(v, src_vnames, tgt_vnames, src_dyvar_mappings_dict)
             end            
             QuoteNode(:flows) => begin
-                current_phase = p -> read_homomorphism_line_and_update_dictionaries!(p, src_fnames, tgt_fnames, src_flow_mappings_dict)
+                current_phase = f -> read_homomorphism_line_and_update_dictionaries!(f, src_fnames, tgt_fnames, src_flow_mappings_dict)
             end                    
             QuoteNode(:sums) => begin
-                current_phase = p -> read_homomorphism_line_and_update_dictionaries!(p, src_svnames, tgt_svnames, src_sum_mappings_dict)
+                current_phase = sv -> read_homomorphism_line_and_update_dictionaries!(sv, src_svnames, tgt_svnames, src_sum_mappings_dict)
             end                    
             QuoteNode(kw) =>
                 error("Unknown block type for stratify syntax: " * String(kw))
@@ -117,9 +117,6 @@ macro hom(sf, block) begin
 
     return src_to_tgt
 
-
-end
-
 end
 
 
@@ -142,9 +139,6 @@ end
 
 
 
-
-
-# LMAO
 function interpret_homomorphism_notation(mapping_pair::Expr)
     @match mapping_pair begin
         :($s => $t) => return (Dict(s => t))

@@ -160,20 +160,20 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     for statement in block.args
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_snames, type_snames, aggregate_snames, strata_stock_mappings_dict, aggregate_stock_mappings_dict)
+                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, strata_snames, type_snames, aggregate_snames, strata_stock_mappings_dict, aggregate_stock_mappings_dict)
             end
             QuoteNode(:parameters) => begin
                 current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_pnames, type_pnames, aggregate_pnames, strata_param_mappings_dict, aggregate_param_mappings_dict)
             end
             QuoteNode(:dynamic_variables) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict)
+                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict)
             end            
             QuoteNode(:flows) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_fnames, type_fnames, aggregate_fnames, strata_flow_mappings_dict, aggregate_flow_mappings_dict)
+                current_phase = f -> read_stratification_line_and_update_dictionaries!(f, strata_fnames, type_fnames, aggregate_fnames, strata_flow_mappings_dict, aggregate_flow_mappings_dict)
             end                    
                   
             QuoteNode(:sums) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict)
+                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict)
             end                    
             QuoteNode(kw) =>
                 error("Unknown block type for stratify syntax: " * String(kw))
