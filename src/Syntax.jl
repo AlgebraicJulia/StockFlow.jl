@@ -1158,24 +1158,24 @@ function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_su
 end
 
 
-function iterate_stockflow_quoteblocks(lines::Vector, fs, fp, fv, ff, fsv)
+function iterate_stockflow_quoteblocks(lines::Vector, fun)
     current_phase = (_, _) -> ()
     for statement in lines
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = s -> fs(s)
+                current_phase = s -> fun(s, :stock)
             end
             QuoteNode(:parameters) => begin
-                current_phase = p -> fp(p)
+                current_phase = p -> fun(p, :parameters)
             end
             QuoteNode(:dynamic_variables) => begin
-                current_phase = v -> fv(v)
+                current_phase = v -> fun(v, :dynamic_variables)
             end            
             QuoteNode(:flows) => begin
-                current_phase = f -> ff(f)
+                current_phase = f -> fun(f, :flows)
             end                    
             QuoteNode(:sums) => begin
-                current_phase = sv -> fsv(sv)
+                current_phase = sv -> fun(sv, :sums)
             QuoteNode(kw) =>
                 error("Unknown block type for stockflow quoteblock syntax: " * String(kw))
             _ => current_phase(statement)
