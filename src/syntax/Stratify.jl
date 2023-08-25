@@ -6,29 +6,42 @@ using ..Syntax
 using MLStyle
 import Base.get
 using Catlab.CategoricalAlgebra
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, StratificationArgument
 
 
 RETURN_HOMS = false
 
 
+
+
+
+
+
+# function unwrap_key_expression(key::Union{Symbol, Expr}, value::Symbol)
+#     unwrapped_key, flags = unwrap_expression(key)
+#     return 
+#     # return unwrapped_key => (value, flags)
+# end
+
+
+
 """
 Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
 """
-function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Dict{Symbol, Symbol}, Dict{Symbol, Symbol}}
+function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{StratificationArgument}, Vector{StratificationArgument}} # TODO: Probably create some kind of struct for the results.
     @match mapping_pair begin
 
 
-        :($s => $t <= $a) => return (Dict(s => t), Dict(a => t))
-        :($s => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
-        :($(shead...), $s => $t <= $a) => return (push!(Dict(ss => t for ss in shead), s => t), Dict(a => t))
+        :($s => $t <= $a) => return ([StratificationArgument(s,t)], [StratificationArgument(a,t)])
+        :($s => $t <= $a, $(atail...)) => ([StratificationArgument(s,t)], [[StratificationArgument(as,t) for as in atail]; StratificationArgument(a,t)])#return (Dict(unwrap_key_expression(s, t)), push!(Dict(unwrap_key_expression(as, t) for as in atail), unwrap_key_expression(a, t)))
+        :($(shead...), $s => $t <= $a) => ([[StratificationArgument(ss, t) for ss in shead] ; StratificationArgument(s, t)], [StratificationArgument(a, t)])#return (push!(Dict(unwrap_key_expression(ss, t) for ss in shead), unwrap_key_expression(s, t)), Dict(unwrap_key_expression(a, t)))
 
         if mapping_pair.head == :tuple end => begin
-            middle_index = findfirst(x -> typeof(x) == Expr, mapping_pair.args)
+            middle_index = findfirst(x -> typeof(x) == Expr && length(x.args) == 3, mapping_pair.args)
             @match mapping_pair.args[middle_index] begin
                 :($stail => $t <= $ahead) => begin
-                    sdict = push!(Dict(ss => t for ss in mapping_pair.args[1:middle_index-1]), stail => t)
-                    adict =  push!(Dict(as => t for as in mapping_pair.args[middle_index+1:end]), ahead => t)
+                    sdict = [[StratificationArgument(ss, t) for ss in mapping_pair.args[1:middle_index-1]] ; StratificationArgument(stail, t)]
+                    adict = [[StratificationArgument(as, t) for as in mapping_pair.args[middle_index+1:end]] ; StratificationArgument(ahead, t)]
                     return (sdict, adict)
                 end
                 _ => "Unknown format found for match; middle three values formatted incorrectly."
@@ -44,8 +57,8 @@ end
 function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
 
-    current_strata_dict = substitute_symbols(strata_names, type_names, current_strata_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
-    current_aggregate_dict = substitute_symbols(aggregate_names, type_names, current_aggregate_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
+    current_strata_dict = substitute_symbols(strata_names, type_names, current_strata_symbol_dict ; use_flags=true)
+    current_aggregate_dict = substitute_symbols(aggregate_names, type_names, current_aggregate_symbol_dict ; use_flags=true)
     # current_strata_dict, current_aggregate_dict = substitute_symbols_stratification(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES

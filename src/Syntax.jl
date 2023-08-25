@@ -1105,6 +1105,33 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
 
 end
 
+
+
+
+struct StratificationArgument
+    key::Symbol
+    value::Symbol
+    flags::Set{Symbol} # currently operating under the assumption that flag order doesn't matter
+    StratificationArgument(kv::Pair{Union{Expr, Symbol}, Symbol}) = begin
+        StratificationArgument(first(kv), second(kv))
+    end
+    StratificationArgument(k::Union{Expr, Symbol}, v::Symbol) = begin
+        key, flags = unwrap_expression(k)
+        new(key, v, flags)
+    end
+end
+
+function unwrap_expression(x::Union{Symbol, Expr}, flags::Set{Symbol}=Set{Symbol}())::Tuple{Symbol, Set{Symbol}} # In Python I'd worry about mutable default arguments, but doesn't seem to be an issue here.
+    if typeof(x) == Symbol
+        return (x, flags)
+    else
+        return unwrap_expression(x.args[2], push!(flags, x.args[1]))
+    end
+end
+
+
+
+
 """
 S₁ => I₁
 S₂ => I₂
@@ -1137,8 +1164,38 @@ function string_indexed_dict(d::Dict{T,V})::Dict{String, Pair{T, V}}  where {T, 
 end
 
 
+
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})
+    if isempty(flags)
+        return [key] # potentially extremely inefficient
+    elseif :~ ∈ flags
+        keystring = string(key)
+        return filter(x -> occursin(keystring, string(x)), collect(keys(s)))
+    else
+    end
+end
+
+
+function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{StratificationArgument} ; use_flags::Bool=true)::Dict{Int, Int}
+    if !use_flags
+        return connect_by_value(src=s, mapping=Dict(arg.key => arg.value for arg in m), tgt=t)
+    else
+        master_dict::Dict{Int, Int} = Dict()
+        for statement in m
+            key_matches = apply_flags(statement.key, statement.flags, s) # Vector of Symbol
+            if isempty(key_matches)
+                println("WARNING!  No matches on $(statement.key) with flags $(statement.flags)")
+            else
+                mergewith!((x...) -> first(x), master_dict, Dict(s[match] => t[statement.value] for match ∈ key_matches))
+            end
+        end
+        return master_dict
+    end
+end
+
+
 # s: Symbol => Int, t: Symbol => Int, m: Symbol => Symbol
-function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_substr_prefix::Bool=true, issubstr_prefix::String="_",)::Dict{U, W} where {T, U, V, W}
+function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_substr_prefix=true, issubstr_prefix="_")::Dict{U, W} where {T, U, V, W} #TODO: Fix 
     if !use_substr_prefix
         return connect_by_value(src=s, mapping=m, tgt=t)::Dict{U, W}
     else
@@ -1183,6 +1240,8 @@ function iterate_stockflow_quoteblocks(lines::Vector, fun)
         end
     end
 end
+
+
 
 
 include("syntax/Homomorphism.jl")
