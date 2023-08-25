@@ -8,6 +8,8 @@ import Base.get
 using Catlab.CategoricalAlgebra
 import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links
 
+# using DataStructures
+
 RETURN_HOMS = false
 
 
@@ -55,6 +57,178 @@ function interpret_stratification_notation(mapping_pair::Expr)
         end
         _ => error("Unknown line format found in stratification notation.") 
     end
+end
+
+# function src_to_tgt(; src::Dict{T, U}, mapping::Dict{U, V}, tgt::Dict{V, W})::Dict{T, W} where {T, U, V}
+#     @assert all(x -> x ∈ keys(mapping), values(src))
+#     @assert all(x -> x ∈ keys(tgt), values(mapping))
+
+#     return Dict(key => tgt[mapping[value]] for (key, value) ∈ src)::Dict{T, W}
+# end
+
+"""
+S₁ => I₁
+S₂ => I₂
+S₁ => S₂
+
+⊢
+
+I₁ => I₂
+
+"""
+function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U})::Dict{U, U}  where {T, U}
+    @assert allunique(values(src))
+
+    @assert all(x -> x ∈ keys(mapping), key(src))
+    @assert all(x -> x ∈ keys(tgt), values(mapping))
+
+    return Dict(src[key] => tgt[value] for (key, value) in mapping)
+
+
+end
+
+function invert_dictionary(d::Dict)
+    @assert allunique(values(d))
+    return Dict(val => key for (key, val) in d)
+end
+
+function invert_dictionary_to_vector(d::Dict{K, V})::Dict{V, Vector{K}}
+    return_dict::Dict{V, Vector{K}} = Dict()
+    for (key, value) ∈ d
+        if value ∈ keys(return_dict)
+            push!(return_dict[value], key)
+        else
+            push!(return_dict[value], [key])
+        end
+    end
+    return return_dict
+end
+
+function substring_matches(it, substr)
+    return filter(x -> occursin(substr, it), it) # iterable
+end
+
+function substring_matches_keys(d, substr::Dict)::Dict
+    return filter(((key, _),) -> occursin(substr, key), d)
+end
+
+function string_indexed_dict(d::Dict{T,V})::Dict{String, Pair{T, V}}  where {T, V}
+    @assert hasmethod(string, T)
+    return Dict(string(key) => key => value for (key, value) ∈ d)
+end
+    
+
+
+
+
+
+function substitute_symbols_V2(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_substr_prefix_s=true, use_substr_prefix_t=false, issubstr_prefix_s="_", issubstr_prefix_t="_")::Dict{U, W} where {T, U, V, W}
+    if !use_substr_prefix_s && !use_substr_prefix_t
+        return connect_by_value(src=s, mapping=m, tgt=t)::Dict{U, W}
+    else
+        master_dict::Dict{U,W} = Dict()
+        if use_substr_prefix_s
+            s_string = string_indexed_dict(s)
+            for (skey, (key, value)) in s_string
+                if startswith(skey, s_string)
+                    match_string = chopprefix(skey, s_string)
+                    mapped_matches = map(((key, value),) -> s[key] => value, substring_matches_keys(s, match_string))
+                    merge!(master_dict, mapped_matches)
+                end
+            end
+        else
+            merge!(master_dict, map(((key, value),) -> s[key] => value, s))
+        end
+        
+        if !use_substr_prefix_t
+            return master_dict
+        else # use_substr_prefix_s == true, use_substr_prefix_t == true
+            final_dict = invert_dictionary_to_vector(master_dict)
+            final_string = string_indexed_dict(final_dict)
+
+
+        end
+
+    end
+
+end
+
+
+
+
+
+function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, mapping::Dict{T, V} ; use_substr_prefix_s=true, use_substr_prefix_t=false, issubstr_prefix_s="_", issubstr_prefix_t="_")::Dict{U, W} where {T, U, V, W}
+    
+    if !use_substr_prefix_s && !use_substr_prefix_t
+        return connect_by_value(src=s, mapping=mapping, tgt=t)::Dict{U, W}
+    else
+        accumulated_dictionary = Dict()::Dict{U, W}
+
+
+        if use_substr_prefix_s
+            @assert hasmethod(string, (T,)) # Technically, we might also want to check that x != y -> string(x) != string(y)
+            stringkeys_s = Dict(string(key) => (key => val) for (key, val) ∈ s)::Dict{String, Pair{T, U}}
+
+            for (key,val) in mapping
+                if startswith(key, issubstr_prefix_s)
+                    match_string = chopprefix(key, issubstr_prefix)
+                    matches = filter(((skey, _), ) -> occursin(match_string, skey), stringkeys_s)::Dict{String, Pair{T, U}}
+
+                    if STRICT_MAPPINGS
+                        @assert all(((newmatch, (key, _)),) -> key ∉ accumulated_dictionary, matches)
+                    end
+                    merge!(accumulated_dictionary, Dict(values(matches))) # last match sticks
+                else
+                    push!(accumulated_dictionary, key => val)
+                end
+            end
+        end
+
+        if use_substr_prefix_t
+            @assert hasmethod(string, (V,))
+            final_dictionary = Dict()::Dict{U,W}
+
+            cached_matches = Dict()::Dict{String, W}
+            
+            stringvals_accumulated = Dict(string(val) => key => val for (key, val) ∈ accumulated_dictionary)::Dict{String, Pair{U, W}}
+
+            for (stringval, (key, val)) in stringvals_accumulated
+                if startswith(stringval, issubstr_prefix_t)
+                    if stringval ∉ keys(cached_matches)
+                        match_string = chopprefix(key, issubstr_prefix)
+
+                        matches = filter(((ackey, _), ) -> occursin(match_string, ackey),stringvals_accumulated )::Dict{String, Pair{U, W}}
+
+                        @assert !isempty(matches) # I guess technically you could have a successful match, then subsequently a failed match which overwrites it
+                        # but that's beyond the scope of this crap
+
+                        if STRICT_MAPPINGS
+                            @assert length(matches) < 2
+                        end
+                        if length(matches) > 1
+                            println("WARNING!  More than one match found for $(match_string): $(matches)")
+                        end
+
+                        push!(cached_matches, first(matches))
+                        # Uhhhhhh
+                        # I'm not really sure what to do if there's more than one match.
+                        # And dictionaries don't have an order, so can't really take first.
+                        # Could always just throw an error I guess
+                        
+                    end
+                    # push!(cached_matches, stringval => val)
+                    push!(final_dictionary, key => cached_matches[stringval])
+                
+                else
+                    push!(final_dictionary, key => val)
+                end
+            end
+            return final_dictionary
+        else
+            return accumulated_dictionary
+        end
+    end
+
 end
 
 
