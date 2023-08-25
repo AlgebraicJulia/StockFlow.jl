@@ -77,7 +77,8 @@ function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=tr
         return new_strata_dict, new_aggregate_dict
     else
 
-        @assert(allequal([values(da)..., values(ds)...])) # just checking that all values in both dictionaries are the same.
+        @assert (allequal([values(da)..., values(ds)...])) "Found mappings to different type value in one statement!"
+        # just checking that all values in both dictionaries are the same.
         # can't take union and check all equal in case they share keys.
 
 
@@ -145,11 +146,12 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
     current_strata_dict, current_aggregate_dict = substitute_symbols_stratification(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES
-        @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) # check that we're not overwriting a value which has already been assigned
+        @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) "Attempt to overwrite a mapping in strata!"
+        # check that we're not overwriting a value which has already been assigned
         merge!(strata_mappings, current_strata_dict) # accumulate dictionary keys
 
 
-        @assert (all(x -> x ∉ keys(aggregate_mappings), keys(current_aggregate_dict)))
+        @assert (all(x -> x ∉ keys(aggregate_mappings), keys(current_aggregate_dict))) "Attempt to overwrite a mapping in aggregate!"
         merge!(aggregate_mappings, current_aggregate_dict)
 
     else 
@@ -182,8 +184,10 @@ end
 macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
-    @assert sf.head == :tuple && length(sf.args) == 3
-    @assert all(x -> x ∈ names(Main), sf.args) # Maybe want it to be not just in Main?
+    @assert sf.head == :tuple && length(sf.args) == 3 "Incorrect arguments!  Expected tuple of length three, got: $(sf)"
+    @assert all(x -> x ∈ names(Main), sf.args) "Stockflows not in Main namespace!  Did you forget to define them?  If doing it at runtime, need an @eval call on stratify!"
+    
+    # Maybe want it to be not just in Main?
 
     strata, type, aggregate = map(x -> getfield(Main, x), sf.args) # Attempting to be clever and get around an eval call
     # note, because of this, you're probably gonna want to run this in a jupyter notebook, or use an @eval call.  It won't work at normal runtime.
@@ -228,18 +232,24 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     aggregate_sum_mappings_dict::Dict{Int, Int} = Dict()
     
 
-    strata_all_names = [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames]
-    type_all_names = [type_snames, type_svnames, type_vnames, type_fnames, type_pnames]
-    aggregate_all_names = [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames]
+    strata_all_names = [snames(strata), svnames(strata), vnames(strata), fnames(strata), pnames(strata)]
+    type_all_names = [snames(type), svnames(type), vnames(type), fnames(type), pnames(type)]
+    aggregate_all_names = [snames(aggregate), svnames(aggregate), vnames(aggregate), fnames(aggregate), pnames(aggregate)]
+
+    @assert all(map(x -> allunique(x), strata_all_names)) "Not all names in strata model are unique!"
+    @assert all(map(x -> allunique(x), type_all_names)) "Not all names in type model are unique!"
+    @assert all(map(x -> allunique(x), aggregate_all_names)) "Not all names in aggregate model are unique!"
+    # ensure names in each stockflow are unique within themselves.
+    # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
+
 
     all_names =  [strata_all_names..., type_all_names..., aggregate_all_names...]
 
     if USE_ISSUB
-        @assert all(ks -> all(k -> !startswith(string(k), ISSUB_DEFAULT), values(ks)), all_names) # ensure that no name in stockflows start with prefix used to identify substrings
+        @assert all(ks -> all(k -> !startswith(string(k), ISSUB_DEFAULT), values(ks)), all_names) "A name starts with the prefix used to identify substrings!"
+        # ensure that no name in stockflows start with prefix used to identify substrings
     end
 
-    @assert(all(map(x -> allunique(x), strata_all_names)) && all(map(x -> allunique(x), type_all_names)) && all(map(x -> allunique(x), aggregate_all_names))) # ensure names in each stockflow are unique within themselves.
-    # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
 
     # STEP 2
     current_phase = (_, _) -> ()
@@ -316,7 +326,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     
 
     # STEP 4
-    @assert all(x -> x != 0, all_mappings) 
+    @assert all(x -> x != 0, all_mappings) "There is an unmapped value!"
     #  "Unmapped: Strata: $([key for (key, _) in filter(((key, value),) -> value == 0, strata_mappings_dicts)])\nAggregate: $([key for (key, _) in filter(((key, value),) -> value == 0, aggregate_mappings_dicts)])"
 
 
