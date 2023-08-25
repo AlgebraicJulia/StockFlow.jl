@@ -23,36 +23,16 @@ function interpret_stratification_notation(mapping_pair::Expr)
         :($s => $t <= $a, $(atail...)) => return (Dict(s => t), push!(Dict(as => t for as in atail), a => t))
         :($(shead...), $s => $t <= $a) => return (push!(Dict(ss => t for ss in shead), s => t), Dict(a => t))
 
-
-        # The most annoying case. :($(shead...), $s => $t <= $a, $(atail...))
-        # basically just gave up here, if you can figure out a way to match it, godspeed.
         if mapping_pair.head == :tuple end => begin
-            
-            svec::Vector{Symbol} = []
-            sdict::Dict{Symbol, Symbol} = Dict() # I don't think I need to initialize this here, but makes scope less ambiguous.
-            adict::Dict{Symbol, Symbol} = Dict()
-            found_t = false
-            t_val = :NONE # this should never, ever be used.  Just need to initialize with something.
-
-            for val in mapping_pair.args
-                @match val begin # TODO: determine if there are more cases to deal with here
-                    val::Symbol && if !found_t end => push!(svec, val)
-                    val::Symbol && if found_t end => push!(adict, val => t_val)
-                    :($s => $t <= $a) => begin
-                        push!(svec, s)
-                        sdict = Dict(prevs => t for prevs in svec)
-
-                        t_val = t
-                        found_t = true
-
-                        push!(adict, a => t)
-
-                    end
-                    _ => error("Unknown expression found in stratification notation: $val")
+            middle_index = findfirst(x -> typeof(x) == Expr, mapping_pair.args)
+            @match mapping_pair.args[middle_index] begin
+                :($stail => $t <= $ahead) => begin
+                    sdict = push!(Dict(ss => t for ss in mapping_pair.args[1:middle_index-1]), stail => t)
+                    adict =  push!(Dict(ss => t for as in mapping_pair.args[middle_index:end]), ahead => t)
+                    return (sdict, adict)
                 end
-
+                _ => "Unknown format found for match; middle three values formatted incorrectly."
             end
-            return (sdict, adict)
         end
         _ => error("Unknown line format found in stratification notation.") 
     end
@@ -303,6 +283,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
             end
         end
         error("There is an unmapped value!")
+    end
     
 
     # STEP 5
