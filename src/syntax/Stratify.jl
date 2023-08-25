@@ -8,7 +8,6 @@ import Base.get
 using Catlab.CategoricalAlgebra
 import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links
 
-# using DataStructures
 
 RETURN_HOMS = false
 
@@ -59,12 +58,7 @@ function interpret_stratification_notation(mapping_pair::Expr)
     end
 end
 
-# function src_to_tgt(; src::Dict{T, U}, mapping::Dict{U, V}, tgt::Dict{V, W})::Dict{T, W} where {T, U, V}
-#     @assert all(x -> x ∈ keys(mapping), values(src))
-#     @assert all(x -> x ∈ keys(tgt), values(mapping))
 
-#     return Dict(key => tgt[mapping[value]] for (key, value) ∈ src)::Dict{T, W}
-# end
 
 """
 S₁ => I₁
@@ -87,26 +81,6 @@ function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U}):
 
 end
 
-# function invert_dictionary(d::Dict)
-#     @assert allunique(values(d))
-#     return Dict(val => key for (key, val) in d)
-# end
-
-# function invert_dictionary_to_vector(d::Dict{K, V})::Dict{V, Vector{K}}
-#     return_dict::Dict{V, Vector{K}} = Dict()
-#     for (key, value) ∈ d
-#         if value ∈ keys(return_dict)
-#             push!(return_dict[value], key)
-#         else
-#             push!(return_dict[value], [key])
-#         end
-#     end
-#     return return_dict
-# end
-
-# function substring_matches(it, substr)
-#     return filter(x -> occursin(substr, it), it) # iterable
-# end
 
 function substring_matches_keys(d::Dict, substr)::Dict
     return filter(((key, _),) -> occursin(substr, string(key)), d) # eliminate string(key)?  Do it outside?
@@ -116,15 +90,6 @@ function string_indexed_dict(d::Dict{T,V})::Dict{String, Pair{T, V}}  where {T, 
     @assert hasmethod(string, (T,))
     return Dict(string(key) => key => value for (key, value) ∈ d)
 end
-
-# function dict_map(f <: Function, d::Dict)
-#     return Dict(f(key, value) for (key, value) ∈ d)
-# end
-
-# function set_map(f <: Function, s::Set)
-#     return Set(f(x) for x ∈ s)
-# end
-
 
 
 # s: Symbol => Int, t: Symbol => Int, m: Symbol => Symbol
@@ -148,169 +113,6 @@ function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_su
 end
 
 
-
-
-
-
-
-# function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, mapping::Dict{T, V} ; use_substr_prefix_s=true, use_substr_prefix_t=false, issubstr_prefix_s="_", issubstr_prefix_t="_")::Dict{U, W} where {T, U, V, W}
-    
-#     if !use_substr_prefix_s && !use_substr_prefix_t
-#         return connect_by_value(src=s, mapping=mapping, tgt=t)::Dict{U, W}
-#     else
-#         accumulated_dictionary = Dict()::Dict{U, W}
-
-
-#         if use_substr_prefix_s
-#             @assert hasmethod(string, (T,)) # Technically, we might also want to check that x != y -> string(x) != string(y)
-#             stringkeys_s = Dict(string(key) => (key => val) for (key, val) ∈ s)::Dict{String, Pair{T, U}}
-
-#             for (key,val) in mapping
-#                 if startswith(key, issubstr_prefix_s)
-#                     match_string = chopprefix(key, issubstr_prefix)
-#                     matches = filter(((skey, _), ) -> occursin(match_string, skey), stringkeys_s)::Dict{String, Pair{T, U}}
-
-#                     if STRICT_MAPPINGS
-#                         @assert all(((newmatch, (key, _)),) -> key ∉ accumulated_dictionary, matches)
-#                     end
-#                     merge!(accumulated_dictionary, Dict(values(matches))) # last match sticks
-#                 else
-#                     push!(accumulated_dictionary, key => val)
-#                 end
-#             end
-#         end
-
-#         if use_substr_prefix_t
-#             @assert hasmethod(string, (V,))
-#             final_dictionary = Dict()::Dict{U,W}
-
-#             cached_matches = Dict()::Dict{String, W}
-            
-#             stringvals_accumulated = Dict(string(val) => key => val for (key, val) ∈ accumulated_dictionary)::Dict{String, Pair{U, W}}
-
-#             for (stringval, (key, val)) in stringvals_accumulated
-#                 if startswith(stringval, issubstr_prefix_t)
-#                     if stringval ∉ keys(cached_matches)
-#                         match_string = chopprefix(key, issubstr_prefix)
-
-#                         matches = filter(((ackey, _), ) -> occursin(match_string, ackey),stringvals_accumulated )::Dict{String, Pair{U, W}}
-
-#                         @assert !isempty(matches) # I guess technically you could have a successful match, then subsequently a failed match which overwrites it
-#                         # but that's beyond the scope of this crap
-
-#                         if STRICT_MAPPINGS
-#                             @assert length(matches) < 2
-#                         end
-#                         if length(matches) > 1
-#                             println("WARNING!  More than one match found for $(match_string): $(matches)")
-#                         end
-
-#                         push!(cached_matches, first(matches))
-#                         # Uhhhhhh
-#                         # I'm not really sure what to do if there's more than one match.
-#                         # And dictionaries don't have an order, so can't really take first.
-#                         # Could always just throw an error I guess
-                        
-#                     end
-#                     # push!(cached_matches, stringval => val)
-#                     push!(final_dictionary, key => cached_matches[stringval])
-                
-#                 else
-#                     push!(final_dictionary, key => val)
-#                 end
-#             end
-#             return final_dictionary
-#         else
-#             return accumulated_dictionary
-#         end
-#     end
-
-# end
-
-
-"""
-Take 5 dictionaries:
-s: strata dict, symbol => index
-t: type dict, symbol => index
-a: aggregate dict, symbol => index
-
-ds: new strata, strata symbol => type symbol
-da: new aggregate, aggregate symbol => type symbol
-
-convert ds to strata index => type index, da to aggregate index => type index
-"""
-# function substitute_symbols_stratification(s, t, a, ds, da; use_substr_prefix=true, issubstr_prefix="_") # TODO: add assert that all symbols in s,t and a are in ds and da (and that use_substr_prefixs have at least one match, maybe?)
-#     #TODO: pick a better issubstr_prefix.  In my current setup, needs to be a valid ascii character which can be used as an identifier.
-#     # TODO: generalize.  Make a single function which can be used by multiple DSL
-
-#     if !use_substr_prefix # this bit isn't necessary, as it's covered by the else block, but it's way simpler, and there may be cases where we don't want to check for substrings
-#         new_strata_dict = Dict(s[strata_symbol] => t[type_symbol] for (strata_symbol, type_symbol) in ds)
-#         new_aggregate_dict = Dict(a[aggregate_symbol] => t[type_symbol] for (aggregate_symbol, type_symbol) in da)
-#         return new_strata_dict, new_aggregate_dict
-#     else
-
-#         @assert (allequal([values(da)..., values(ds)...])) "Found mappings to different type value in one statement!"
-#         # just checking that all values in both dictionaries are the same.
-#         # can't take union and check all equal in case they share keys.
-
-
-#         t_original_value::Symbol = only(Set(values(merge(ds, da)))) # since I did the check above, can just merge with no issues.
-#         # the merge probably isn't necessary.  Used on the off chance one of them has no mapping to t.
-#         # though in that case, the product would be 0, so the other would need to have no mappings as well.
-#         t_val_string = string(t_original_value)
-
-
-#         if startswith(t_val_string, issubstr_prefix)
-#             error("Wildcard matching on type not allowed!") # just disallowing it now.  Prevents stupid mistakes.  Only benefit, really, is that the last value can be a _ instead of fully writing it out.
-#         else
-#             type_index = t[t_original_value]
-#         end
-
-
-
-#         new_strata_dict = Dict()
-
-#         for strata_key::Symbol in keys(ds)
-#             strata_key_string = string(strata_key)
-
-#             if startswith(strata_key_string, issubstr_prefix)
-#                 strata_match_string = chopprefix(strata_key_string, issubstr_prefix)
-#                 matches = [s[key] => type_index for (key,_) in filter(((key, value),) -> occursin(strata_match_string, string(key)), s)] # setting type_index as the mapping for all keys which have strata_key_string as a substring
-#                 # above includes case where strata_match_string is empty string, in which case everything will match.
-#                 if length(matches) != 0
-#                     push!(new_strata_dict, matches...)
-#                 else
-#                     println("Warning, no substring matches found on $(strata_match_string)")
-#                 end
-#             else
-#                 push!(new_strata_dict, s[strata_key] => type_index)
-#             end
-#         end
-
-#         new_aggregate_dict = Dict()
-
-#         for aggregate_key::Symbol in keys(da)
-#             aggregate_key_string = string(aggregate_key)
-
-#             if startswith(aggregate_key_string, issubstr_prefix)
-#                 aggregate_match_string = chopprefix(aggregate_key_string, issubstr_prefix)
-#                 matches = [a[key] => type_index for (key,_) in filter(((key, value),) -> occursin(aggregate_match_string, string(key)), a)]
-#                 if length(matches) != 0
-#                     push!(new_aggregate_dict, matches...) # setting type_index as the mapping for all keys which have aggregate_key_string as a substring
-#                 else
-#                     println("Warning, no substring matches found on $(aggregate_match_string)")
-#                 end
-#             else
-#                 push!(new_aggregate_dict, a[aggregate_key] => type_index)
-#             end
-#         end
-
-#         return new_strata_dict, new_aggregate_dict
-        
-        
-
-#     end
-# end
 
 function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
@@ -369,6 +171,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
 
 
     @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, [strata, type, aggregate]) # Unsure if we want to be more or less strict with the type check
+    # they all need parameter fields right now.  Could probably generalize.
 
     Base.remove_linenums!(block)
 
@@ -479,30 +282,28 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     strata_mappings = [strata_stock_mappings => snames(strata), strata_flow_mappings => fnames(strata), strata_dyvar_mappings => vnames(strata), strata_param_mappings => pnames(strata), strata_sum_mappings => svnames(strata)]
     aggregate_mappings = [aggregate_stock_mappings => snames(aggregate), aggregate_flow_mappings => fnames(aggregate), aggregate_dyvar_mappings => vnames(aggregate), aggregate_param_mappings => pnames(aggregate), aggregate_sum_mappings => svnames(aggregate)]
 
+    # STEP 4
 
     #unmapped: 
-    for (ints, dicts) in strata_mappings
-        for (i, val) in enumerate(ints)
-            if val == 0
-                println("UNMAPPED IN STRATA:")
-                println(dicts[i])
+    if !(all(x -> x != 0, all_mappings))
+        for (ints, dicts) in strata_mappings
+            for (i, val) in enumerate(ints)
+                if val == 0
+                    println("UNMAPPED IN STRATA:")
+                    println(dicts[i])
+                end
             end
         end
-    end
-    for (ints, dicts) in aggregate_mappings
-        for (i, val) in enumerate(ints)
-            if val == 0
-                println("UNMAPPED IN AGGREGATE:")
-                println(dicts[i])
+        for (ints, dicts) in aggregate_mappings
+            for (i, val) in enumerate(ints)
+                if val == 0
+                    println("UNMAPPED IN AGGREGATE:")
+                    println(dicts[i])
+                end
             end
         end
-    end
+        error("There is an unmapped value!")
     
-
-    # STEP 4
-    @assert all(x -> x != 0, all_mappings) "There is an unmapped value!"
-    #  "Unmapped: Strata: $([key for (key, _) in filter(((key, value),) -> value == 0, strata_mappings_dicts)])\nAggregate: $([key for (key, _) in filter(((key, value),) -> value == 0, aggregate_mappings_dicts)])"
-
 
     # STEP 5
     nothing_function = x -> nothing
@@ -523,6 +324,7 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     #  v    v    v
     #  A'<- C'-> B'
     #
+    
     strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)    
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
     strata_to_type = ACSetTransformation(strata, no_attribute_type; strata_necmaps..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
