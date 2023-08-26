@@ -227,13 +227,13 @@ age_weight_3 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
     v_NewBorn => v_birth <= v_NB
     v_DeathNormalWeight, v_DeathOverWeight, v_DeathObese => v_death <= v_DeathC, v_DeathA, v_DeathS
     v_idNW, v_idOW, v_idOb  => v_aging <= v_agingCA, v_agingAS
-    v_BecomingOverWeight, v_BecomingObese => v_fstOrder <= v_idC, v_idA, v_idS
+    ~_ => v_fstOrder <= ~_
 
     :parameters
     μ => μ <= μ
     δw, δo => δ <= δC, δA, δS
     rw, ro => rFstOrder <= r
-    rage => rage <= rageCA, rageAS
+    _ => rage <= _
 
     :sums
     N => N <= N

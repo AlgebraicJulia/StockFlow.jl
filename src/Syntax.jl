@@ -1165,13 +1165,29 @@ end
 
 
 
-function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} # Need work.  Only works with 
+\
     if isempty(flags)
         return [key] # potentially extremely inefficient
     elseif :~ ∈ flags
+
+        # Tried and failed to do this all in a single for comprehension.
         keystring = string(key)
-        return filter(x -> occursin(keystring, string(x)), collect(keys(s)))
+
+
+        matches = [i for i in filter(x -> occursin(keystring, string(x)), keys(s))]
+
+        return_vector::Vector{Symbol} = Vector{Symbol}()
+        new_flags = copy(flags) # copy isn't necessary, probably
+        pop!(new_flags, :~) 
+
+        for m ∈ matches
+            append!(return_vector, apply_flags(m, new_flags, s))
+        end
+        return return_vector
+
     else
+        error("Unknown flag found!  $(flags)")
     end
 end
 
