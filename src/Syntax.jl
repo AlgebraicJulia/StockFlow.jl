@@ -1257,7 +1257,7 @@ function iterate_stockflow_quoteblocks(lines::Vector, fun)
     end
 end
 
-
+NothingFunction(x) = nothing;
 
 
 include("syntax/Homomorphism.jl")

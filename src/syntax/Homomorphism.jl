@@ -9,7 +9,7 @@ using ..Syntax
 
 using Catlab.CategoricalAlgebra
 
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, DSLArgument
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, DSLArgument, NothingFunction
 
 
 
@@ -106,14 +106,13 @@ macro hom(sf, block)
     @assert(all(x -> x != 0, all_mappings))
 
 
-    nothing_function = x -> nothing
-    no_attribute_tgt = map(sftgt, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
+    no_attribute_tgt = map(sftgt, Name=NothingFunction, Op=NothingFunction, Position=NothingFunction)
 
     filter_no_mappings(d) = filter(((key, val),) -> !isempty(val), d)
 
     src_necmaps = Dict(:S => src_stock_mappings, :F => src_flow_mappings, :V => src_dyvar_mappings, :P => src_param_mappings, :SV => src_sum_mappings)    
     src_inferred_links = infer_links(sfsrc, sftgt, src_necmaps)
-    src_to_tgt = ACSetTransformation(sfsrc, no_attribute_tgt; filter_no_mappings(src_necmaps)..., filter_no_mappings(src_inferred_links)..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+    src_to_tgt = ACSetTransformation(sfsrc, no_attribute_tgt; filter_no_mappings(src_necmaps)..., filter_no_mappings(src_inferred_links)..., Op =NothingFunction, Position = NothingFunction, Name =NothingFunction)
 
     @assert is_natural(src_to_tgt) # unfortunately, at this point, all the attributes will be nothing.
 

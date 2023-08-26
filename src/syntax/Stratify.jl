@@ -6,7 +6,7 @@ using ..Syntax
 using MLStyle
 import Base.get
 using Catlab.CategoricalAlgebra
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, DSLArgument
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, DSLArgument, NothingFunction
 
 
 RETURN_HOMS = false
@@ -269,8 +269,8 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     
 
     # STEP 5
-    nothing_function = x -> nothing
-    no_attribute_type = map(type, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
+    # nothing_function = x -> nothing
+    no_attribute_type = map(type, Name=NothingFunction, Op=NothingFunction, Position=NothingFunction)
 
     # STEP 6/7 
     # This is where we pull out the magic to infer links.
@@ -290,12 +290,12 @@ macro stratify(sf, block) # Trying to be very vigilant about catching errors.
     
     strata_necmaps = Dict(:S => strata_stock_mappings, :F => strata_flow_mappings, :V => strata_dyvar_mappings, :P => strata_param_mappings, :SV => strata_sum_mappings)    
     strata_inferred_links = infer_links(strata, type, strata_necmaps)
-    strata_to_type = ACSetTransformation(strata, no_attribute_type; strata_necmaps..., strata_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+    strata_to_type = ACSetTransformation(strata, no_attribute_type; strata_necmaps..., strata_inferred_links..., Op = NothingFunction, Position = NothingFunction, Name = NothingFunction)
 
     
     aggregate_necmaps = Dict(:S => aggregate_stock_mappings, :F => aggregate_flow_mappings, :V => aggregate_dyvar_mappings, :P => aggregate_param_mappings, :SV => aggregate_sum_mappings)
     aggregate_inferred_links = infer_links(aggregate, type, aggregate_necmaps)
-    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate_necmaps..., aggregate_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate_necmaps..., aggregate_inferred_links..., Op =NothingFunction, Position = NothingFunction, Name =NothingFunction)
 
     
 

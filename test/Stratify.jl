@@ -1,5 +1,5 @@
-# using Pkg;
-# Pkg.activate(".")
+using Pkg;
+Pkg.activate(".")
 
 using Test
 
@@ -8,6 +8,8 @@ using StockFlow.Syntax
 using StockFlow.Syntax.Stratify
 
 using StockFlow.Syntax.Stratify: interpret_stratification_notation
+using StockFlow.Syntax: NothingFunction
+
 
 using StockFlow.Syntax.Homomorphism
 
@@ -45,7 +47,7 @@ l_type = @stock_and_flow begin
     N = [pop]
     
 end;
-l_type_noatts = map(l_type, Name=name->nothing, Op=op->nothing, Position=pos->nothing);
+l_type_noatts = map(l_type, Name=NothingFunction, Op=NothingFunction, Position=NothingFunction);
 
 
 WeightModel = @stock_and_flow begin
@@ -163,7 +165,8 @@ typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
   LSV = [lsv_birth1],
   P = [p_μ, p_δ, p_rfstOrder, p_rfstOrder, p_δ, p_rage],
   LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_aging2, lpv_aging2, lpv_aging2],
-  Name = name -> nothing, Op=op->nothing, Position=pos->nothing
+  Name=NothingFunction, Op=NothingFunction, Position=NothingFunction
+#   Name = name -> nothing, Op=op->nothing, Position=pos->nothing
 );
 @assert is_natural(typed_WeightModel);
 
@@ -200,7 +203,7 @@ typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type_noatts,
   LSV = [lsv_birth1],
   P = [p_μ, p_δ, p_δ, p_δ, p_rage, p_rage, p_rfstOrder],
   LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2],
-  Name = name -> nothing, Op=op->nothing, Position=pos->nothing
+  Name =NothingFunction, Op=NothingFunction, Position=NothingFunction
 );
 @assert is_natural(typed_ageWeightModel);
 
@@ -347,7 +350,7 @@ end
     # println(typed_WeightModel_2.components)
     @test typed_WeightModel.dom == typed_WeightModel_2.dom
     @test typed_WeightModel.codom == typed_WeightModel_2.codom
-    # @test typed_WeightModel.components == typed_WeightModel_2.components # NOTE! THEY WON'T BE EQUAL, BECAUSE THEY USE DIFFERENT x -> nothing FUNCTIONS!
+    @test typed_WeightModel.components == typed_WeightModel_2.components # NOTE! THEY WON'T BE EQUAL, BECAUSE THEY USE DIFFERENT x -> nothing FUNCTIONS!
 
 
     # @test typed_WeightModel == typed_WeightModel_2
