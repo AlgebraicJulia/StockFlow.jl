@@ -6,7 +6,7 @@ using ..Syntax
 using MLStyle
 import Base.get
 using Catlab.CategoricalAlgebra
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, StratificationArgument
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, DSLArgument
 
 
 RETURN_HOMS = false
@@ -26,20 +26,20 @@ TEMP_STRAT_DEFAULT = :_
 """
 Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
 """
-function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{StratificationArgument}, Vector{StratificationArgument}} # TODO: Probably create some kind of struct for the results.
+function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{DSLArgument}, Vector{DSLArgument}} # TODO: Probably create some kind of struct for the results.
     @match mapping_pair begin
 
 
-        :($s => $t <= $a) => return ([StratificationArgument(s,t)], [StratificationArgument(a,t)])
-        :($s => $t <= $a, $(atail...)) => ([StratificationArgument(s,t)], [[StratificationArgument(as,t) for as in atail]; StratificationArgument(a,t)])#return (Dict(unwrap_key_expression(s, t)), push!(Dict(unwrap_key_expression(as, t) for as in atail), unwrap_key_expression(a, t)))
-        :($(shead...), $s => $t <= $a) => ([[StratificationArgument(ss, t) for ss in shead] ; StratificationArgument(s, t)], [StratificationArgument(a, t)])#return (push!(Dict(unwrap_key_expression(ss, t) for ss in shead), unwrap_key_expression(s, t)), Dict(unwrap_key_expression(a, t)))
+        :($s => $t <= $a) => return ([DSLArgument(s,t)], [DSLArgument(a,t)])
+        :($s => $t <= $a, $(atail...)) => ([DSLArgument(s,t)], [[DSLArgument(as,t) for as in atail]; DSLArgument(a,t)])#return (Dict(unwrap_key_expression(s, t)), push!(Dict(unwrap_key_expression(as, t) for as in atail), unwrap_key_expression(a, t)))
+        :($(shead...), $s => $t <= $a) => ([[DSLArgument(ss, t) for ss in shead] ; DSLArgument(s, t)], [DSLArgument(a, t)])#return (push!(Dict(unwrap_key_expression(ss, t) for ss in shead), unwrap_key_expression(s, t)), Dict(unwrap_key_expression(a, t)))
 
         if mapping_pair.head == :tuple end => begin
             middle_index = findfirst(x -> typeof(x) == Expr && length(x.args) == 3, mapping_pair.args)
             @match mapping_pair.args[middle_index] begin
                 :($stail => $t <= $ahead) => begin
-                    sdict = [[StratificationArgument(ss, t) for ss in mapping_pair.args[1:middle_index-1]] ; StratificationArgument(stail, t)]
-                    adict = [[StratificationArgument(as, t) for as in mapping_pair.args[middle_index+1:end]] ; StratificationArgument(ahead, t)]
+                    sdict = [[DSLArgument(ss, t) for ss in mapping_pair.args[1:middle_index-1]] ; DSLArgument(stail, t)]
+                    adict = [[DSLArgument(as, t) for as in mapping_pair.args[middle_index+1:end]] ; DSLArgument(ahead, t)]
                     return (sdict, adict)
                 end
                 _ => "Unknown format found for match; middle three values formatted incorrectly."

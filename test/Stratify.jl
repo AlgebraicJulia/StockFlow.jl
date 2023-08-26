@@ -1,5 +1,5 @@
-using Pkg;
-Pkg.activate(".")
+# using Pkg;
+# Pkg.activate(".")
 
 using Test
 
@@ -8,6 +8,8 @@ using StockFlow.Syntax
 using StockFlow.Syntax.Stratify
 
 using StockFlow.Syntax.Stratify: interpret_stratification_notation
+
+using StockFlow.Syntax.Homomorphism
 
 using StockFlow.PremadeModels
 
@@ -165,6 +167,26 @@ typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
 );
 @assert is_natural(typed_WeightModel);
 
+typed_WeightModel_2 = @hom (WeightModel, l_type) begin
+    :dynamic_variables
+    v_NewBorn => v_birth
+    ~Death => v_death
+    ~Becoming => v_fstOrder
+    ~id => v_aging
+
+    :parameters
+    μ => μ
+    ~δ => δ
+    rw, ro => rFstOrder
+    rage => rage
+
+    :flows
+    ~id => f_aging
+    ~Becoming => f_fstOrder
+    f_NewBorn => f_birth
+    ~Death => f_death
+end
+
 
 typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type_noatts,
   S = [s,s,s],
@@ -319,3 +341,15 @@ end
 
 
 
+@testset "Testing homomorphism" begin
+    # println(fieldnames(typeof(typed_WeightModel)))
+    # println(typed_WeightModel.components)
+    # println(typed_WeightModel_2.components)
+    @test typed_WeightModel.dom == typed_WeightModel_2.dom
+    @test typed_WeightModel.codom == typed_WeightModel_2.codom
+    # @test typed_WeightModel.components == typed_WeightModel_2.components # NOTE! THEY WON'T BE EQUAL, BECAUSE THEY USE DIFFERENT x -> nothing FUNCTIONS!
+
+
+    # @test typed_WeightModel == typed_WeightModel_2
+
+end

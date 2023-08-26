@@ -9,7 +9,7 @@ using ..Syntax
 
 using Catlab.CategoricalAlgebra
 
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, DSLArgument
 
 
 
@@ -109,9 +109,11 @@ macro hom(sf, block)
     nothing_function = x -> nothing
     no_attribute_tgt = map(sftgt, Name=name->nothing, Op=op->nothing, Position=pos->nothing)
 
+    filter_no_mappings(d) = filter(((key, val),) -> !isempty(val), d)
+
     src_necmaps = Dict(:S => src_stock_mappings, :F => src_flow_mappings, :V => src_dyvar_mappings, :P => src_param_mappings, :SV => src_sum_mappings)    
     src_inferred_links = infer_links(sfsrc, sftgt, src_necmaps)
-    src_to_tgt = ACSetTransformation(sfsrc, no_attribute_tgt; src_necmaps..., src_inferred_links..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
+    src_to_tgt = ACSetTransformation(sfsrc, no_attribute_tgt; filter_no_mappings(src_necmaps)..., filter_no_mappings(src_inferred_links)..., Op = nothing_function, Position = nothing_function, Name = nothing_function)
 
     @assert is_natural(src_to_tgt) # unfortunately, at this point, all the attributes will be nothing.
 
@@ -126,7 +128,9 @@ end
 function read_homomorphism_line_and_update_dictionaries!(line::Expr, src_names::Dict{Symbol, Int}, tgt_names::Dict{Symbol, Int}, src_mappings::Dict{Int, Int})
     current_src_symbol_dict = interpret_homomorphism_notation(line) 
 
-    current_src_dict = substitute_symbols(src_names, tgt_names, current_src_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
+    current_src_dict = substitute_symbols(src_names, tgt_names, current_src_symbol_dict ; use_flags=true)
+
+    # current_src_dict = substitute_symbols(src_names, tgt_names, current_src_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES
         @assert (all(x -> x ∉ keys(src_mappings), keys(current_src_dict))) # check that we're not overwriting a value which has already been assigned
@@ -141,8 +145,8 @@ end
 
 function interpret_homomorphism_notation(mapping_pair::Expr)
     @match mapping_pair begin
-        :($s => $t) => return (Dict(s => t))
-        :($(shead...), $s => $t) => return push!(Dict(ss => t for ss in shead), s => t)
+        :($s => $t) => return [DSLArgument(s, t)]
+        :($(shead...), $s => $t) => return [[DSLArgument(ss, t) for ss in shead] ; DSLArgument(s, t)]
         _ => error("Unknown line format found in homomorphism notation.") 
     end
 

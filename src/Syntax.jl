@@ -1074,7 +1074,7 @@ If A <- C -> B, and we have A -> A' and B -> B' and a unique C' such that A' <- 
 
 necMaps must contain keys S, F, SV, P, V
 """
-function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}}) # TODO: break these down into multiple functions.
+function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}}) # TODO: Determine if this works even if there are no stocks or no flows
 
 
     stockmaps = NecMaps[:S]
@@ -1108,14 +1108,14 @@ end
 
 
 
-struct StratificationArgument
+struct DSLArgument
     key::Symbol
     value::Symbol
     flags::Set{Symbol} # currently operating under the assumption that flag order doesn't matter
-    StratificationArgument(kv::Pair{Union{Expr, Symbol}, Symbol}) = begin
-        StratificationArgument(first(kv), second(kv))
+    DSLArgument(kv::Pair{Union{Expr, Symbol}, Symbol}) = begin # this constructor seemed to fail... need to figure out why.  Maybe it can't call other constructors.
+        DSLArgument(first(kv), second(kv))
     end
-    StratificationArgument(k::Union{Expr, Symbol}, v::Symbol) = begin
+    DSLArgument(k::Union{Expr, Symbol}, v::Symbol) = begin
         key, flags = unwrap_expression(k)
         new(key, v, flags)
     end
@@ -1165,8 +1165,8 @@ end
 
 
 
-function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} # Need work.  Only works with 
-\
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} # Need work.  Only works with ~
+
     if isempty(flags)
         return [key] # potentially extremely inefficient
     elseif :~ ∈ flags
@@ -1192,7 +1192,7 @@ function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vec
 end
 
 
-function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{StratificationArgument} ; use_flags::Bool=true)::Dict{Int, Int}
+function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
     if !use_flags
         return connect_by_value(src=s, mapping=Dict(arg.key => arg.value for arg in m), tgt=t)
     else
