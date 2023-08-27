@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, @stratify
+export @stock_and_flow, @foot, @feet, stratify
 
 using ..StockFlow
 using MLStyle
