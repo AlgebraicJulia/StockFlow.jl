@@ -107,7 +107,7 @@ export @stock_and_flow, @foot, @feet, @stratify
 
 using ..StockFlow
 using MLStyle
-import Base.get
+import Base: get, ==
 using Catlab.CategoricalAlgebra
 
 
@@ -1113,13 +1113,17 @@ struct DSLArgument
     value::Symbol
     flags::Set{Symbol} # currently operating under the assumption that flag order doesn't matter
     DSLArgument(kv::Pair{Union{Expr, Symbol}, Symbol}) = begin # this constructor seemed to fail... need to figure out why.  Maybe it can't call other constructors.
-        DSLArgument(first(kv), second(kv))
+        key, flags = unwrap_expression(first(kv))
+        new(key, second(kv), flags)
     end
     DSLArgument(k::Union{Expr, Symbol}, v::Symbol) = begin
         key, flags = unwrap_expression(k)
         new(key, v, flags)
     end
+    DSLArgument(k::Symbol, v::Symbol, f::Set{Symbol}) = new(k, v, f)
 end
+
+==(a::DSLArgument, b::DSLArgument) = a.key == b.key && a.value == b.value && a.flags == b.flags
 
 function unwrap_expression(x::Union{Symbol, Expr}, flags::Set{Symbol}=Set{Symbol}())::Tuple{Symbol, Set{Symbol}} # In Python I'd worry about mutable default arguments, but doesn't seem to be an issue here.
     if typeof(x) == Symbol
@@ -1145,13 +1149,13 @@ I₁ => I₂
 function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U})::Dict{U, U}  where {T, U}
     @assert allunique(values(src))
 
-    @assert all(x -> x ∈ keys(mapping), key(src))
+    @assert all(x -> x ∈ keys(mapping), keys(src))
     @assert all(x -> x ∈ keys(tgt), values(mapping))
 
     return Dict(src[key] => tgt[value] for (key, value) in mapping)
 
-
 end
+
 
 
 function substring_matches_keys(d::Dict, substr)::Dict
@@ -1194,7 +1198,8 @@ end
 
 function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
     if !use_flags
-        return connect_by_value(src=s, mapping=Dict(arg.key => arg.value for arg in m), tgt=t)
+        mapping = Dict(arg.key => arg.value for arg in m)
+        return connect_by_value(src=s, mapping=mapping, tgt=t)
     else
         master_dict::Dict{Int, Int} = Dict()
         for statement in m
@@ -1210,25 +1215,25 @@ function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vecto
 end
 
 
-# s: Symbol => Int, t: Symbol => Int, m: Symbol => Symbol
-function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_substr_prefix=true, issubstr_prefix="_")::Dict{U, W} where {T, U, V, W} #TODO: Fix 
-    if !use_substr_prefix
-        return connect_by_value(src=s, mapping=m, tgt=t)::Dict{U, W}
-    else
-        master_dict::Dict{U,W} = Dict()
-        m_string = string_indexed_dict(m)
-        for (skey, (key, value)) in m_string
-            if startswith(skey, issubstr_prefix)
-                match_string = chopprefix(skey, issubstr_prefix)
-                mapped_matches = Dict(invalue => t[value] for (inkey, invalue) ∈ substring_matches_keys(s, match_string))
-                mergewith!((x...) -> first(x), master_dict, mapped_matches) # keeps first match
-            else
-                push!(master_dict, s[key] => t[value])
-            end
-        end
-        return master_dict
-    end
-end
+# # s: Symbol => Int, t: Symbol => Int, m: Symbol => Symbol
+# function substitute_symbols(s::Dict{T, U}, t::Dict{V, W}, m::Dict{T, V} ; use_substr_prefix=true, issubstr_prefix="_")::Dict{U, W} where {T, U, V, W} #TODO: Fix 
+#     if !use_substr_prefix
+#         return connect_by_value(src=s, mapping=m, tgt=t)::Dict{U, W}
+#     else
+#         master_dict::Dict{U,W} = Dict()
+#         m_string = string_indexed_dict(m)
+#         for (skey, (key, value)) in m_string
+#             if startswith(skey, issubstr_prefix)
+#                 match_string = chopprefix(skey, issubstr_prefix)
+#                 mapped_matches = Dict(invalue => t[value] for (inkey, invalue) ∈ substring_matches_keys(s, match_string))
+#                 mergewith!((x...) -> first(x), master_dict, mapped_matches) # keeps first match
+#             else
+#                 push!(master_dict, s[key] => t[value])
+#             end
+#         end
+#         return master_dict
+#     end
+# end
 
 
 function iterate_stockflow_quoteblocks(lines::Vector, fun)
@@ -1262,7 +1267,7 @@ NothingFunction(x) = nothing;
 
 include("syntax/Homomorphism.jl")
 include("syntax/Stratify.jl")
-
+include("syntax/Composition.jl")
 
 end
 

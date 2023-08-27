@@ -31,15 +31,18 @@ function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{DSL
 
 
         :($s => $t <= $a) => return ([DSLArgument(s,t)], [DSLArgument(a,t)])
-        :($s => $t <= $a, $(atail...)) => ([DSLArgument(s,t)], [[DSLArgument(as,t) for as in atail]; DSLArgument(a,t)])#return (Dict(unwrap_key_expression(s, t)), push!(Dict(unwrap_key_expression(as, t) for as in atail), unwrap_key_expression(a, t)))
+        :($s => $t <= $a, $(atail...)) => ([DSLArgument(s,t)], [DSLArgument(a,t) ; [DSLArgument(as,t) for as in atail] ])#return (Dict(unwrap_key_expression(s, t)), push!(Dict(unwrap_key_expression(as, t) for as in atail), unwrap_key_expression(a, t)))
         :($(shead...), $s => $t <= $a) => ([[DSLArgument(ss, t) for ss in shead] ; DSLArgument(s, t)], [DSLArgument(a, t)])#return (push!(Dict(unwrap_key_expression(ss, t) for ss in shead), unwrap_key_expression(s, t)), Dict(unwrap_key_expression(a, t)))
 
         if mapping_pair.head == :tuple end => begin
-            middle_index = findfirst(x -> typeof(x) == Expr && length(x.args) == 3, mapping_pair.args)
+            middle_index = findfirst(x -> typeof(x) == Expr && length(x.args) == 3, mapping_pair.args) # still isn't specific enough
+            if isnothing(middle_index)
+                error("Malformed line $mapping_pair, could not find center.")
+            end
             @match mapping_pair.args[middle_index] begin
                 :($stail => $t <= $ahead) => begin
                     sdict = [[DSLArgument(ss, t) for ss in mapping_pair.args[1:middle_index-1]] ; DSLArgument(stail, t)]
-                    adict = [[DSLArgument(as, t) for as in mapping_pair.args[middle_index+1:end]] ; DSLArgument(ahead, t)]
+                    adict = [DSLArgument(ahead, t) ; [DSLArgument(as, t) for as in mapping_pair.args[middle_index+1:end]]]
                     return (sdict, adict)
                 end
                 _ => "Unknown format found for match; middle three values formatted incorrectly."
