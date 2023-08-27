@@ -1,7 +1,9 @@
 #!/usr/bin/env julia
 
 # using Pkg;
-# Pkg.activate("../")
+# Pkg.activate("./")
+# # Pkg.precompile()
+# # Pkg.resolve()
 
 using Test
 
@@ -141,79 +143,79 @@ ageWeightModel = @stock_and_flow begin
     
 end;
 
-# begin
-#     s, = parts(l_type, :S)
-#     N, = parts(l_type, :SV)
-#     lsn, = parts(l_type, :LS)
-#     f_aging, f_fstorder, f_birth, f_death = parts(l_type, :F)
-#     i_aging, i_fstorder, i_birth = parts(l_type, :I)
-#     o_aging, o_fstorder, o_death = parts(l_type, :O)
-#     v_aging, v_fstorder, v_birth, v_death = parts(l_type, :V)
-#     lv_aging1, lv_fstorder1, lv_death1 = parts(l_type, :LV)
-#     lsv_birth1, = parts(l_type, :LSV)
-#     p_μ, p_δ, p_rfstOrder, p_rage = parts(l_type, :P)
-#     lpv_aging2, lpv_fstorder2, lpv_birth2, lpv_death2 = parts(l_type, :LPV)
-# end;
+begin
+    s, = parts(l_type, :S)
+    N, = parts(l_type, :SV)
+    lsn, = parts(l_type, :LS)
+    f_aging, f_fstorder, f_birth, f_death = parts(l_type, :F)
+    i_aging, i_fstorder, i_birth = parts(l_type, :I)
+    o_aging, o_fstorder, o_death = parts(l_type, :O)
+    v_aging, v_fstorder, v_birth, v_death = parts(l_type, :V)
+    lv_aging1, lv_fstorder1, lv_death1 = parts(l_type, :LV)
+    lsv_birth1, = parts(l_type, :LSV)
+    p_μ, p_δ, p_rfstOrder, p_rage = parts(l_type, :P)
+    lpv_aging2, lpv_fstorder2, lpv_birth2, lpv_death2 = parts(l_type, :LPV)
+end;
 
-# typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
-#   S = [s,s,s],
-#   SV = [N],
-#   LS = [lsn,lsn,lsn],   
-#   F = [f_birth, f_death, f_fstorder, f_death, f_fstorder, f_death, f_aging, f_aging, f_aging],    
-#   I = [i_birth, i_aging, i_fstorder, i_aging, i_fstorder, i_aging], 
-#   O = [o_death, o_fstorder, o_aging, o_death, o_fstorder, o_aging, o_death, o_aging],
-#   V = [v_birth, v_death, v_fstorder, v_death, v_fstorder, v_death, v_aging, v_aging, v_aging],
-#   LV = [lv_death1, lv_fstorder1, lv_death1, lv_fstorder1, lv_death1, lv_aging1, lv_aging1, lv_aging1],
-#   LSV = [lsv_birth1],
-#   P = [p_μ, p_δ, p_rfstOrder, p_rfstOrder, p_δ, p_rage],
-#   LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_aging2, lpv_aging2, lpv_aging2],
-#   Name=NothingFunction, Op=NothingFunction, Position=NothingFunction
-# #   Name = name -> nothing, Op=op->nothing, Position=pos->nothing
-# );
-# @assert is_natural(typed_WeightModel);
+typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
+  S = [s,s,s],
+  SV = [N],
+  LS = [lsn,lsn,lsn],   
+  F = [f_birth, f_death, f_fstorder, f_death, f_fstorder, f_death, f_aging, f_aging, f_aging],    
+  I = [i_birth, i_aging, i_fstorder, i_aging, i_fstorder, i_aging], 
+  O = [o_death, o_fstorder, o_aging, o_death, o_fstorder, o_aging, o_death, o_aging],
+  V = [v_birth, v_death, v_fstorder, v_death, v_fstorder, v_death, v_aging, v_aging, v_aging],
+  LV = [lv_death1, lv_fstorder1, lv_death1, lv_fstorder1, lv_death1, lv_aging1, lv_aging1, lv_aging1],
+  LSV = [lsv_birth1],
+  P = [p_μ, p_δ, p_rfstOrder, p_rfstOrder, p_δ, p_rage],
+  LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_aging2, lpv_aging2, lpv_aging2],
+  Name=NothingFunction, Op=NothingFunction, Position=NothingFunction
+#   Name = name -> nothing, Op=op->nothing, Position=pos->nothing
+);
+@assert is_natural(typed_WeightModel);
 
-# typed_WeightModel_2 = @hom (WeightModel, l_type) begin
-#     :dynamic_variables
-#     v_NewBorn => v_birth
-#     ~Death => v_death
-#     ~Becoming => v_fstOrder
-#     ~id => v_aging
+typed_WeightModel_2 = sfhom(WeightModel, l_type, quote
+    :dynamic_variables
+    v_NewBorn => v_birth
+    ~Death => v_death
+    ~Becoming => v_fstOrder
+    ~id => v_aging
 
-#     :parameters
-#     μ => μ
-#     ~δ => δ
-#     rw, ro => rFstOrder
-#     rage => rage
+    :parameters
+    μ => μ
+    ~δ => δ
+    rw, ro => rFstOrder
+    rage => rage
 
-#     :flows
-#     ~id => f_aging
-#     ~Becoming => f_fstOrder
-#     f_NewBorn => f_birth
-#     ~Death => f_death
-# end
+    :flows
+    ~id => f_aging
+    ~Becoming => f_fstOrder
+    f_NewBorn => f_birth
+    ~Death => f_death
+end)
 
 
-# typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type_noatts,
-#   S = [s,s,s],
-#   SV = [N],
-#   LS = [lsn,lsn,lsn],   
-#   F = [f_birth, f_fstorder, f_death, f_aging, f_fstorder, f_death, f_aging, f_fstorder, f_death],    
-#   I = [i_birth, i_fstorder, i_aging, i_fstorder, i_aging, i_fstorder], 
-#   O = [o_fstorder, o_death, o_aging, o_fstorder, o_death, o_aging, o_fstorder, o_death],
-#   V = [v_birth, v_death, v_fstorder, v_aging, v_death, v_fstorder, v_aging, v_death, v_fstorder],
-#   LV = [lv_death1, lv_fstorder1, lv_aging1, lv_death1, lv_fstorder1, lv_aging1, lv_death1, lv_fstorder1],
-#   LSV = [lsv_birth1],
-#   P = [p_μ, p_δ, p_δ, p_δ, p_rage, p_rage, p_rfstOrder],
-#   LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2],
-#   Name =NothingFunction, Op=NothingFunction, Position=NothingFunction
-# );
-# @assert is_natural(typed_ageWeightModel);
+typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type_noatts,
+  S = [s,s,s],
+  SV = [N],
+  LS = [lsn,lsn,lsn],   
+  F = [f_birth, f_fstorder, f_death, f_aging, f_fstorder, f_death, f_aging, f_fstorder, f_death],    
+  I = [i_birth, i_fstorder, i_aging, i_fstorder, i_aging, i_fstorder], 
+  O = [o_fstorder, o_death, o_aging, o_fstorder, o_death, o_aging, o_fstorder, o_death],
+  V = [v_birth, v_death, v_fstorder, v_aging, v_death, v_fstorder, v_aging, v_death, v_fstorder],
+  LV = [lv_death1, lv_fstorder1, lv_aging1, lv_death1, lv_fstorder1, lv_aging1, lv_death1, lv_fstorder1],
+  LSV = [lsv_birth1],
+  P = [p_μ, p_δ, p_δ, p_δ, p_rage, p_rage, p_rfstOrder],
+  LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2],
+  Name =NothingFunction, Op=NothingFunction, Position=NothingFunction
+);
+@assert is_natural(typed_ageWeightModel);
 
-# aged_weight = pullback(typed_WeightModel, typed_ageWeightModel) |> apex |> rebuildStratifiedModelByFlattenSymbols;
+aged_weight = pullback(typed_WeightModel, typed_ageWeightModel) |> apex |> rebuildStratifiedModelByFlattenSymbols;
 
 # #########################################
 
-age_weight_2 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin 
+age_weight_2 = stratify(WeightModel, l_type, ageWeightModel, quote 
     :stocks
     NormalWeight, OverWeight, Obese => pop <= Child, Adult, Senior
 
@@ -267,33 +269,33 @@ end)
 # end)
 
 
-# age_weight_3 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
-#     :stocks
-#     _ => pop <= _
+age_weight_3 =  stratify(WeightModel, l_type, ageWeightModel, quote
+    :stocks
+    _ => pop <= _
 
-#     :flows
-#     f_NewBorn => f_birth <= f_NB
-#     _Death => f_death <= _Death
-#     _id => f_aging <= _aging
-#     _Becoming => f_fstOrder <= _id
+    :flows
+    f_NewBorn => f_birth <= f_NB
+    ~Death => f_death <= ~Death
+    ~id => f_aging <= ~aging
+    ~Becoming => f_fstOrder <= ~id
 
-#     :dynamic_variables
-#     v_NewBorn => v_birth <= v_NB
-#     _Death => v_death <= _Death
-#     _id  => v_aging <= _aging
-#     _Becoming => v_fstOrder <= _id
+    :dynamic_variables
+    v_NewBorn => v_birth <= v_NB
+    ~Death => v_death <= ~Death
+    ~id  => v_aging <= ~aging
+    ~Becoming => v_fstOrder <= ~id
 
-#     :parameters
-#     μ => μ <= μ
-#     _δ => δ <= _δ
-#     rage => rage <= rageCA, rageAS
-#     _ => rFstOrder <= _
+    :parameters
+    μ => μ <= μ
+    ~δ => δ <= ~δ
+    rage => rage <= rageCA, rageAS
+    _ => rFstOrder <= _
 
-#     :sums
-#     _ => N <= _
+    :sums
+    _ => N <= _
 
 
-# end) 
+end) 
 
     
 # age_weight_4 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
@@ -330,11 +332,11 @@ end)
 
 
 
-# @testset "Pullback computed in standard way is equal to DSL pullbacks" begin
-#     @test aged_weight == age_weight_2
-#     @test aged_weight == age_weight_3
-#     # @test aged_weight == age_weight_4
-# end
+@testset "Pullback computed in standard way is equal to DSL pullbacks" begin
+    @test aged_weight == age_weight_2
+    @test aged_weight == age_weight_3
+    # @test aged_weight == age_weight_4
+end
 
 @testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
     # Note the orders.  The lists produced go left to right.  A1, A2 => B <= C1, C2 results in [A1 => B, A2 => B], [C1 => B. C2 => B]

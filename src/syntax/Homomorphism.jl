@@ -1,6 +1,6 @@
 module Homomorphism
 
-export @hom
+export sfhom
 
 
 using ...StockFlow
@@ -29,11 +29,11 @@ end
 
 
 """
-macro hom(sf, block)
-    @assert sf.head == :tuple && length(sf.args) == 2
-    @assert all(x -> x ∈ names(Main), sf.args)
+function sfhom(sfsrc, sftgt, block)
+    # @assert sf.head == :tuple && length(sf.args) == 2
+    # @assert all(x -> x ∈ names(Main), sf.args)
 
-    sfsrc, sftgt = map(x -> getfield(Main, x), sf.args)
+    # sfsrc, sftgt = map(x -> getfield(Main, x), sf.args)
     @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, [sfsrc, sftgt]) # The infer links call is particular to stockflows 
 
     Base.remove_linenums!(block)

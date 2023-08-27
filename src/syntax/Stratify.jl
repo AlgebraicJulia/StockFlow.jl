@@ -1,5 +1,5 @@
 module Stratify
-export @stratify
+export stratify
 
 using ...StockFlow
 using ..Syntax
@@ -98,16 +98,16 @@ end
     7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
     8. Return pullback (with flattened attributes)
 """
-macro stratify(sf, block) # Trying to be very vigilant about catching errors.
+function stratify(strata, type, aggregate, block) # Trying to be very vigilant about catching errors.
 
 
-    @assert sf.head == :tuple && length(sf.args) == 3 "Incorrect arguments!  Expected tuple of length three, got: $(sf)"
-    @assert all(x -> x ∈ names(Main), sf.args) "Stockflows not in Main namespace!  Did you forget to define them?  If doing it at runtime, need an @eval call on stratify!"
+    # @assert sf.head == :tuple && length(sf.args) == 3 "Incorrect arguments!  Expected tuple of length three, got: $(sf)"
+    # @assert all(x -> x ∈ names(Main), sf.args) "Stockflows not in Main namespace!  Did you forget to define them?  If doing it at runtime, need an @eval call on stratify!"
     
-    # Maybe want it to be not just in Main?
+    # # Maybe want it to be not just in Main?
 
-    strata, type, aggregate = map(x -> getfield(Main, x), sf.args) # Attempting to be clever and get around an eval call
-    # note, because of this, you're probably gonna want to run this in a jupyter notebook, or use an @eval call.  It won't work at normal runtime.
+    # strata, type, aggregate = map(x -> getfield(Main, x), sf.args) # Attempting to be clever and get around an eval call
+    # # note, because of this, you're probably gonna want to run this in a jupyter notebook, or use an @eval call.  It won't work at normal runtime.
 
 
 
