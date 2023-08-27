@@ -1,5 +1,5 @@
-module Stratify
-export stratify
+module Stratification
+export sfstratify
 
 using ...StockFlow
 using ..Syntax
@@ -98,7 +98,7 @@ end
     7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
     8. Return pullback (with flattened attributes)
 """
-function stratify(strata, type, aggregate, block) # Trying to be very vigilant about catching errors.
+function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant about catching errors.
 
 
     # @assert sf.head == :tuple && length(sf.args) == 3 "Incorrect arguments!  Expected tuple of length three, got: $(sf)"

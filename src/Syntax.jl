@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, stratify
+export @stock_and_flow, @foot, @feet
 
 using ..StockFlow
 using MLStyle
@@ -1266,7 +1266,7 @@ NothingFunction(x) = nothing;
 
 
 include("syntax/Homomorphism.jl")
-include("syntax/Stratify.jl")
+include("syntax/Stratification.jl")
 include("syntax/Composition.jl")
 
 end
