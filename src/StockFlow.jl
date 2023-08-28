@@ -11,7 +11,8 @@ vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAn
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
 get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
-sindex, findex, svindex, pindex, vindex
+sindex, findex, svindex, pindex, vindex,
+get_lvvposition, get_lvtgtposition, get_lsvvposition, get_lpvvposition, get_vop
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -570,6 +571,11 @@ get_lvtgt(sf::StockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
 
 get_links(sf::StockAndFlowF) = Dict(map(x -> x => collect(values(sf.subparts[x].m)), [:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]))
 
+get_lvvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvvposition].m))
+get_lvtgtposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvtgtposition].m))
+get_lsvvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvvposition].m))
+get_lpvvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvvposition].m))
+get_vop(sf::StockAndFlowF) = collect(values(sf.subparts[:vop].m))
 
 
 sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname) # return the stocks name with index of s
@@ -608,6 +614,9 @@ svindex(sf::AbstractStockAndFlow0,sv) = findfirst(x -> Symbol(x) == sv, svnames(
 vindex(sf::AbstractStockAndFlowStructure,v) =  findfirst(x -> Symbol(x) == v, vnames(sf))
 """ return first index of parameters with equal name """
 pindex(sf::AbstractStockAndFlowStructureF,p) =  findfirst(x -> Symbol(x) == p, pnames(sf)) 
+
+
+
 
 
 
