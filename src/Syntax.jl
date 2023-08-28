@@ -142,15 +142,18 @@ into a StockAndFlowF data type for use with the StockFlow.jl modelling system.
 """
 macro stock_and_flow(block)
     Base.remove_linenums!(block)
-    syntax_lines = parse_stock_and_flow_syntax(block.args)
-    saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
-    return StockAndFlowF(
-        saff_args.stocks,
-        saff_args.params,
-        map(kv -> kv.first => get(kv.second), saff_args.dyvars),
-        saff_args.flows,
-        saff_args.sums,
-    )
+    block_args = block.args
+    return quote
+      local syntax_lines = parse_stock_and_flow_syntax($block_args)
+      local saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
+      StockAndFlowF(
+          saff_args.stocks,
+          saff_args.params,
+          map(kv -> kv.first => get(kv.second), saff_args.dyvars),
+          saff_args.flows,
+          saff_args.sums,
+      )
+    end
 end
 
 """
@@ -974,7 +977,7 @@ end
 
 Create foot (StockAndFlow0) using format A => B, where A is a stock and B is a sum variable.  Use () to represent no stock or sum variable.
 To have multiple stocks or sum variables, chain together multiple pairs with commas.  Repeated occurences of the same symbol will be treated as the same stock or sum variable.
-You cannot create distinct stocks or sum variables with the same name using this format. 
+You cannot create distinct stocks or sum variables with the same name using this format.
 
 ```julia
 standard_foot = @foot A => N
@@ -989,8 +992,8 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 function create_foot(block::Expr)
     @match block.head begin
 
-        :tuple => begin 
-            if isempty(block.args) # case for create_foot(:()) 
+        :tuple => begin
+            if isempty(block.args) # case for create_foot(:())
                 error("Cannot create foot with no arguments.")
             end
             foot_s = Vector{Symbol}()
@@ -1016,7 +1019,7 @@ Takes as argument an expression of the form A => B and returns a tuple in a form
 Return type is Tuple{Union{Tuple{}, Symbol}, Union{Tuple{}, Symbol}, Union{Tuple{}, Pair{Symbol, Symbol}}}.  The empty tuple represents no stocks, no flows, or no links.
 
 """
-function match_foot_format(footblock::Expr) 
+function match_foot_format(footblock::Expr)
     @match footblock begin
         :(()              => ())              => ((), (), ())
         :($(s :: Symbol)  => ())              => (s, (), ())
