@@ -10,8 +10,8 @@ vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
-get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links
-
+get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
+sindex, findex, svindex, pindex, vindex
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -598,8 +598,16 @@ set_svname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :svname,
 set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :vname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
 set_pname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :pname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(pnames(p))])
 
-
-
+""" return first index of stock with equal name """
+sindex(p::AbstractStockAndFlow0,s) = findfirst(x -> Symbol(x) == s, snames(p))
+""" return first index of flow with equal name """
+findex(p::AbstractStockAndFlowStructure,f) =  findfirst(x -> Symbol(x) == s, fnames(p)) 
+""" return first index of sum variable with equal name """
+svindex(p::AbstractStockAndFlow0,sv) = findfirst(x -> Symbol(x) == s, svnames(p)) 
+""" return first index of dynamic variable with equal name """
+vindex(p::AbstractStockAndFlowStructure,v) =  findfirst(x -> Symbol(x) == s, vnames(p))
+""" return first index of parameters with equal name """
+pindex(sf::AbstractStockAndFlowStructureF,p) =  findfirst(x -> Symbol(x) == s, pnames(p)) 
 
 
 fv(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
