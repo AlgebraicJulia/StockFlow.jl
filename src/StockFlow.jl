@@ -10,6 +10,7 @@ vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
+get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
 sindex, findex, svindex, pindex, vindex
 
 using Catlab
@@ -29,7 +30,6 @@ const FK_SVVARIABLE_NAME=:SVV_NONE #fake name of the auxiliary variables that li
 
 +(f::Function, g::Function) = (x...) -> f(x...) + g(x...)
 -(f::Function, g::Function) = (x...) -> f(x...) - g(x...)
-
 
 vectorify(n::Vector) = collect(n)
 vectorify(n::Tuple) = length(n) == 1 ? [n] : collect(n)
@@ -551,6 +551,27 @@ StockAndFlowF(s,p,v,f,sv) = begin
   sf
 end
 
+#[:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]
+get_lss(sf::StockAndFlowF) = collect(values(sf.subparts[:lss].m))
+get_lssv(sf::StockAndFlowF) = collect(values(sf.subparts[:lssv].m))
+get_lsvsv(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvsv].m))
+get_lsvv(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvv].m))
+get_lvs(sf::StockAndFlowF) = collect(values(sf.subparts[:lvs].m))
+get_lvv(sf::StockAndFlowF) = collect(values(sf.subparts[:lvv].m))
+get_is(sf::StockAndFlowF) = collect(values(sf.subparts[:is].m))
+get_ifn(sf::StockAndFlowF) = collect(values(sf.subparts[:ifn].m))
+get_os(sf::StockAndFlowF) = collect(values(sf.subparts[:os].m))
+get_ofn(sf::StockAndFlowF) = collect(values(sf.subparts[:ofn].m))
+get_lpvp(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvp].m))
+get_lpvv(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvv].m))
+get_lvsrc(sf::StockAndFlowF) = collect(values(sf.subparts[:lvsrc].m))
+get_lvtgt(sf::StockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
+
+
+get_links(sf::StockAndFlowF) = Dict(map(x -> x => collect(values(sf.subparts[x].m)), [:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]))
+
+
+
 sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname) # return the stocks name with index of s
 fname(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fname) # return the flows name with index of f
 svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname) # return the sum auxiliary variables name with index of sv
@@ -578,15 +599,15 @@ set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :
 set_pname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :pname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(pnames(p))])
 
 """ return first index of stock with equal name """
-sindex(p::AbstractStockAndFlow0,s) = findfirst(x -> Symbol(x) == s, snames(p))
+sindex(sf::AbstractStockAndFlow0,s) = findfirst(x -> Symbol(x) == s, snames(sf))
 """ return first index of flow with equal name """
-findex(p::AbstractStockAndFlowStructure,f) =  findfirst(x -> Symbol(x) == s, fnames(p)) 
+findex(sf::AbstractStockAndFlowStructure,f) =  findfirst(x -> Symbol(x) == f, fnames(sf)) 
 """ return first index of sum variable with equal name """
-svindex(p::AbstractStockAndFlow0,sv) = findfirst(x -> Symbol(x) == s, svnames(p)) 
+svindex(sf::AbstractStockAndFlow0,sv) = findfirst(x -> Symbol(x) == sv, svnames(sf)) 
 """ return first index of dynamic variable with equal name """
-vindex(p::AbstractStockAndFlowStructure,v) =  findfirst(x -> Symbol(x) == s, vnames(p))
+vindex(sf::AbstractStockAndFlowStructure,v) =  findfirst(x -> Symbol(x) == v, vnames(sf))
 """ return first index of parameters with equal name """
-pindex(sf::AbstractStockAndFlowStructureF,p) =  findfirst(x -> Symbol(x) == s, pnames(p)) 
+pindex(sf::AbstractStockAndFlowStructureF,p) =  findfirst(x -> Symbol(x) == p, pnames(sf)) 
 
 
 fv(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
