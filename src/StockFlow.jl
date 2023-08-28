@@ -599,15 +599,16 @@ set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :
 set_pname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :pname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(pnames(p))])
 
 """ return first index of stock with equal name """
-sindex(p::AbstractStockAndFlow0,s) = findfirst(x -> Symbol(x) == s, snames(p))
+sindex(sf::AbstractStockAndFlow0,s) = findfirst(x -> Symbol(x) == s, snames(sf))
 """ return first index of flow with equal name """
-findex(p::AbstractStockAndFlowStructure,f) =  findfirst(x -> Symbol(x) == f, fnames(p)) 
+findex(sf::AbstractStockAndFlowStructure,f) =  findfirst(x -> Symbol(x) == f, fnames(sf)) 
 """ return first index of sum variable with equal name """
-svindex(p::AbstractStockAndFlow0,sv) = findfirst(x -> Symbol(x) == sv, svnames(p)) 
+svindex(sf::AbstractStockAndFlow0,sv) = findfirst(x -> Symbol(x) == sv, svnames(sf)) 
 """ return first index of dynamic variable with equal name """
-vindex(p::AbstractStockAndFlowStructure,v) =  findfirst(x -> Symbol(x) == v, vnames(p))
+vindex(sf::AbstractStockAndFlowStructure,v) =  findfirst(x -> Symbol(x) == v, vnames(sf))
 """ return first index of parameters with equal name """
-pindex(sf::AbstractStockAndFlowStructureF,p) =  findfirst(x -> Symbol(x) == p, pnames(p)) 
+pindex(sf::AbstractStockAndFlowStructureF,p) =  findfirst(x -> Symbol(x) == p, pnames(sf)) 
+
 
 
 fv(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
