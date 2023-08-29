@@ -1262,7 +1262,28 @@ function iterate_stockflow_quoteblocks(lines::Vector, fun)
     end
 end
 
+
+
+function sf_to_block(sf)
+    stocks = snames(sf)
+    params = pnames(sf)
+    sums = [(svname, map(x -> sname(sf, x), stockssv(sf, i))) for (i, svname) ∈ enumerate(svnames(sf))]
+    dyvars = [(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))]
+    flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]
+
+    newsums = [(s1, isempty(vec) ? :SV_NONE : vec) for (s1, vec) ∈ sums]
+
+    newflows = [((isempty(inflow) ? :F_NONE : inflow[1]), flow, (isempty(out) ? :F_NONE : out[1])) for (inflow, flow, out) ∈ flows]
+
+
+    s = StockAndFlowBlock(stocks, params, dyvars, newflows, newsums)
+end
+
+
 NothingFunction(x) = nothing;
+
+
+
 
 
 include("syntax/Homomorphism.jl")

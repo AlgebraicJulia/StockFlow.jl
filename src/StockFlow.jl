@@ -12,7 +12,8 @@ object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
 get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
 sindex, findex, svindex, pindex, vindex,
-get_lvvposition, get_lvtgtposition, get_lsvvposition, get_lpvvposition, get_vop
+get_lvvposition, get_lvtgtposition, get_lsvvposition, get_lpvvposition, get_vop,
+make_v_expr_nonrecursive
 
 using Catlab
 using Catlab.CategoricalAlgebra
@@ -730,6 +731,39 @@ eval_function(expr,s,sv,p,us,uNs,ps) = begin
     f=eval(Expr(:->, Expr(:tuple, s..., sv..., p...), Expr(:block,:(()),expr)))
     return @eval $f($(us...), $(uNs...), $(ps...))
 end
+
+
+
+
+
+
+"""
+Generates the expression of an auxiliary variable, only going one layer deep
+If other dynamic variables make up its definition, they will not be substituted.
+"""
+function make_v_expr_nonrecursive(p::AbstractStockAndFlowF,v)
+
+  op = vop(p,v)
+  srcsv=map(i->sname(p,i),stocksv(p,v))
+  srcsvv=map(i->svname(p,i),svsv(p,v))
+  srcpv=map(i->pname(p,i),vpsrc(p,v))
+  srcvv=map(i->vname(p,i),vsrc(p,v))
+
+  lvvp=lvvposition(p,v)
+  lvtgtp=lvtgtposition(p,v)
+  lsvvp=lsvvposition(p,v)
+  lpvvp=lpvvposition(p,v)
+
+  # create dictionary of (key=position, value=symbole of source argument)
+  position_src=merge(make_dict(lvvp,srcsv),make_dict(lsvvp,srcsvv),make_dict(lpvvp,srcpv),make_dict(lvtgtp,srcvv))
+  ordered_position_src=sort(collect(position_src), by = x->x[1])
+  srcs=map(x->last(x),ordered_position_src)
+
+  return math_expr(op,srcs...)
+end
+
+
+
 
 
 # return sum auxiliary variables all stocks link (frequency)
