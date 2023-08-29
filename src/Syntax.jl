@@ -1289,6 +1289,7 @@ NothingFunction(x) = nothing;
 include("syntax/Homomorphism.jl")
 include("syntax/Stratification.jl")
 include("syntax/Composition.jl")
+include("syntax/Rewrite.jl")
 
 end
 
