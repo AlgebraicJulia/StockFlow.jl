@@ -5,19 +5,19 @@
 # # Pkg.precompile()
 # # Pkg.resolve()
 
-using Test
+# using Test
 
-using StockFlow
-using StockFlow.Syntax
-using StockFlow.Syntax.Stratify
+# using StockFlow
+# using StockFlow.Syntax
+using ..StockFlow.Syntax.Stratification
 
-using StockFlow.Syntax.Stratify: interpret_stratification_notation
-using StockFlow.Syntax: NothingFunction, DSLArgument, unwrap_expression, substitute_symbols
+using ..StockFlow.Syntax.Stratification: interpret_stratification_notation
+using ..StockFlow.Syntax: NothingFunction, DSLArgument, unwrap_expression, substitute_symbols
 
 
-using StockFlow.Syntax.Homomorphism
+# using StockFlow.Syntax.Homomorphism
 
-using StockFlow.PremadeModels
+using ..StockFlow.PremadeModels
 
 
 
@@ -174,25 +174,25 @@ typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
 );
 @assert is_natural(typed_WeightModel);
 
-typed_WeightModel_2 = sfhom(WeightModel, l_type, quote
-    :dynamic_variables
-    v_NewBorn => v_birth
-    ~Death => v_death
-    ~Becoming => v_fstOrder
-    ~id => v_aging
+# typed_WeightModel_2 = sfhom(WeightModel, l_type, quote
+#     :dynamic_variables
+#     v_NewBorn => v_birth
+#     ~Death => v_death
+#     ~Becoming => v_fstOrder
+#     ~id => v_aging
 
-    :parameters
-    μ => μ
-    ~δ => δ
-    rw, ro => rFstOrder
-    rage => rage
+#     :parameters
+#     μ => μ
+#     ~δ => δ
+#     rw, ro => rFstOrder
+#     rage => rage
 
-    :flows
-    ~id => f_aging
-    ~Becoming => f_fstOrder
-    f_NewBorn => f_birth
-    ~Death => f_death
-end)
+#     :flows
+#     ~id => f_aging
+#     ~Becoming => f_fstOrder
+#     f_NewBorn => f_birth
+#     ~Death => f_death
+# end)
 
 
 typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type_noatts,
@@ -215,7 +215,7 @@ aged_weight = pullback(typed_WeightModel, typed_ageWeightModel) |> apex |> rebui
 
 # #########################################
 
-age_weight_2 = stratify(WeightModel, l_type, ageWeightModel, quote 
+age_weight_2 = sfstratify(WeightModel, l_type, ageWeightModel, quote 
     :stocks
     NormalWeight, OverWeight, Obese => pop <= Child, Adult, Senior
 
@@ -242,36 +242,7 @@ age_weight_2 = stratify(WeightModel, l_type, ageWeightModel, quote
 end)
 #########################################
 
-# age_weight_3 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
-#     :stocks
-#     ~Weight, ~Weight, Obese => pop <= Child, Adult, Senior
-
-#     :flows
-#     f_NewBorn => f_birth <= f_NB
-#     ~Death => f_death <= f_DeathC, f_DeathA, f_DeathS
-#     f_idNW, f_idOW, f_idOb => f_aging <= f_agingCA, f_agingAS
-#     f_BecomingOverWeight, f_BecomingObese => f_fstOrder <= f_idC, f_idA, f_idS
-
-#     :dynamic_variables
-#     v_NewBorn => v_birth <= v_NB
-#     v_DeathNormalWeight, v_DeathOverWeight, v_DeathObese => v_death <= v_DeathC, v_DeathA, v_DeathS
-#     v_idNW, v_idOW, v_idOb  => v_aging <= v_agingCA, v_agingAS
-#     ~_ => v_fstOrder <= ~_
-
-#     :parameters
-#     μ => μ <= μ
-#     δw, δo => δ <= δC, δA, δS
-#     rw, ro => rFstOrder <= r
-#     _ => rage <= _
-
-#     :sums
-#     N => N <= N
-# end)
-
-
-age_weight_3 =  stratify(WeightModel, l_type, ageWeightModel, quote
-    :stocks
-    _ => pop <= _
+age_weight_3 =  sfstratify(WeightModel, l_type, ageWeightModel, quote
 
     :flows
     f_NewBorn => f_birth <= f_NB
@@ -291,51 +262,16 @@ age_weight_3 =  stratify(WeightModel, l_type, ageWeightModel, quote
     rage => rage <= rageCA, rageAS
     _ => rFstOrder <= _
 
-    :sums
-    _ => N <= _
 
 
 end) 
 
-    
-# age_weight_4 = @eval (@stratify (WeightModel, l_type, ageWeightModel) begin
-
-
-#     :flows
-#     _MATCHESNOTHING => f_birth <= _ALSOMATCHESNOTHING
-#     _New => f_birth <= _N
-#     _id => f_aging <= _aging
-#     _Death => f_death <= _Death
-#     _ => f_fstOrder <= _
-#     # everything has matched at this point, so the following are ignored.  Keys must exist, unless matching on _.  It can optionally throw an error with STRICT_MATCHES = true
-#     _ => f_fstOrder <= _
-#     f_DeathNormalWeight => f_fstOrder <= _aging
-
-#     :parameters
-#     μ => μ <= μ
-#     _δ => δ <= _δ
-#     rage => rage <= rageCA, rageAS
-#     _ => rFstOrder <= _
-
-#     _foo => rage <= _baz # would error if just did foo, as opposed to _foo.
-
-
-#     :dynamic_variables
-#     v_NewBorn => v_birth <= v_NB
-#     _Death => v_death <= _Death
-#     _id  => v_aging <= _aging
-#     _ => v_fstOrder <= _
-
-
-
-# end) 
 
 
 
 @testset "Pullback computed in standard way is equal to DSL pullbacks" begin
     @test aged_weight == age_weight_2
     @test aged_weight == age_weight_3
-    # @test aged_weight == age_weight_4
 end
 
 @testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
@@ -414,6 +350,10 @@ end
     # always goes with first match.  A1 is taken, B matches AB3 and AB4, then A matches A2 and A5
     @test substitute_symbols(s4, t4, m4) == Dict(1 => 1, 3 => 2, 4 => 2, 2 => 3, 5 => 3)
 end
+
+
+
+
 
 # @testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
 #     @test interpret_stratification_notation(:(A => B <= C)) == (Dict(:A => :B), Dict(:C => :B))

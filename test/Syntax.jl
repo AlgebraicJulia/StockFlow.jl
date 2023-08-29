@@ -1,11 +1,13 @@
+include("../src/StockFlow.jl")
+
 using Base: is_unary_and_binary_operator
 using Test
-using StockFlow
-using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
+using .StockFlow
+using .StockFlow.Syntax
+using .StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
 
-@testset "Straification DSL" begin
-    include("Stratify.jl")
+@testset "Stratification DSL" begin
+    include("Stratification.jl")
 end
 
 @testset "is_binop_or_unary recognises binops" begin
@@ -341,5 +343,133 @@ end
     @test_throws Exception @eval @feet begin A => B; 1 => 2; end
 end
 
+###########################
+
+@testset "infer_links works as expected" begin
+    # No prior mappings means no inferred mappings
+    @test (infer_links(StockAndFlowF(), StockAndFlowF(), Dict{Symbol, Vector{Int64}}(:S => [], :F => [], :SV => [], :P => [], :V => []))
+        == Dict(:LS => [], :LSV => [], :LV => [], :I => [], :O => [], :LPV => [], :LVV => []))
+
+    # S: 1 -> 1 and SV: 1 -> 1 implies LS: 1 -> 1
+    @test (infer_links(
+        (@stock_and_flow begin; :stocks; A; :sums; NA = [A]; end), 
+        (@stock_and_flow begin; :stocks; B; :sums; NB = [B]; end),
+        Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [1], :P => [], :V => []))
+    == Dict(:LS => [1], :LSV => [], :LV => [], :I => [], :O => [], :LPV => [], :LVV => []))
+
+    # annoying exanmple, required me to add code to disambiguate using position
+    # that is, vA = A + A, vA -> vB, A -> implies that the As in the vA definition map to the Bs in the vB definition
+    # But both As link to the same stock and dynamic variable so just looking at those isn't enough to figure out what it maps to.
+    # There will exist cases where it's impossible to tell - eg, when there exist multiple duplicate links, and some positions don't match up.
+   
+    # It does not currently look at the operator.  You could therefore map vA = A + A -> vB = B * B
+    # I can see this being useful, actually, specifically when mapping between + and -, * and /, etc.  Probably logs and powers too.
+    # Just need to be aware that it won't say it's invalid.
+    @test (infer_links(
+        (@stock_and_flow begin; :stocks; A; :dynamic_variables; vA = A + A; end), 
+        (@stock_and_flow begin; :stocks; B; :dynamic_variables; vB = B + B; end),
+        Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [], :P => [], :V => [1]))
+    == Dict(:LS => [], :LSV => [], :LV => [1,2], :I => [], :O => [], :LPV => [], :LVV => []))
+
+    @test (infer_links(
+        (@stock_and_flow begin; :stocks; A; :parameters; pA; :dynamic_variables; vA = A + pA; end), 
+        (@stock_and_flow begin; :stocks; B; :parameters; pB; :dynamic_variables; vB = pB + B; end),
+        Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [], :P => [1], :V => [1]))
+    == Dict(:LS => [], :LSV => [], :LV => [1], :I => [], :O => [], :LPV => [1], :LVV => []))
+
+    @test (infer_links(
+        (@stock_and_flow begin
+            :stocks
+            S
+            I
+            R
+
+            :parameters
+            p_inf
+            p_rec
 
 
+            :flows
+            S => f_StoI(p_inf * S) => I
+            I => f_ItoR(I * p_rec) => R
+
+            :sums
+            N = [S,I,R]
+            NI = [I]
+            NS = [S,I,R]
+        end),
+        (@stock_and_flow begin
+            :stocks
+            pop
+
+            :parameters
+            p_generic
+
+
+            :flows
+            pop => f_generic(p_generic * pop) => pop
+
+            :sums
+            N = [pop]
+            NI = [pop]
+            NS = [pop]
+        end),
+
+        Dict{Symbol, Vector{Int64}}(:S => [1,1,1], :F => [1,1], :SV => [1,2,3], :P => [1,1], :V => [1,1]))
+    == Dict(:LS => [1,3,1,2,3,1,3], :LSV => [], :LV => [1,1], :I => [1,1], :O => [1,1], :LPV => [1,1], :LVV => []))
+
+ 
+end
+
+
+
+@testset "non-natural transformations fail infer_links" begin
+    # mapping it all to I
+
+    # This one fails when trying to figure out the inflow.  Stock maps to 2, and flow maps to 2,
+    # But inflows on the target have (1,2) and (2,3)
+
+    # This also wouldn't work if we tried mapping flow to 1 instead.  Outflows expect 1,1 or 2,2,
+    # so it fails on (1,2).
+     @test_throws  KeyError (infer_links(
+        (@stock_and_flow begin
+        :stocks
+        pop
+
+        :parameters
+        p_generic
+
+
+        :flows
+        pop => f_generic(p_generic * pop) => pop
+
+        :sums
+        N = [pop]
+        NI = [pop]
+        NS = [pop]
+    end),
+    (@stock_and_flow begin
+        :stocks
+        S
+        I
+        R
+
+        :parameters
+        p_inf
+        p_rec
+
+
+        :flows
+        S => f_StoI(p_inf * S) => I
+        I => f_ItoR(I * p_rec) => R
+
+        :sums
+        N = [S,I,R]
+        NI = [I]
+        NS = [S,I,R]
+    end),
+
+        Dict{Symbol, Vector{Int64}}(:S => [2], :F => [2], :SV => [1,2,3], :P => [2], :V => [2])))
+    # == Dict(:LS => [2,4,6], :LSV => [], :LV => [2], :I => [2], :O => [2], :LPV => [2], :LVV => []))
+
+end

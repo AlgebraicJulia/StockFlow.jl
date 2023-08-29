@@ -12,7 +12,7 @@ object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
 get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
 sindex, findex, svindex, pindex, vindex,
-get_lvvposition, get_lvtgtposition, get_lsvvposition, get_lpvvposition, get_vop,
+get_lvsposition, get_lsvsvposition, get_lvsrcposition, get_lpvpposition, get_vop,
 make_v_expr_nonrecursive
 
 using Catlab
@@ -572,10 +572,10 @@ get_lvtgt(sf::StockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
 
 get_links(sf::StockAndFlowF) = Dict(map(x -> x => collect(values(sf.subparts[x].m)), [:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]))
 
-get_lvvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvvposition].m))
-get_lvtgtposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvtgtposition].m))
-get_lsvvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvvposition].m))
-get_lpvvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvvposition].m))
+get_lvsposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvsposition].m))
+get_lvsrcposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvsrcposition].m))
+get_lsvsvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvsvposition].m))
+get_lpvpposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvpposition].m))
 get_vop(sf::StockAndFlowF) = collect(values(sf.subparts[:vop].m))
 
 
