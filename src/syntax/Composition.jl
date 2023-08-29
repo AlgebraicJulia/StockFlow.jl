@@ -15,6 +15,8 @@ import ..Syntax: create_foot, match_foot_format, STRICT_MAPPINGS, STRICT_MATCHES
 import Catlab.Programs.RelationalPrograms: UntypedUnnamedRelationDiagram
 
 
+RETURN_UWD = false
+
 function create_uwd(;Box::Vector{Symbol} = Vector{Symbol}(), Port::Vector{Tuple{Int, Int}} = Vector{Tuple{Int, Int}}(), OuterPort::Vector{Int} = Vector{Int}(), Junction::Vector{Symbol} = Vector{Symbol}())
     uwd = UntypedUnnamedRelationDiagram{Symbol, Symbol}(0)
     add_parts!(uwd, :Box, length(Box), name=Box)
@@ -95,7 +97,12 @@ function sfcompose(args...) #(sf1, sf2, ..., block)
 
     # create_uwd(Box=sf_vector, Junction=[gensym() for _ ∈ 1:length(foot_vector)], Port=flattened_foot_int_indexed_vector, OuterPort=collect(1:length(foot_vector)))
 
-    return apex(oapply(uwd, open_stockflows))
+
+    if RETURN_UWD
+        return apex(oapply(uwd, open_stockflows)), uwd
+    else
+        return apex(oapply(uwd, open_stockflows))
+    end
 
 
     

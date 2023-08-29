@@ -67,7 +67,6 @@ function add_swap!(sw, sfblock, all_names, modified_stocks, modified_flows, modi
                 :V => begin
                     original_index = all_names[tgt][2]
                     original_definition = sfblock.dyvars[original_index]
-
                     new_definition = parse_dyvar!(Vector{Tuple{Symbol,Expr}}(), Expr(:(=), tgt, new))[1]
                     push!(modified_dyvars, original_definition => new_definition)
                     # temp_vector = []
@@ -114,7 +113,7 @@ function modify_rewrite_dict!(line, added_objects, removed_objects, parse_defini
 
 
         Expr(:(=), Expr(:call, :+, tgt), Expr(:block, rest)) => begin # dyvars, sums,
-            object_definition = parse_definition_function!(Expr(:(=), tgt, rest.args...))
+            object_definition = parse_definition_function!(Expr(:(=), tgt, rest))
             push!(added_objects, object_definition)
         end
         Expr(:call, :(=>), Expr(:call, :+, S1), rest) => begin # flows
@@ -175,7 +174,7 @@ function sfrewrite(sf::AbstractStockAndFlowF, block)
     name_vector = [snames(sf) ; svnames(sf) ; vnames(sf) ; fnames(sf) ; pnames(sf)]
 
     # println(name_vector)
-    @assert allunique(name_vector) "Not all names are unique!"
+    @assert allunique(name_vector) "Not all names are unique!  $(filter(x -> count(y -> y == x, name_vector) >= 2, name_vector))"
     # This may be a bit annoying when after a composition, you can have things that have the same name, but this makes rewriting a lot simpler
     # Unless you'd rather specify indices than names, I guess
     # Can always run this through set_snames! before calling.
