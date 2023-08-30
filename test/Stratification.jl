@@ -1,25 +1,7 @@
-#!/usr/bin/env julia
+using StockFlow.Syntax.Stratification
 
-# using Pkg;
-# Pkg.activate("./")
-# # Pkg.precompile()
-# # Pkg.resolve()
-
-# using Test
-
-# using StockFlow
-# using StockFlow.Syntax
-using ..StockFlow.Syntax.Stratification
-
-using ..StockFlow.Syntax.Stratification: interpret_stratification_notation
-using ..StockFlow.Syntax: NothingFunction, DSLArgument, unwrap_expression, substitute_symbols
-
-
-# using StockFlow.Syntax.Homomorphism
-
-using ..StockFlow.PremadeModels
-
-
+using StockFlow.Syntax.Stratification: interpret_stratification_notation
+using StockFlow.Syntax: NothingFunction, DSLArgument, unwrap_expression, substitute_symbols
 
 using Catlab.WiringDiagrams
 using Catlab.ACSets
@@ -136,11 +118,7 @@ ageWeightModel = @stock_and_flow begin
     
     :sums
     N = [Child, Adult, Senior]
-    
-
-
-
-    
+        
 end;
 
 begin
@@ -170,29 +148,9 @@ typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
   P = [p_μ, p_δ, p_rfstOrder, p_rfstOrder, p_δ, p_rage],
   LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_aging2, lpv_aging2, lpv_aging2],
   Name=NothingFunction, Op=NothingFunction, Position=NothingFunction
-#   Name = name -> nothing, Op=op->nothing, Position=pos->nothing
 );
 @assert is_natural(typed_WeightModel);
 
-# typed_WeightModel_2 = sfhom(WeightModel, l_type, quote
-#     :dynamic_variables
-#     v_NewBorn => v_birth
-#     ~Death => v_death
-#     ~Becoming => v_fstOrder
-#     ~id => v_aging
-
-#     :parameters
-#     μ => μ
-#     ~δ => δ
-#     rw, ro => rFstOrder
-#     rage => rage
-
-#     :flows
-#     ~id => f_aging
-#     ~Becoming => f_fstOrder
-#     f_NewBorn => f_birth
-#     ~Death => f_death
-# end)
 
 
 typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type_noatts,
@@ -352,27 +310,3 @@ end
 end
 
 
-
-
-
-# @testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
-#     @test interpret_stratification_notation(:(A => B <= C)) == (Dict(:A => :B), Dict(:C => :B))
-#     @test interpret_stratification_notation(:(A1, A2 => B <= C)) == (Dict(:A1 => :B, :A2 => :B), Dict(:C => :B))
-#     @test interpret_stratification_notation(:(A => B <= C1, C2)) == (Dict(:A => :B), Dict(:C1 => :B, :C2 => :B))
-#     @test interpret_stratification_notation(:(A1, A2 => B <= C1, C2))  == (Dict(:A1 => :B, :A2 => :B), Dict(:C1 => :B, :C2 => :B))
-#     @test interpret_stratification_notation(:(_ => B <= _)) == (Dict(:_ => :B), Dict(:_ => :B))
-# end
-
-
-
-# @testset "Testing homomorphism" begin
-#     # println(fieldnames(typeof(typed_WeightModel)))
-#     # println(typed_WeightModel.components)
-#     # println(typed_WeightModel_2.components)
-#     @test typed_WeightModel.dom == typed_WeightModel_2.dom
-#     @test typed_WeightModel.codom == typed_WeightModel_2.codom
-#     @test typed_WeightModel.components == typed_WeightModel_2.components 
-
-#     # @test typed_WeightModel == typed_WeightModel_2
-
-# end

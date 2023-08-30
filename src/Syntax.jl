@@ -1040,6 +1040,8 @@ ISSUB_DEFAULT::String = "_"
 USE_ISSUB::Bool = true
 STRICT_MAPPINGS::Bool = false # whether you need to include all, or if you can infer those which only have one thing to map to.
 STRICT_MATCHES::Bool = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
+
+
 # :stocks
 # ~f_death => f_death <= fdeath
 # _ => f_id <= fid
@@ -1051,9 +1053,6 @@ STRICT_MATCHES::Bool = false # each value is only allowed to match one line in i
     infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf=nothing)
 
 infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps, get_lvvposition) # LV
-
-
-
 """
 function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector)
         
@@ -1161,7 +1160,7 @@ end
 struct DSLArgument
     key::Symbol
     value::Symbol
-    flags::Set{Symbol} # currently operating under the assumption that flag order doesn't matter
+    flags::Set{Symbol} # At present, the only flag that exists is ~
     DSLArgument(kv::Pair{Union{Expr, Symbol}, Symbol}) = begin # this constructor seemed to fail... need to figure out why.  Maybe it can't call other constructors.
         key, flags = unwrap_expression(first(kv))
         new(key, second(kv), flags)
@@ -1175,15 +1174,13 @@ end
 
 ==(a::DSLArgument, b::DSLArgument) = a.key == b.key && a.value == b.value && a.flags == b.flags
 
-function unwrap_expression(x::Union{Symbol, Expr}, flags::Set{Symbol}=Set{Symbol}())::Tuple{Symbol, Set{Symbol}} # In Python I'd worry about mutable default arguments, but doesn't seem to be an issue here.
+function unwrap_expression(x::Union{Symbol, Expr}, flags::Set{Symbol}=Set{Symbol}())::Tuple{Symbol, Set{Symbol}} # No mutable default arguments.
     if typeof(x) == Symbol
         return (x, flags)
     else
         return unwrap_expression(x.args[2], push!(flags, x.args[1]))
     end
 end
-
-
 
 
 """
@@ -1212,20 +1209,14 @@ function substring_matches_keys(d::Dict, substr)::Dict
     return filter(((key, _),) -> occursin(substr, string(key)), d) # eliminate string(key)?  Do it outside?
 end
 
-function string_indexed_dict(d::Dict{T,V})::Dict{String, Pair{T, V}}  where {T, V}
-    @assert hasmethod(string, (T,))
-    return Dict(string(key) => key => value for (key, value) ∈ d)
-end
 
 
-
-function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} # Need work.  Only works with ~
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} 
 
     if isempty(flags)
-        return [key] # potentially extremely inefficient
+        return [key] # potentially quite inefficient
     elseif :~ ∈ flags
 
-        # Tried and failed to do this all in a single for comprehension.
         keystring = string(key)
 
 
@@ -1287,12 +1278,21 @@ function sf_to_block(sf)
 end
 
 
+"""
+Convert a vector of unique elements to a dictionary with each element pointing to their original index.
+"""
+function invert_vector(v::Vector{K})::Dict{K, Int} where {K} # Elements of v must be hashable
+    new_dict = Dict(val => i for (i, val) ∈ enumerate(v))
+    @assert length(new_dict) == length(v) "Nonunique key in vector v: $v"
+    return new_dict
+end
+
 
 """
-Takes one argument and returns nothing.
+Takes any arguments and returns nothing.
 Used so we can maintain equality when making ACSetTransforms.
 """
-NothingFunction(x) = nothing;
+NothingFunction(x...) = nothing;
 
 
 

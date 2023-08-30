@@ -1,10 +1,8 @@
-include("../src/StockFlow.jl")
-
 using Base: is_unary_and_binary_operator
 using Test
-using .StockFlow
-using .StockFlow.Syntax
-using .StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
+using StockFlow
+using StockFlow.Syntax
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
 
 @testset "Stratification DSL" begin
     include("Stratification.jl")

@@ -4,29 +4,22 @@ export sfstratify
 using ...StockFlow
 using ..Syntax
 using MLStyle
-import Base.get
+import Base: get
 using Catlab.CategoricalAlgebra
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, DSLArgument, NothingFunction
+import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, infer_links, substitute_symbols, DSLArgument, NothingFunction, invert_vector
 
+# Possible other settings: USE_FLAGS, USE_TEMP_STRAT_DEFAULT
 
 RETURN_HOMS = false
 
 TEMP_STRAT_DEFAULT = :_
 
 
-
-# function unwrap_key_expression(key::Union{Symbol, Expr}, value::Symbol)
-#     unwrapped_key, flags = unwrap_expression(key)
-#     return 
-#     # return unwrapped_key => (value, flags)
-# end
-
-
-
 """
-Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of dictionaries of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
+    interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{DSLArgument}, Vector{DSLArgument}}
+Take an expression of the form a1, ..., => t <= s1, ..., where every element is a symbol, and return a 2-tuple of form ((a1 => t, a2 => t, ...), (s1 => t, ...))
 """
-function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{DSLArgument}, Vector{DSLArgument}} # TODO: Probably create some kind of struct for the results.
+function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{DSLArgument}, Vector{DSLArgument}}
     @match mapping_pair begin
 
 
@@ -60,7 +53,6 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 
     current_strata_dict = substitute_symbols(strata_names, type_names, current_strata_symbol_dict ; use_flags=true)
     current_aggregate_dict = substitute_symbols(aggregate_names, type_names, current_aggregate_symbol_dict ; use_flags=true)
-    # current_strata_dict, current_aggregate_dict = substitute_symbols_stratification(strata_names, type_names, aggregate_names, current_strata_symbol_dict, current_aggregate_symbol_dict ; use_substr_prefix=USE_ISSUB, issubstr_prefix=ISSUB_DEFAULT)
     
     if STRICT_MATCHES
         @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) "Attempt to overwrite a mapping in strata!"
@@ -79,6 +71,8 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 end
 
 
+
+
 """
     @stratify (strata, type, aggregate) begin ... end
 
@@ -87,8 +81,7 @@ end
     2. iterate over each line in the block
         2a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
         2b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
-            2bα. Map symbols without ISSUB_DEFAULT to Int
-            2bβ. If applicable, for symbols with ISSUB_DEFAULT as a prefix, find all matching symbols in the symbol dictionaries, and map all those
+            2bα. If applicable, for symbols with TEMP_STRAT_DEFAULT as a prefix, find all matching symbols in the symbol dictionaries, and map all those
         2c. Accumulate respective dictionaries (optionally, only allow first match vs throw an error (STRICT_MATCHES = false vs true))
     3. Create an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate.   Insert into arrays all values from the two Int => Int dictionaries
         3a. If STRICT_MAPPINGS = false, if there only exists one option in type to map to, and it hasn't been explicitly specified, add it.  If STRICT_MAPPINGS = true and it hasn't been specified, throw an error.
@@ -98,43 +91,30 @@ end
     7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
     8. Return pullback (with flattened attributes)
 """
-function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant about catching errors.
-
-
-    # @assert sf.head == :tuple && length(sf.args) == 3 "Incorrect arguments!  Expected tuple of length three, got: $(sf)"
-    # @assert all(x -> x ∈ names(Main), sf.args) "Stockflows not in Main namespace!  Did you forget to define them?  If doing it at runtime, need an @eval call on stratify!"
-    
-    # # Maybe want it to be not just in Main?
-
-    # strata, type, aggregate = map(x -> getfield(Main, x), sf.args) # Attempting to be clever and get around an eval call
-    # # note, because of this, you're probably gonna want to run this in a jupyter notebook, or use an @eval call.  It won't work at normal runtime.
-
-
-
-    @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, [strata, type, aggregate]) # Unsure if we want to be more or less strict with the type check
-    # they all need parameter fields right now.  Could probably generalize.
+function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockAndFlowStructureF, aggregate::AbstractStockAndFlowStructureF, block::Expr)
 
     Base.remove_linenums!(block)
 
     # STEP 1
-       
-    strata_snames = Dict(S => i for (i, S) in enumerate(snames(strata)))
-    strata_svnames = Dict(S => i for (i, S) in enumerate(svnames(strata)))
-    strata_vnames = Dict(S => i for (i, S) in enumerate(vnames(strata)))
-    strata_fnames = Dict(S => i for (i, S) in enumerate(fnames(strata)))
-    strata_pnames = Dict(S => i for (i, S) in enumerate(pnames(strata)))
+    
+    # invert_vector: Vector{K} -> Dict{K, Int} where int is original index and all K (symbols, in this case) are unique.
+    strata_snames::Dict{Symbol, Int} = invert_vector(snames(strata)) 
+    strata_svnames::Dict{Symbol, Int} = invert_vector(svnames(strata))
+    strata_vnames::Dict{Symbol, Int} = invert_vector(vnames(strata))
+    strata_fnames::Dict{Symbol, Int} = invert_vector(fnames(strata))
+    strata_pnames::Dict{Symbol, Int} = invert_vector(pnames(strata))
 
-    type_snames = Dict(S => i for (i, S) in enumerate(snames(type)))
-    type_svnames = Dict(S => i for (i, S) in enumerate(svnames(type)))
-    type_vnames = Dict(S => i for (i, S) in enumerate(vnames(type)))
-    type_fnames = Dict(S => i for (i, S) in enumerate(fnames(type)))
-    type_pnames = Dict(S => i for (i, S) in enumerate(pnames(type)))
+    type_snames::Dict{Symbol, Int} = invert_vector(snames(type))
+    type_svnames::Dict{Symbol, Int} = invert_vector(svnames(type))
+    type_vnames::Dict{Symbol, Int} = invert_vector(vnames(type))
+    type_fnames::Dict{Symbol, Int} = invert_vector(fnames(type))
+    type_pnames::Dict{Symbol, Int} = invert_vector(pnames(type))
 
-    aggregate_snames = Dict(S => i for (i, S) in enumerate(snames(aggregate)))
-    aggregate_svnames = Dict(S => i for (i, S) in enumerate(svnames(aggregate)))
-    aggregate_vnames = Dict(S => i for (i, S) in enumerate(vnames(aggregate)))
-    aggregate_fnames = Dict(S => i for (i, S) in enumerate(fnames(aggregate)))
-    aggregate_pnames = Dict(S => i for (i, S) in enumerate(pnames(aggregate)))
+    aggregate_snames::Dict{Symbol, Int} = invert_vector(snames(aggregate))
+    aggregate_svnames::Dict{Symbol, Int} = invert_vector(svnames(aggregate))
+    aggregate_vnames::Dict{Symbol, Int} = invert_vector(vnames(aggregate))
+    aggregate_fnames::Dict{Symbol, Int} = invert_vector(fnames(aggregate))
+    aggregate_pnames::Dict{Symbol, Int} = invert_vector(pnames(aggregate))
 
 
     strata_stock_mappings_dict::Dict{Int, Int} = Dict()
@@ -154,29 +134,13 @@ function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant
     type_all_names = [snames(type), svnames(type), vnames(type), fnames(type), pnames(type)]
     aggregate_all_names = [snames(aggregate), svnames(aggregate), vnames(aggregate), fnames(aggregate), pnames(aggregate)]
 
-    @assert all(map(x -> allunique(x), strata_all_names)) "Not all names in strata model are unique!"
-    @assert all(map(x -> allunique(x), type_all_names)) "Not all names in type model are unique!"
-    @assert all(map(x -> allunique(x), aggregate_all_names)) "Not all names in aggregate model are unique!"
-
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), strata_all_names)
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), type_all_names)
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), aggregate_all_names)
-
-    # ensure names in each stockflow are unique within themselves.
-    # there's the possibility this would be called after mapping to nothing, so if you get an error here, check that the names aren't all nothing
-
-
-    # all_names =  [strata_all_names..., type_all_names..., aggregate_all_names...]
+    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), strata_all_names) "Strata contains $TEMP_STRAT_DEFAULT !  Please change TEMP_STRAT_DEFAULT to a different symbol or rename offending object."
+    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), type_all_names) "Type contains $TEMP_STRAT_DEFAULT !  Please change TEMP_STRAT_DEFAULT to a different symbol or rename offending object."
+    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), aggregate_all_names) "Aggregate contains $TEMP_STRAT_DEFAULT !  Please change TEMP_STRAT_DEFAULT to a different symbol or rename offending object."
 
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames])
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), [type_snames, type_svnames, type_vnames, type_fnames, type_pnames])
     map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames])
-
-
-    # if USE_ISSUB
-    #     @assert all(ks -> all(k -> !startswith(string(k), ISSUB_DEFAULT), values(ks)), all_names) "A name starts with the prefix used to identify substrings!"
-    #     # ensure that no name in stockflows start with prefix used to identify substrings
-    # end
 
 
     # STEP 2
@@ -206,17 +170,18 @@ function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant
     end
 
 
-    default_index_strata_stock = -1 ∈ keys(strata_stock_mappings_dict) ? strata_stock_mappings_dict[-1] : 0
-    default_index_strata_flow = -1 ∈ keys(strata_flow_mappings_dict) ? strata_flow_mappings_dict[-1] : 0
-    default_index_strata_dyvar = -1 ∈ keys(strata_dyvar_mappings_dict) ? strata_dyvar_mappings_dict[-1] : 0
-    default_index_strata_param = -1 ∈ keys(strata_param_mappings_dict) ? strata_param_mappings_dict[-1] : 0
-    default_index_strata_sum = -1 ∈ keys(strata_sum_mappings_dict) ? strata_sum_mappings_dict[-1] : 0
+    # get the default value, if it has been assigned.  Use 0 if it hasn't.
+    default_index_strata_stock = get(strata_stock_mappings_dict, -1, 0)
+    default_index_strata_flow = get(strata_flow_mappings_dict, -1, 0)
+    default_index_strata_dyvar = get(strata_dyvar_mappings_dict, -1, 0)
+    default_index_strata_param = get(strata_param_mappings_dict, -1, 0)
+    default_index_strata_sum = get(strata_sum_mappings_dict, -1, 0)
 
-    default_index_aggregate_stock = -1 ∈ keys(aggregate_stock_mappings_dict) ? aggregate_stock_mappings_dict[-1] : 0
-    default_index_aggregate_flow = -1 ∈ keys(aggregate_flow_mappings_dict) ? aggregate_flow_mappings_dict[-1] : 0
-    default_index_aggregate_dyvar = -1 ∈ keys(aggregate_dyvar_mappings_dict) ? aggregate_dyvar_mappings_dict[-1] : 0
-    default_index_aggregate_param = -1 ∈ keys(aggregate_param_mappings_dict) ? aggregate_param_mappings_dict[-1] : 0
-    default_index_aggregate_sum = -1 ∈ keys(aggregate_sum_mappings_dict) ? aggregate_sum_mappings_dict[-1] : 0
+    default_index_aggregate_stock = get(aggregate_stock_mappings_dict, -1, 0)
+    default_index_aggregate_flow = get(aggregate_flow_mappings_dict, -1, 0)
+    default_index_aggregate_dyvar = get(aggregate_dyvar_mappings_dict, -1, 0)
+    default_index_aggregate_param = get(aggregate_param_mappings_dict, -1, 0)
+    default_index_aggregate_sum = get(aggregate_sum_mappings_dict, -1, 0)
 
 
     # STEP 3
@@ -230,17 +195,27 @@ function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant
         one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
     end
 
-    strata_stock_mappings::Vector{Int} = [get(strata_stock_mappings_dict, i, (default_index_strata_stock != 0 ? default_index_strata_stock : one_type_stock))  for i in 1:ns(strata)] # if key isn't in dictionary, returns one_type_stock
-    strata_flow_mappings::Vector{Int} =  [get(strata_flow_mappings_dict, i, (default_index_strata_flow != 0 ? default_index_strata_flow : one_type_flow))  for i in 1:nf(strata)]
-    strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, (default_index_strata_dyvar != 0 ? default_index_strata_dyvar : one_type_dyvar))  for i in 1:nvb(strata)]
-    strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i,  (default_index_strata_param != 0 ? default_index_strata_param : one_type_param))  for i in 1:np(strata)]
-    strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i,  (default_index_strata_sum != 0 ? default_index_strata_sum : one_type_sum))  for i in 1:nsv(strata)]
+    # Convert back to vectors.  If you find a zero, check if there's a default and use that.  If there isn't a default, check if there's only one option and use that.
+    # Otherwise, there's an unassigned value which can't be inferred.
+    # Taking max because it's less verbose than ternary and accomplishes the same thing:
+    # - If both default_index and one_type are mapped, they must be mapped to the same thing, because one_type being mapped implies there's only one option.
+    # - If only one_type is mapped, then it will be positive, and default_infex will be 0
+    # - If only default_index is mapped, it will be positive and one_type will be 0
 
-    aggregate_stock_mappings::Vector{Int} = [get(aggregate_stock_mappings_dict, i, (default_index_aggregate_stock != 0 ? default_index_aggregate_stock : one_type_stock))  for i in 1:ns(aggregate)] # if key isn't in dictionary, returns one_type_stock
-    aggregate_flow_mappings::Vector{Int} =  [get(aggregate_flow_mappings_dict, i, (default_index_aggregate_flow != 0 ? default_index_aggregate_flow : one_type_flow))  for i in 1:nf(aggregate)]
-    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, (default_index_aggregate_dyvar != 0 ? default_index_aggregate_dyvar : one_type_dyvar))  for i in 1:nvb(aggregate)]
-    aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i,  (default_index_aggregate_param != 0 ? default_index_aggregate_param : one_type_param))  for i in 1:np(aggregate)]
-    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i,  (default_index_aggregate_sum != 0 ? default_index_aggregate_sum : one_type_sum))  for i in 1:nsv(aggregate)]
+    strata_stock_mappings::Vector{Int} = [get(strata_stock_mappings_dict, i, max(default_index_strata_stock, one_type_stock))  for i in 1:ns(strata)]
+    strata_flow_mappings::Vector{Int} =  [get(strata_flow_mappings_dict, i, max(default_index_strata_flow, one_type_flow))  for i in 1:nf(strata)]
+    strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, max(default_index_strata_dyvar, one_type_dyvar))  for i in 1:nvb(strata)]
+    strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i,  max(default_index_strata_param, one_type_param))  for i in 1:np(strata)]
+    strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i,  max(default_index_strata_sum, one_type_sum))  for i in 1:nsv(strata)]
+
+    aggregate_stock_mappings::Vector{Int} = [get(aggregate_stock_mappings_dict, i, max(default_index_aggregate_stock, one_type_stock))  for i in 1:ns(aggregate)]
+    aggregate_flow_mappings::Vector{Int} =  [get(aggregate_flow_mappings_dict, i, max(default_index_aggregate_flow, one_type_flow))  for i in 1:nf(aggregate)]
+    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, max(default_index_aggregate_dyvar, one_type_dyvar))  for i in 1:nvb(aggregate)]
+    aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i,  max(default_index_aggregate_param, one_type_param))  for i in 1:np(aggregate)]
+    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i,  max(default_index_aggregate_sum, one_type_sum))  for i in 1:nsv(aggregate)]
+
+
+    # This bit is a bit verbose, but makes debugging when making a stratification easier.  Tells you exactly which ones you forgot to map.
 
     all_mappings = [strata_stock_mappings..., strata_flow_mappings..., strata_dyvar_mappings..., strata_param_mappings..., strata_sum_mappings..., aggregate_stock_mappings..., aggregate_flow_mappings..., aggregate_dyvar_mappings..., aggregate_param_mappings..., aggregate_sum_mappings...]
     
@@ -272,7 +247,7 @@ function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant
     
 
     # STEP 5
-    # nothing_function = x -> nothing
+    # NothingFunction(x...) = nothing;
     no_attribute_type = map(type, Name=NothingFunction, Op=NothingFunction, Position=NothingFunction)
 
     # STEP 6/7 
@@ -298,7 +273,7 @@ function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant
     
     aggregate_necmaps = Dict(:S => aggregate_stock_mappings, :F => aggregate_flow_mappings, :V => aggregate_dyvar_mappings, :P => aggregate_param_mappings, :SV => aggregate_sum_mappings)
     aggregate_inferred_links = infer_links(aggregate, type, aggregate_necmaps)
-    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate_necmaps..., aggregate_inferred_links..., Op =NothingFunction, Position = NothingFunction, Name =NothingFunction)
+    aggregate_to_type = ACSetTransformation(aggregate, no_attribute_type; aggregate_necmaps..., aggregate_inferred_links..., Op = NothingFunction, Position = NothingFunction, Name =NothingFunction)
 
     
 
@@ -312,57 +287,6 @@ function sfstratify(strata, type, aggregate, block) # Trying to be very vigilant
     end
     
 end
-
-
-
-
-
-
-# macro n-stratify (sf, block)
-#     @assert sf.head == tuple
-#     @assert all(x -> x ∈ names(Main), sf.args) "Stockflows not in Main namespace!  Did you forget to define them?  If doing it at runtime, need an @eval call on stratify!"
-
-#     sfs_all = map(x -> getfield(Main, x), sf.args)
-
-#     @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, sfs_all)
-
-
-#     sfs = sfs_all[1:(length(sfs_all)-1)]
-#     type = sfs_all[last]
-
-#     Base.remove_linenums!(block)
-
-#     sf_snames = map(x => Dict(S => i for (i, S) in enumerate(snames(x))), sfs)::Vector{Dict{Symbol, Int}}
-#     sf_svnames = map(x => Dict(S => i for (i, S) in enumerate(svnames(x))), sfs)
-#     sf_vnames = map(x => Dict(S => i for (i, S) in enumerate(vnames(x))), sfs)
-#     sf_fnames = map(x => Dict(S => i for (i, S) in enumerate(fnames(x))), sfs)
-#     sf_pnames = map(x => Dict(S => i for (i, S) in enumerate(pnames(x))), sfs)
-
-
-#     type_snames = Dict(S => i for (i, S) in enumerate(snames(type)))
-#     type_svnames = Dict(S => i for (i, S) in enumerate(svnames(type)))
-#     type_vnames = Dict(S => i for (i, S) in enumerate(vnames(type)))
-#     type_fnames = Dict(S => i for (i, S) in enumerate(fnames(type)))
-#     type_pnames = Dict(S => i for (i, S) in enumerate(pnames(type)))
-
-
-    
-#     sf_all_names = [[snames(sf), svnames(sf), vnames(sf), fnames(sf), pnames(sf)] for sf in sfs]
-#     type_all_names = [snames(type), svnames(type), vnames(type), fnames(type), pnames(type)]
-
-#     @assert all(map(x -> allunique(x), type_all_names)) "Not all names in type model are unique!"
-#     @assert all(all(map(x -> allunique(x), sf)) for sf in sf_all_names)
-
-
-# # @assert all(map(x -> allunique(x),))
-
-
-# end
-
-
-
-
-
 
 
 
