@@ -1033,6 +1033,9 @@ function match_foot_format(footblock::Expr)
     end
 end
 
+
+#############################################
+
 ISSUB_DEFAULT::String = "_"
 USE_ISSUB::Bool = true
 STRICT_MAPPINGS::Bool = false # whether you need to include all, or if you can infer those which only have one thing to map to.
@@ -1052,82 +1055,59 @@ infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvm
 
 
 """
-function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf=nothing)
-    if isnothing(posf)
+function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector)
         
-        hom1′_mappings = f1(sftgt)
-        hom2′_mappings = f2(sftgt)
+    hom1′_mappings = f1(sftgt)
+    hom2′_mappings = f2(sftgt)
 
-        tgt::Dict{Tuple{Int, Int}, Int} = Dict((hom1′, hom2′) => i for (i, (hom1′, hom2′)) in enumerate(zip(hom1′_mappings, hom2′_mappings))) # ISSUE: If there are two matches, second one overwrites the first.
-        
-        @assert length(hom1′_mappings) == length(tgt) "There exist two identical mappings, and there is no disambiguating posf function!  $(collect(zip(hom1′_mappings, hom2′_mappings)))"
-        
-        for (i, (hom1, hom2)) in enumerate(zip(f1(sfsrc), f2(sfsrc)))
-            mapped_index1 = map1[hom1]
-            mapped_index2 = map2[hom2]
+    tgt::Dict{Tuple{Int, Int}, Int} = Dict((hom1′, hom2′) => i for (i, (hom1′, hom2′)) in enumerate(zip(hom1′_mappings, hom2′_mappings))) # ISSUE: If there are two matches, second one overwrites the first.
+    
+    @assert length(hom1′_mappings) == length(tgt) "There exist two identical mappings, and there is no disambiguating posf function!  $(collect(zip(hom1′_mappings, hom2′_mappings)))"
+    
+    for (i, (hom1, hom2)) in enumerate(zip(f1(sfsrc), f2(sfsrc)))
+        mapped_index1 = map1[hom1]
+        mapped_index2 = map2[hom2]
 
-            linkmap = tgt[(mapped_index1, mapped_index2)]
-    
-            
-    
-            destination_vector[i] = linkmap # updated
+        linkmap = tgt[(mapped_index1, mapped_index2)]
+
+        
+
+        destination_vector[i] = linkmap # updated
+    end
+    return destination_vector
+
+end
+
+function infer_particular_link_with_position!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf)
+    tgt_pos::Dict{Tuple{Int, Int}, Dict{Int, Int}} = Dict() # Dict instead of vector because position might not start at 1
+    for (i, (hom1′, hom2′, poshom′)) in enumerate(zip(f1(sftgt), f2(sftgt), posf(sftgt)))
+        if (hom1′, hom2′) ∉ keys(tgt_pos)
+            push!(tgt_pos, (hom1′, hom2′) => Dict(poshom′ => i))
+        else
+            push!(tgt_pos[(hom1′, hom2′)], poshom′ => i) # this would overwrite if the position ever matches
+            # which should never, ever happen.
         end
-        return destination_vector
-    
-    
-    
-    else
-        tgt_pos::Dict{Tuple{Int, Int}, Dict{Int, Int}} = Dict() # Dict instead of vector because position might not start at 1
-        for (i, (hom1′, hom2′, poshom′)) in enumerate(zip(f1(sftgt), f2(sftgt), posf(sftgt)))
-            if (hom1′, hom2′) ∉ keys(tgt_pos)
-                push!(tgt_pos, (hom1′, hom2′) => Dict(poshom′ => i))
+    end
+
+    for (i, (hom1, hom2, poshom)) in enumerate(zip(f1(sfsrc), f2(sfsrc), posf(sfsrc)))
+        mapped_index1 = map1[hom1]
+        mapped_index2 = map2[hom2]
+
+        linkmap = tgt_pos[(mapped_index1, mapped_index2)]
+        if length(linkmap) > 1
+            if poshom ∈ keys(linkmap)
+                destination_vector[i] = linkmap[poshom]
             else
-                push!(tgt_pos[(hom1′, hom2′)], poshom′ => i) # this would overwrite if the position ever matches
-                # which should never, ever happen.
+                error("More than one option to choose and no matching position for $((hom1, hom2, poshom))")
             end
+        else
+            destination_vector[i] = last(only(linkmap))
         end
-
-        for (i, (hom1, hom2, poshom)) in enumerate(zip(f1(sfsrc), f2(sfsrc), posf(sfsrc)))
-            mapped_index1 = map1[hom1]
-            mapped_index2 = map2[hom2]
-
-
-    
-            linkmap = tgt_pos[(mapped_index1, mapped_index2)]
-            if length(linkmap) > 1
-                if poshom ∈ keys(linkmap)
-                    destination_vector[i] = linkmap[poshom]
-                else
-                    error("More than one option to choose and no matching position for $((hom1, hom2, poshom))")
-                end
-            else
-                destination_vector[i] = last(only(linkmap))
-            end
-            
-    
-            # destination_vector[i] = linkmap # updated
-        end
-        return destination_vector
-    
-        
-
 
     end
+    return destination_vector
+
 end
-#         # Could also make this a 2D vector
-
-#     for (i, (hom1, hom2)) in enumerate(zip(f1(sfsrc), f2(sfsrc)))
-#         mapped_index1 = map1[hom1]
-#         mapped_index2 = map2[hom2]
-
-#         linkmap = tgt[(mapped_index1, mapped_index2)]
-
-        
-
-#         destination_vector[i] = linkmap # updated
-#     end
-# end
-
 
 
 """
@@ -1141,9 +1121,9 @@ If A <- C -> B, and we have A -> A' and B -> B' and a unique C' such that A' <- 
 
 :S => [2,4,1,3], :F => [1,2,4,3], ...
 
-necMaps must contain keys S, F, SV, P, V
+necMaps must contain keys S, F, SV, P, V, each pointing to a (possibly empty) array of indices
 """
-function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}}) # TODO: Determine if this works even if there are no stocks or no flows
+function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
 
 
     stockmaps = NecMaps[:S]
@@ -1159,15 +1139,16 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     lsvmaps = zeros(Int, nlsv(sfsrc))
     lvvmaps = zeros(Int, nlvv(sfsrc))
     lpvmaps = zeros(Int, nlpv(sfsrc))
+    # After the following calls, there should be no zeroes.
 
 
     infer_particular_link!(sfsrc, sftgt, get_lss, get_lssv, stockmaps, summaps, lsmaps) # LS
     infer_particular_link!(sfsrc, sftgt, get_ifn, get_is, flowmaps, stockmaps, imaps) # I
     infer_particular_link!(sfsrc, sftgt, get_ofn, get_os, flowmaps, stockmaps, omaps) # O
-    infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps, get_lvsposition) # LV
-    infer_particular_link!(sfsrc, sftgt, get_lsvsv, get_lsvv, summaps, dyvarmaps, lsvmaps, get_lsvsvposition) # LSV
-    infer_particular_link!(sfsrc, sftgt, get_lvsrc, get_lvtgt, dyvarmaps, dyvarmaps, lvvmaps, get_lvsrcposition) # LVV
-    infer_particular_link!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps, get_lpvpposition) # LPV
+    infer_particular_link_with_position!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps, get_lvsposition) # LV
+    infer_particular_link_with_position!(sfsrc, sftgt, get_lsvsv, get_lsvv, summaps, dyvarmaps, lsvmaps, get_lsvsvposition) # LSV
+    infer_particular_link_with_position!(sfsrc, sftgt, get_lvsrc, get_lvtgt, dyvarmaps, dyvarmaps, lvvmaps, get_lvsrcposition) # LVV
+    infer_particular_link_with_position!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps, get_lpvpposition) # LPV
 
     return Dict(:LS => lsmaps, :LSV => lsvmaps, :LV => lvmaps, :I => imaps, :O => omaps, :LPV => lpvmaps, :LVV => lvvmaps)
 
@@ -1283,36 +1264,11 @@ function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vecto
     end
 end
 
-
-
-function iterate_stockflow_quoteblocks(lines::Vector, fun)
-    current_phase = (_, _) -> ()
-    for statement in lines
-        @match statement begin
-            QuoteNode(:stocks) => begin
-                current_phase = s -> fun(s, :stock)
-            end
-            QuoteNode(:parameters) => begin
-                current_phase = p -> fun(p, :parameters)
-            end
-            QuoteNode(:dynamic_variables) => begin
-                current_phase = v -> fun(v, :dynamic_variables)
-            end            
-            QuoteNode(:flows) => begin
-                current_phase = f -> fun(f, :flows)
-            end                    
-            QuoteNode(:sums) => begin
-                current_phase = sv -> fun(sv, :sums)
-            end
-            QuoteNode(kw) =>
-                error("Unknown block type for stockflow quoteblock syntax: " * String(kw))
-            _ => current_phase(statement)
-        end
-    end
-end
-
-
-
+"""
+Converts a stock flow into a stock flow block
+Could be different from the initial definition, since this creates flows of form f(v), whereas it might've originally been of the form f(A + B)
+Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
+"""
 function sf_to_block(sf)
     stocks = snames(sf)
     params = pnames(sf)
@@ -1326,7 +1282,11 @@ function sf_to_block(sf)
 
 
     s = StockAndFlowBlock(stocks, params, dyvars, newflows, newsums)
+
+    return s;
 end
+
+
 
 """
 Takes one argument and returns nothing.
