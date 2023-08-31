@@ -2,7 +2,7 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags, substitute_symbols
 
 @testset "Stratification DSL" begin
     include("Stratification.jl")
@@ -367,7 +367,7 @@ end
         (@stock_and_flow begin; :stocks; A; :dynamic_variables; vA = A + A; end), 
         (@stock_and_flow begin; :stocks; B; :dynamic_variables; vB = B + B; end),
         Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [], :P => [], :V => [1]))
-    == Dict(:LS => [], :LSV => [], :LV => [1,2], :I => [], :O => [], :LPV => [], :LVV => []))
+    == Dict(:LS => [], :LSV => [], :LV => [1,1], :I => [], :O => [], :LPV => [], :LVV => [])) # If duplicate values, always map to first.
 
     @test (infer_links(
         (@stock_and_flow begin; :stocks; A; :parameters; pA; :dynamic_variables; vA = A + pA; end), 
@@ -420,16 +420,84 @@ end
 end
 
 
+@testset "Applying flags can correctly find substring matches" begin
+    @test apply_flags(:f_, Set([:~]), Vector{Symbol}()) == [] 
+    @test apply_flags(:f_, Set([:~]), [:f_death, :f_birth]) == [:f_death, :f_birth] 
+    @test apply_flags(:NOMATCH, Set([:~]), [:f_death, :f_birth]) == [] 
+    @test apply_flags(:f_birth, Set([:~]), [:f_death, :f_birth]) == [:f_birth] 
+    @test apply_flags(:f_birth, Set{Symbol}(), [:f_death, :f_birth]) == [:f_birth]
+
+    # Note, apply_flags is specifically meant to work on vectors without duplicates; the vector which is input are the keys of a dictionary.
+    # Regardless, the following will hold:
+    @test apply_flags(:f_birth, Set{Symbol}(), [:f_death, :f_birth, :f_birth, :f_birth]) == [:f_birth]
+    @test apply_flags(:f_birth, Set{Symbol}([:~]), [:f_death, :f_birth, :f_birth, :f_birth]) == [:f_birth, :f_birth, :f_birth]
+end
+
+
+@testset "substitute_symbols will correctly associate values of the two provided dictionaries based on user defined mappings" begin
+    # substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
+
+
+    # Note, these dictionaries represent a vector where all the entries are unique, and the values are the original indices.
+    # So, both keys and values should be unique.
+    # For stratification, first dictionary is strata or aggregate, second is type, and the vector of DSLArgument are the user-defined maps.
+    # For homomorphism, first argument is src, second is dest, vector are user-defined maps.
+    @test substitute_symbols(Dict{Symbol, Int}(), Dict{Symbol, Int}(), Vector{DSLArgument}()) == Dict{Int, Int}()
+    @test substitute_symbols(Dict{Symbol, Int}(), Dict(:B => 2), Vector{DSLArgument}()) == Dict{Int, Int}()
+
+    @test substitute_symbols(Dict(:A => 1), Dict(:B => 1), [DSLArgument(:A, :B, Set{Symbol}())]) == Dict(1 => 1)
+    @test substitute_symbols(Dict(:A1 => 1, :A2 => 2), Dict(:B => 1), [DSLArgument(:A1, :B, Set{Symbol}()), DSLArgument(:A2, :B, Set{Symbol}())]) == Dict(1 => 1, 2 => 1)
+    @test substitute_symbols(Dict(:A1 => 1), Dict(:B1 => 1, :B2 => 2), [DSLArgument(:A1, :B2, Set{Symbol}())]) == Dict(1 => 2)
+
+
+    @test substitute_symbols(Dict(:A1 => 1, :A2 => 2), Dict(:B1 => 1, :B2 => 2), [DSLArgument(:A, :B2, Set{Symbol}([:~]))]) == Dict(1 => 2, 2 => 2)
+
+    # 1:100
+    # 1:50
+    # All multiples x of 14 below 100 go to x % 10 + 1
+    @test (substitute_symbols(Dict(Symbol(i) => i for i ∈ 1:100), Dict(Symbol(-i) => i for i ∈ 1:50), [DSLArgument(Symbol(i), Symbol(-((i%10) + 1)), Set{Symbol}()) for i ∈ 1:100 if i % 14 == 0])
+    == Dict(14 => 5, 28 => 9, 42 => 3, 56 => 7, 70 => 1, 84 => 5, 98 => 9))
+
+    # Captures everything with a 7 as a digit
+    @test (substitute_symbols(Dict(Symbol(i) => i for i ∈ 1:100), Dict(Symbol(-i) => i for i ∈ 1:50), [DSLArgument(Symbol(7), Symbol(-1), Set{Symbol}([:~]))])
+    == Dict(7 => 1, 17 => 1, 27 => 1, 37 => 1, 47 => 1, 57 => 1, 67 => 1, 70 => 1, 71 => 1, 72 => 1, 73 => 1, 74 => 1, 75 => 1, 76 => 1, 77 => 1, 78 => 1, 79 => 1, 87 => 1, 97 => 1))
+
+    @test substitute_symbols(Dict(Symbol("~") => 1), Dict(:R => 1), [DSLArgument(Symbol("~"), :R, Set([:~]))], ; use_flags = false) == Dict(1 => 1) # Note, the Set([:~]) is ignored because use_flags is false
+
+end
 
 
 @testset "non-natural transformations fail infer_links" begin
-    # mapping it all to I
+
+    # Map both dynamic variables to the same
+    # Obviously, this will fail, as the new dynamic variable needs a LVV and one LV, but instead has two LV
+    @test_throws KeyError (infer_links(
+        (@stock_and_flow begin
+        :stocks
+        A
+
+        :dynamic_variables
+        v1 = A + A
+        v2 = v1 + A
+    end),
+    (@stock_and_flow begin
+        :stocks
+        A
+        
+        :dynamic_variables
+        v1 = A + A
+    end), 
+    Dict{Symbol, Vector{Int64}}(:S => [1], :V => [1,1])))
+
+    
+
+    # Mapping it all to I
 
     # This one fails when trying to figure out the inflow.  Stock maps to 2, and flow maps to 2,
     # But inflows on the target have (1,2) and (2,3)
 
     # This also wouldn't work if we tried mapping flow to 1 instead.  Outflows expect 1,1 or 2,2,
-    # so it fails on (1,2).
+    # so it fails on (2,1).
      @test_throws  KeyError (infer_links(
         (@stock_and_flow begin
         :stocks
@@ -467,14 +535,15 @@ end
         NI = [I]
         NS = [S,I,R]
     end),
+    Dict{Symbol, Vector{Int64}}(:S => [2], :F => [2], :SV => [1,2,3], :P => [2], :V => [2])))
 
-        Dict{Symbol, Vector{Int64}}(:S => [2], :F => [2], :SV => [1,2,3], :P => [2], :V => [2])))
 end
 
+@testset "Applying flags throws on invalid inputs" begin
+    @test_throws ErrorException apply_flags(:f_, Set([:+]), [:f_death, :f_birth]) # fails because :+ is not a defined operation
+    @test_throws ErrorException apply_flags(:f_birth, Set([:~, :+]), [:f_death, :f_birth]) # also fails for same reason
 
-apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} 
+    @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), Vector{Symbol}()) # fails because it's not looking for substrings, and :NOMATCH isn't in the list of options.
+    @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), [:nomatch]) # same reason
 
-
-@testset "Applying flags can correctly find substring matches" begin
-    apply_flags(:f_, Set(:~), Dict(:f_death => 1, :f_birth => 2)) == [:f_death, :f_birth] # DICTIONARY ORDER IS STABLE IN JULIA
 end

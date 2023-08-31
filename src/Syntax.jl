@@ -107,7 +107,7 @@ export @stock_and_flow, @foot, @feet, infer_links
 
 using ..StockFlow
 using MLStyle
-import Base: get, ==, Iterators.flatmap
+import Base: ==, Iterators.flatmap
 using Catlab.CategoricalAlgebra
 
 
@@ -1077,14 +1077,18 @@ function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_ve
 
 end
 
+"""
+If we're mapping the same value to multiple positions, it doesn't matter which one goes where.
+We have a few options, on how we want to distribute mappings.  Way it's done here, always goes to the first position.
+There's some irrelevant code in here to preserve position.  TODO: remove
+"""
 function infer_particular_link_with_position!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf)
-    tgt_pos::Dict{Tuple{Int, Int}, Dict{Int, Int}} = Dict() # Dict instead of vector because position might not start at 1
+    tgt_pos::Dict{Tuple{Int, Int}, Vector{Int}} = Dict() 
     for (i, (hom1′, hom2′, poshom′)) in enumerate(zip(f1(sftgt), f2(sftgt), posf(sftgt)))
         if (hom1′, hom2′) ∉ keys(tgt_pos)
-            push!(tgt_pos, (hom1′, hom2′) => Dict(poshom′ => i))
+            push!(tgt_pos, (hom1′, hom2′) => [i])
         else
-            push!(tgt_pos[(hom1′, hom2′)], poshom′ => i) # this would overwrite if the position ever matches
-            # which should never, ever happen.
+            push!(tgt_pos[(hom1′, hom2′)], i)
         end
     end
 
@@ -1093,16 +1097,7 @@ function infer_particular_link_with_position!(sfsrc, sftgt, f1, f2, map1, map2, 
         mapped_index2 = map2[hom2]
 
         linkmap = tgt_pos[(mapped_index1, mapped_index2)]
-        if length(linkmap) > 1
-            if poshom ∈ keys(linkmap)
-                destination_vector[i] = linkmap[poshom]
-            else
-                error("More than one option to choose and no matching position for $((hom1, hom2, poshom))")
-            end
-        else
-            destination_vector[i] = last(only(linkmap))
-        end
-
+        destination_vector[i] = linkmap[begin] # end also works
     end
     return destination_vector
 
@@ -1216,9 +1211,10 @@ end
 Takes a symbol 'key', applys flags, finds matches in s, and returns a vector of matching keys.
 Currently, there are two options: no flags, in which case [key] is returned, or ~ is the only flag, in which case 
 """
-function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector{Symbol} 
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector{Symbol} # Could make this a generator?
 
     if isempty(flags)
+        @assert (key ∈ s) "$s does not contain key $key !  Did you forget to prefix ~?"
         return [key] # potentially inefficient
     elseif :~ ∈ flags
 
@@ -1233,7 +1229,11 @@ function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector
     end
 end
 
-
+"""
+    substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
+Convert Dict(SymA => IntA), Dict(SymB => IntB), Dict(SymA => SymB) into Dict{IntA => IntB}
+Using original sf defintions, and the user defined mappings, transform user defined symbol mappings to index mappings.
+"""
 function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
     if !use_flags
         mapping = Dict(arg.key => arg.value for arg in m)
@@ -1287,7 +1287,7 @@ end
 
 """
 Takes any arguments and returns nothing.
-Used so we can maintain equality when making ACSetTransforms.
+Used so we can maintain equality when making ACSetTransformations.
 """
 NothingFunction(x...) = nothing;
 
