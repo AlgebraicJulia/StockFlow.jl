@@ -2,7 +2,7 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags
 
 @testset "Stratification DSL" begin
     include("Stratification.jl")
@@ -421,6 +421,7 @@ end
 
 
 
+
 @testset "non-natural transformations fail infer_links" begin
     # mapping it all to I
 
@@ -468,6 +469,12 @@ end
     end),
 
         Dict{Symbol, Vector{Int64}}(:S => [2], :F => [2], :SV => [1,2,3], :P => [2], :V => [2])))
-    # == Dict(:LS => [2,4,6], :LSV => [], :LV => [2], :I => [2], :O => [2], :LPV => [2], :LVV => []))
+end
 
+
+apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} 
+
+
+@testset "Applying flags can correctly find substring matches" begin
+    apply_flags(:f_, Set(:~), Dict(:f_death => 1, :f_birth => 2)) == [:f_death, :f_birth] # DICTIONARY ORDER IS STABLE IN JULIA
 end

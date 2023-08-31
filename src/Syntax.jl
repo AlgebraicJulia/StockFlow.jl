@@ -107,7 +107,7 @@ export @stock_and_flow, @foot, @feet, infer_links
 
 using ..StockFlow
 using MLStyle
-import Base: get, ==
+import Base: get, ==, Iterators.flatmap
 using Catlab.CategoricalAlgebra
 
 
@@ -1192,6 +1192,7 @@ S₁ => S₂
 
 I₁ => I₂
 
+Determine what index an element e maps to based upon what f we have in the mapping such that e -> f
 """
 function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U})::Dict{U, U}  where {T, U}
     @assert allunique(values(src))
@@ -1203,34 +1204,30 @@ function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U}):
 
 end
 
-
-
-function substring_matches_keys(d::Dict, substr)::Dict
-    return filter(((key, _),) -> occursin(substr, string(key)), d) # eliminate string(key)?  Do it outside?
+"""
+Filter a vector for all elements with substr as a substring.
+"""
+function substring_matches(v::Vector, substr::String)::Vector
+    return filter(x -> occursin(substr, string(x)), v)
 end
 
 
-
-function apply_flags(key::Symbol, flags::Set{Symbol}, s::Dict{Symbol, Int})::Vector{Symbol} 
+"""
+Takes a symbol 'key', applys flags, finds matches in s, and returns a vector of matching keys.
+Currently, there are two options: no flags, in which case [key] is returned, or ~ is the only flag, in which case 
+"""
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector{Symbol} 
 
     if isempty(flags)
-        return [key] # potentially quite inefficient
+        return [key] # potentially inefficient
     elseif :~ ∈ flags
 
-        keystring = string(key)
+        matches = collect(substring_matches(s, string(key)))
 
-
-        matches = [i for i in filter(x -> occursin(keystring, string(x)), keys(s))]
-
-        return_vector::Vector{Symbol} = Vector{Symbol}()
         new_flags = copy(flags) # copy isn't necessary, probably
         pop!(new_flags, :~) 
 
-        for m ∈ matches
-            append!(return_vector, apply_flags(m, new_flags, s))
-        end
-        return return_vector
-
+        return collect(flatmap(x -> apply_flags(x, new_flags, s), matches)) # this is just in case we add additional flags.  As is, the recursion is unnecessary.
     else
         error("Unknown flag found!  $(flags)")
     end
@@ -1244,7 +1241,7 @@ function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vecto
     else
         master_dict::Dict{Int, Int} = Dict()
         for statement in m
-            key_matches = apply_flags(statement.key, statement.flags, s) # Vector of Symbol
+            key_matches = apply_flags(statement.key, statement.flags, collect(keys(s))) # Vector of Symbol
             if isempty(key_matches)
                 println("WARNING!  No matches on $(statement.key) with flags $(statement.flags)")
             else
@@ -1256,11 +1253,11 @@ function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vecto
 end
 
 """
-Converts a stock flow into a stock flow block
+Converts a stock flow into a stock flow block.
 Could be different from the initial definition, since this creates flows of form f(v), whereas it might've originally been of the form f(A + B)
 Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
 """
-function sf_to_block(sf)
+function sf_to_block(sf::AbstractStockAndFlowF)
     stocks = snames(sf)
     params = pnames(sf)
     sums = [(svname, map(x -> sname(sf, x), stockssv(sf, i))) for (i, svname) ∈ enumerate(svnames(sf))]

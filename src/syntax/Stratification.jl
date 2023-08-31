@@ -85,10 +85,10 @@ end
         2c. Accumulate respective dictionaries (optionally, only allow first match vs throw an error (STRICT_MATCHES = false vs true))
     3. Create an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate.   Insert into arrays all values from the two Int => Int dictionaries
         3a. If STRICT_MAPPINGS = false, if there only exists one option in type to map to, and it hasn't been explicitly specified, add it.  If STRICT_MAPPINGS = true and it hasn't been specified, throw an error.
-    4. Do a once-over of arrays and ensure there aren't any zeroes (unmapped values) remaining
+    4. Do a once-over of arrays and ensure there aren't any zeroes (unmapped values) remaining (helps with debugging when you screw up stratifying)
     5. Deal with attributes (create a copy of type sf with attributes mapped to nothing)
-    6. Infer LS, LSV, etc.
-    7. Construct strata -> type and aggregate -> type ACSetTransformations (Maybe not ACSet, because we don't care about attributes)
+    6. Infer LS, LSV, etc., if possible.
+    7. Construct strata -> type and aggregate -> type ACSetTransformations
     8. Return pullback (with flattened attributes)
 """
 function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockAndFlowStructureF, aggregate::AbstractStockAndFlowStructureF, block::Expr)
