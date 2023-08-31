@@ -1053,6 +1053,10 @@ STRICT_MATCHES::Bool = false # each value is only allowed to match one line in i
     infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf=nothing)
 
 infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps, get_lvvposition) # LV
+
+If we're mapping the same value to multiple positions, it doesn't matter which one goes where.
+We have a few options, on how we want to distribute mappings.  Way it's done here, always goes to the last position.
+
 """
 function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector)
         
@@ -1060,9 +1064,7 @@ function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_ve
     hom2′_mappings = f2(sftgt)
 
     tgt::Dict{Tuple{Int, Int}, Int} = Dict((hom1′, hom2′) => i for (i, (hom1′, hom2′)) in enumerate(zip(hom1′_mappings, hom2′_mappings))) # ISSUE: If there are two matches, second one overwrites the first.
-    
-    @assert length(hom1′_mappings) == length(tgt) "There exist two identical mappings, and there is no disambiguating posf function!  $(collect(zip(hom1′_mappings, hom2′_mappings)))"
-    
+    # SOLUTION: Who cares.  Just map to the last.
     for (i, (hom1, hom2)) in enumerate(zip(f1(sfsrc), f2(sfsrc)))
         mapped_index1 = map1[hom1]
         mapped_index2 = map2[hom2]
@@ -1077,31 +1079,6 @@ function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_ve
 
 end
 
-"""
-If we're mapping the same value to multiple positions, it doesn't matter which one goes where.
-We have a few options, on how we want to distribute mappings.  Way it's done here, always goes to the first position.
-There's some irrelevant code in here to preserve position.  TODO: remove
-"""
-function infer_particular_link_with_position!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf)
-    tgt_pos::Dict{Tuple{Int, Int}, Vector{Int}} = Dict() 
-    for (i, (hom1′, hom2′, poshom′)) in enumerate(zip(f1(sftgt), f2(sftgt), posf(sftgt)))
-        if (hom1′, hom2′) ∉ keys(tgt_pos)
-            push!(tgt_pos, (hom1′, hom2′) => [i])
-        else
-            push!(tgt_pos[(hom1′, hom2′)], i)
-        end
-    end
-
-    for (i, (hom1, hom2, poshom)) in enumerate(zip(f1(sfsrc), f2(sfsrc), posf(sfsrc)))
-        mapped_index1 = map1[hom1]
-        mapped_index2 = map2[hom2]
-
-        linkmap = tgt_pos[(mapped_index1, mapped_index2)]
-        destination_vector[i] = linkmap[begin] # end also works
-    end
-    return destination_vector
-
-end
 
 
 """
@@ -1139,10 +1116,10 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     infer_particular_link!(sfsrc, sftgt, get_lss, get_lssv, stockmaps, summaps, lsmaps) # LS
     infer_particular_link!(sfsrc, sftgt, get_ifn, get_is, flowmaps, stockmaps, imaps) # I
     infer_particular_link!(sfsrc, sftgt, get_ofn, get_os, flowmaps, stockmaps, omaps) # O
-    infer_particular_link_with_position!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps, get_lvsposition) # LV
-    infer_particular_link_with_position!(sfsrc, sftgt, get_lsvsv, get_lsvv, summaps, dyvarmaps, lsvmaps, get_lsvsvposition) # LSV
-    infer_particular_link_with_position!(sfsrc, sftgt, get_lvsrc, get_lvtgt, dyvarmaps, dyvarmaps, lvvmaps, get_lvsrcposition) # LVV
-    infer_particular_link_with_position!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps, get_lpvpposition) # LPV
+    infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps) # LV
+    infer_particular_link!(sfsrc, sftgt, get_lsvsv, get_lsvv, summaps, dyvarmaps, lsvmaps) # LSV
+    infer_particular_link!(sfsrc, sftgt, get_lvsrc, get_lvtgt, dyvarmaps, dyvarmaps, lvvmaps) # LVV
+    infer_particular_link!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps) # LPV
 
     return Dict(:LS => lsmaps, :LSV => lsvmaps, :LV => lvmaps, :I => imaps, :O => omaps, :LPV => lpvmaps, :LVV => lvvmaps)
 

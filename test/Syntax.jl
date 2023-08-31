@@ -367,7 +367,7 @@ end
         (@stock_and_flow begin; :stocks; A; :dynamic_variables; vA = A + A; end), 
         (@stock_and_flow begin; :stocks; B; :dynamic_variables; vB = B + B; end),
         Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [], :P => [], :V => [1]))
-    == Dict(:LS => [], :LSV => [], :LV => [1,1], :I => [], :O => [], :LPV => [], :LVV => [])) # If duplicate values, always map to first.
+    == Dict(:LS => [], :LSV => [], :LV => [2,2], :I => [], :O => [], :LPV => [], :LVV => [])) # If duplicate values, always map to end.
 
     @test (infer_links(
         (@stock_and_flow begin; :stocks; A; :parameters; pA; :dynamic_variables; vA = A + pA; end), 
