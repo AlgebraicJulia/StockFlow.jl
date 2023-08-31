@@ -9,7 +9,7 @@ using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 
 
-import ..Syntax: create_foot, match_foot_format, STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, iterate_stockflow_quoteblocks, DSLArgument, NothingFunction
+import ..Syntax: create_foot, match_foot_format, STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, DSLArgument, NothingFunction
 
 
 import Catlab.Programs.RelationalPrograms: UntypedUnnamedRelationDiagram
