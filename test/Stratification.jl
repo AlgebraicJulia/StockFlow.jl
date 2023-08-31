@@ -224,21 +224,46 @@ age_weight_3 =  sfstratify(WeightModel, l_type, ageWeightModel, quote
 
 end) 
 
+age_weight_4 =  sfstratify(WeightModel, l_type, ageWeightModel, quote
 
+    :flows
+    ~NO_MATCHES => f_birth <= ~NO_MATCHES
+    f_NewBorn => f_birth <= f_NB
+    ~Death => f_death <= ~Death
+    ~id => f_aging <= ~aging
+    ~Becoming => f_fstOrder <= ~id
+    ~Becoming => f_aging <= ~id # Everything already matched; ignored
+    _ => f_aging <= _ # also ignored
+
+    :dynamic_variables
+    v_NewBorn => v_birth <= v_NB
+    ~Death => v_death <= ~Death
+    ~id  => v_aging <= ~aging
+    _ => v_fstOrder <= _
+
+    :parameters
+    μ => μ <= μ
+    ~δ => δ <= ~δ
+    rage => rage <= rageCA, rageAS
+    _ => rFstOrder <= _
+
+
+
+end) 
 
 
 @testset "Pullback computed in standard way is equal to DSL pullbacks" begin
     @test aged_weight == age_weight_2
     @test aged_weight == age_weight_3
+    @test aged_weight == age_weight_4
 end
 
 @testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
     # Note the orders.  The lists produced go left to right.  A1, A2 => B <= C1, C2 results in [A1 => B, A2 => B], [C1 => B. C2 => B]
-    t1 = interpret_stratification_notation(:(A => B <= C))
-    r1 = ([DSLArgument(:A, :B, Set{Symbol}())], [DSLArgument(:C, :B, Set{Symbol}())])
-    
-    @test t1 == r1
 
+
+    @test interpret_stratification_notation(:(A => B <= C)) == ([DSLArgument(:A, :B, Set{Symbol}())], [DSLArgument(:C, :B, Set{Symbol}())])
+    
     @test interpret_stratification_notation(:(A1, A2 => B <= C)) == (
         [DSLArgument(:A1, :B, Set{Symbol}()), DSLArgument(:A2, :B, Set{Symbol}())],
         [DSLArgument(:C, :B, Set{Symbol}())]
