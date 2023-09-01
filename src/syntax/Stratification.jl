@@ -41,7 +41,9 @@ end
 
 
 
-
+"""
+Gets mapping information from each line and updates dictionaries.  If a symbol already has a mapping and another is found, keep the first, or throw an error if strict_matches = true.
+"""
 function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int} ; strict_matches = false, use_flags = true)
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
 
@@ -108,7 +110,7 @@ function iterate_over_stratification_lines!(block, strata_names, type_names, agg
 end
 
 """
-Apply default mappings, infer mapping if there's only a single option, and convert from Dict{Int, Int} to vector{Int}
+Apply default mappings, infer mapping if there's only a single option, and convert from Dict{Int, Int} to Vector{Int}
 """
 function complete_mappings(strata_all_index_mappings::Vector{Dict{Int, Int}}, aggregate_all_index_mappings::Vector{Dict{Int, Int}}, sfstrata::AbstractStockAndFlowF, sftype::AbstractStockAndFlowF, sfaggregate::AbstractStockAndFlowF; strict_mappings = false)
     # get the default value, if it has been assigned.  Use 0 if it hasn't.
@@ -158,7 +160,6 @@ function complete_mappings(strata_all_index_mappings::Vector{Dict{Int, Int}}, ag
 
     return ((strata_stock_mappings, strata_sum_mappings, strata_dyvar_mappings, strata_flow_mappings, strata_param_mappings), (aggregate_stock_mappings, aggregate_sum_mappings, aggregate_dyvar_mappings, aggregate_flow_mappings, aggregate_param_mappings))
 end
-
 
 
 """
@@ -243,6 +244,7 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
 
 
     strata_mappings, aggregate_mappings = complete_mappings(strata_all_index_mappings, aggregate_all_index_mappings, strata, type, aggregate ; strict_mappings=strict_mappings)
+
     strata_stock_mappings, strata_sum_mappings, strata_dyvar_mappings, strata_flow_mappings, strata_param_mappings = strata_mappings
     aggregate_stock_mappings, aggregate_sum_mappings, aggregate_dyvar_mappings, aggregate_flow_mappings, aggregate_param_mappings = aggregate_mappings
 
