@@ -554,29 +554,29 @@ StockAndFlowF(s,p,v,f,sv) = begin
 end
 
 #[:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]
-get_lss(sf::StockAndFlowF) = collect(values(sf.subparts[:lss].m))
-get_lssv(sf::StockAndFlowF) = collect(values(sf.subparts[:lssv].m))
-get_lsvsv(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvsv].m))
-get_lsvv(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvv].m))
-get_lvs(sf::StockAndFlowF) = collect(values(sf.subparts[:lvs].m))
-get_lvv(sf::StockAndFlowF) = collect(values(sf.subparts[:lvv].m))
-get_is(sf::StockAndFlowF) = collect(values(sf.subparts[:is].m))
-get_ifn(sf::StockAndFlowF) = collect(values(sf.subparts[:ifn].m))
-get_os(sf::StockAndFlowF) = collect(values(sf.subparts[:os].m))
-get_ofn(sf::StockAndFlowF) = collect(values(sf.subparts[:ofn].m))
-get_lpvp(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvp].m))
-get_lpvv(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvv].m))
-get_lvsrc(sf::StockAndFlowF) = collect(values(sf.subparts[:lvsrc].m))
-get_lvtgt(sf::StockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
+get_lss(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lss].m))
+get_lssv(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lssv].m))
+get_lsvsv(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lsvsv].m))
+get_lsvv(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lsvv].m))
+get_lvs(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvs].m))
+get_lvv(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvv].m))
+get_is(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:is].m))
+get_ifn(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:ifn].m))
+get_os(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:os].m))
+get_ofn(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:ofn].m))
+get_lpvp(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lpvp].m))
+get_lpvv(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lpvv].m))
+get_lvsrc(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvsrc].m))
+get_lvtgt(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
 
 
-get_links(sf::StockAndFlowF) = Dict(map(x -> x => collect(values(sf.subparts[x].m)), [:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]))
+get_links(sf::AbstractStockAndFlowF) = Dict(map(x -> x => collect(values(sf.subparts[x].m)), [:lss, :lssv, :lsvsv, :lsvv, :lvs, :lvv, :is, :ifn, :os, :ofn, :lpvp, :lpvv, :lvsrc, :lvtgt]))
 
-get_lvsposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvsposition].m))
-get_lvsrcposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lvsrcposition].m))
-get_lsvsvposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lsvsvposition].m))
-get_lpvpposition(sf::StockAndFlowF) = collect(values(sf.subparts[:lpvpposition].m))
-get_vop(sf::StockAndFlowF) = collect(values(sf.subparts[:vop].m))
+get_lvsposition(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvsposition].m))
+get_lvsrcposition(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvsrcposition].m))
+get_lsvsvposition(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lsvsvposition].m))
+get_lpvpposition(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lpvpposition].m))
+get_vop(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:vop].m))
 
 
 sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname) # return the stocks name with index of s

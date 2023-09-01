@@ -2,22 +2,26 @@ module Composition
 export sfcompose
 
 using ...StockFlow
-import StockFlow: OpenStockAndFlowF
 using ..Syntax
-using MLStyle
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 
-
-import ..Syntax: create_foot, match_foot_format, STRICT_MAPPINGS, STRICT_MATCHES, USE_ISSUB, ISSUB_DEFAULT, infer_links, substitute_symbols, DSLArgument, NothingFunction
-
-
+import ..Syntax: create_foot
 import Catlab.Programs.RelationalPrograms: UntypedUnnamedRelationDiagram
 
 
 RETURN_UWD = false
 
-function create_uwd(;Box::Vector{Symbol} = Vector{Symbol}(), Port::Vector{Tuple{Int, Int}} = Vector{Tuple{Int, Int}}(), OuterPort::Vector{Int} = Vector{Int}(), Junction::Vector{Symbol} = Vector{Symbol}())
+"""
+Construct a uwd to compose your open stockflows
+"""
+function create_uwd(;
+    Box::Vector{Symbol} = Vector{Symbol}(), # stockflows
+    Port::Vector{Tuple{Int, Int}} = Vector{Tuple{Int, Int}}(), # stockflow => foot number, for each foot on stockflow
+    OuterPort::Vector{Int} = Vector{Int}(),  # unique feet number (1:n)
+    Junction::Vector{Symbol} = Vector{Symbol}() # A symbol for each (unique) foot
+    )
+
     uwd = UntypedUnnamedRelationDiagram{Symbol, Symbol}(0)
     add_parts!(uwd, :Box, length(Box), name=Box)
     add_parts!(uwd, :Junction, length(Junction), variable=Junction)
@@ -26,150 +30,132 @@ function create_uwd(;Box::Vector{Symbol} = Vector{Symbol}(), Port::Vector{Tuple{
     return uwd
 end
 
+"""
+Parse expression of form A ^ B => C, extract sf A and foot B => C
+"""
+function interpret_center_of_composition_statement(center::Expr)::Tuple{Symbol, Expr} # sf, foot defintion
+    @assert length(center.args) == 3 && center.args[1] == :(=>) && typeof(center.args[2]) == Expr "Invalid argument: expected A ^ B => C, A ^ () => C or A ^ B => (), got $center"
+        # third argument can be symbol or (), the latter of which is an Expr
+        center_caret_statement = center.args[2]
+        @assert length(center_caret_statement.args) == 3 && center_caret_statement.args[1] == :^ && typeof(center_caret_statement.args[2]) == Symbol "Invalid center argument: expected A ^ B or A ^ (), got $center"
+        # third argument here, too, can be symbol or ()
+        return (center_caret_statement.args[2], Expr(:call, :(=>), center_caret_statement.args[3], center.args[3]))
+end
 
-
-
+"""
+Go line by line and associate stockflows and feet
+"""
 function interpret_composition_notation(mapping_pair::Expr)::Tuple{Vector{Symbol}, StockAndFlow0}
-    stockflows = Vector{Symbol}()
-    foot_temp = Vector{Expr}()
-    @match mapping_pair.args begin
-        [:(=>), :($sf ^ $stock), sum] => begin
-            # println(stock)
-            # println(sum)
-            push!(stockflows, sf)
-            push!(foot_temp, Expr(:call, :(=>), stock, sum))
-        end
-        Many[
-            sf::Symbol && Do(push!(stockflows, sf)) ||
-            Expr(:call, :(=>), Expr(:call, :^, sf, stock), sum) && Do(push!(stockflows, sf), push!(foot_temp, Expr(:call, :(=>), stock, sum))) ||
-            foot::Expr && Do(push!(foot_temp, foot)) 
-        ] => true
+
+    if mapping_pair.head == :call # (A ^ B => C) case (incl where B or C are ())
+        sf, foot_def = interpret_center_of_composition_statement(mapping_pair)
+        return [sf], create_foot(foot_def)
     end
 
-    return stockflows, create_foot(Expr(:tuple, foot_temp...))
+    expr_args = mapping_pair.args
+    stockflows = collect(Base.Iterators.takewhile(x -> typeof(x) == Symbol, expr_args))
+    center_index = length(stockflows) + 1
+    @assert center_index <= length(expr_args) "A tuple is an invalid expression for composition syntax.  Expected argument of form sf1, sf2, ... ^ stock1 => sum1, stock2 => sum2, ..."
+    center = expr_args[center_index]
+
+    foot_temp = Vector{Expr}()
+
+    sf, foot_def = interpret_center_of_composition_statement(center)
+    push!(foot_temp, foot_def)
+    push!(stockflows, sf)
+    append!(foot_temp, expr_args[center_index+1:end])
+
+    return (stockflows, create_foot(Expr(:tuple, foot_temp...)))
 end
 
 
+"""
+sirv = sfcompose(sir, svi, quote
+    (sr, sv)
+    sr, sv ^ S => N, I => N
+end)
 
-
-
+Cannot use () => () as a foot, 
+the length of the first tuple must be the same as the number of stock flows given as argument,
+and every foot can only be used once.
+"""
 function sfcompose(args...) #(sf1, sf2, ..., block)
 
-    sfs = args[1:end-1]
+    @assert length(args) > 0 "Didn't get any arguments!"
+
     block = args[end]
+    @assert typeof(block) == Expr "Didn't get an expression block for last argument!"
+    
+    sfs = args[1:end-1]
 
-    # @assert sf.head == :tuple
-    # @assert all(x -> x ∈ names(Main), sf.args)
-    # sfs = map(x -> getfield(Main, x), sf.args)
 
-    # sf_map = Dict(sym => getfield(Main, sym) for sym ∈ sf.args)
+    @assert all(sf -> typeof(sf) <: AbstractStockAndFlowF, sfs) "Not all arguments before the block are stock flows!"
 
-    # @assert all(x -> typeof(x) <: AbstractStockAndFlowStructureF, sfs)
-    # sf_tuple = sf.args
 
     Base.remove_linenums!(block)
     
-    # @assert allunique(sf_tuple)
-    sf_names::Vector{Symbol} = block.args[1].args
-    # println(sf_names)
-    sf_map::Dict{Symbol, AbstractStockAndFlowF} = Dict(sf_names[i] => sfs[i] for i ∈ eachindex(sf_names))
-    
+    sf_names::Vector{Symbol} = block.args[1].args # first line are the names you want to use for the ordered arguments.
+    # That is, first line needs to be a tuple, with the first argument being what you'll call the first stockflow
 
-    foot_dict = Dict{AbstractStockAndFlowStructureF, Vector{StockAndFlow0}}(x => [] for x in sfs) # intialize sf => foot dict
-    feet_index_dict::Dict{StockAndFlow0, Int} = Dict()
+    if length(sfs) == 0 # Composing 0 stock flows should give you an empty stock flow
+        return StockAndFlowF()
+   end
+
+   @assert length(sf_names) == length(sfs) "The number of symbols on the first line is not the same as the number of stock flow arguments provided.  Stockflow #: $(length(sfs)) Symbol #: $(length(sf_names))"
+
+
+
+    @assert allunique(sf_names) "Not all choices of names for stock flows are unique!"
+
+
+    empty_foot =  (@foot () => ())
+
+
+    # symbol representation of sf => (sf itself, sf's feet)
+    # Every sf has empty foot as first foot to get around being unable to create OpenStockAndFlowF without feet
+    sf_map::Dict{Symbol, Tuple{AbstractStockAndFlowF, Vector{StockAndFlow0}}} = Dict(sf_names[i] => (sfs[i], [empty_foot]) for i ∈ eachindex(sf_names)) # map the symbols to their corresponding stockflows
+    
+    # all feet
+    feet_index_dict::Dict{StockAndFlow0, Int} = Dict(empty_foot => 1)
     for statement in block.args[2:end]
         stockflows, foot = interpret_composition_notation(statement)
+        # adding new foot to list
+        @assert (foot ∉ keys(feet_index_dict)) "Foot has already been used, or you are using an empty foot!"
         push!(feet_index_dict, foot => length(feet_index_dict) + 1)
         for stockflow in stockflows
-            push!(foot_dict[sf_map[stockflow]], foot)
+            # adding this foot to each stock flow to its left
+            push!(sf_map[stockflow][2], foot)
         end
     end
 
     Box::Vector{Symbol} = sf_names
-    Port = [(i,feet_index_dict[j]) for (i,key) ∈ enumerate(sf_names) for j ∈ foot_dict[sf_map[key]]]
-    Junction = [gensym() for _ ∈ 1:length(feet_index_dict)]
-    OuterPort = collect(1:length(feet_index_dict))
+
+
+    Port = Vector{Tuple{Int, Int}}()
+
+    for (k, v) ∈ sf_map # TODO: Just find a better way to do this.
+        for foot ∈ v[2]
+            push!(Port, (findfirst(x -> x == k, sf_names), feet_index_dict[foot]))
+        end
+    end
+
+    Junction::Vector{Symbol} = [gensym() for _ ∈ 1:length(feet_index_dict)]
+    OuterPort::Vector{Int} = collect(1:length(feet_index_dict))
 
     uwd = create_uwd(Box=Box, Port=Port, Junction=Junction, OuterPort=OuterPort)
-    # open_stockflows::AbstractDict = Dict(sf => Open(sf, feet...) for (sf, feet) ∈ foot_dict)
 
-    open_stockflows::AbstractDict = Dict(sf_key => Open(sf_val, foot_dict[sf_val]...) for (sf_key, sf_val) ∈ sf_map)
+    # I'd prefer this to be a vector, but oapply didn't like that
+    # I'd also prefer that I don't include the empty foot, but Open doesn't want to accept stockflows with no feet.
+    # open_stockflows::AbstractDict = Dict(sf_key => Open(sf_val, foot_dict[sf_val]...,) for (sf_key, sf_val) ∈ sf_map)
 
-    # create_uwd(Box=sf_vector, Junction=[gensym() for _ ∈ 1:length(foot_vector)], Port=flattened_foot_int_indexed_vector, OuterPort=collect(1:length(foot_vector)))
+    open_stockflows::AbstractDict = Dict(sf_key => Open(sf_val[1], sf_val[2]...) for (sf_key, sf_val) ∈ sf_map)
 
-
-    if RETURN_UWD
+    if RETURN_UWD # UWD might be a bit screwed up from the empty foot being first.
         return apex(oapply(uwd, open_stockflows)), uwd
     else
         return apex(oapply(uwd, open_stockflows))
     end
 
-
-    
-
 end
-
-
-    # # I really fumble at the 10 yard line here
-    # # this whole bit needs to be reworked.
-
-    # flattened_foot_vector = Vector{Tuple{AbstractStockAndFlowF, StockAndFlow0}}()
-
-    # # open_stockflows = Dict{Symbol, OpenStockAndFlowF}()
-    # foot_set = Set{StockAndFlow0}()
-    # for (stockflow, feet) ∈ foot_dict
-    #     union!(foot_set, feet)
-
-    #     # println(foot_dict[stockflow])
-    #     # println("DSAD")
-    #     # append!(foot_dict[stockflow], feet)
-    #     # println(feet)
-
-    #     # push!(open_stockflows(Open(stockflow, feet...)))
-    #     append!(flattened_foot_vector, [(stockflow, foot) for foot in feet])
-    #     # println([(stockflow, foot) for foot in feet])
-
-    # end
-    # # println(flattened_foot_vector)
-
-
-    # open_stockflows::AbstractDict = Dict(sf => Open(sf_map[sf], feet...) for (sf, feet) ∈ foot_dict)
-
-    # # open_stockflows::Vector{OpenStockAndFlowF} = [Open(sf_map[sf], feet...) for (sf, feet) ∈ foot_dict]
-
-    # # println(open_stockflows[1].feet[1] == @foot A => ())
-
-
-    # sf_vector::Vector{Symbol} = collect(sf_names)
-    # sf_dict = Dict(stockflow => i for (i, stockflow) ∈ enumerate(sf_vector)) # terrible
-
-
-    # # sf_tuple_dict = Dict{Symbol, Int}(stockflow => i for (i, stockflow) ∈ sf_vector)
-
-    # foot_vector::Vector{StockAndFlow0} = collect(foot_set)
-
-
-    # foot_dict2 = Dict(foot => i for (i, foot) ∈ enumerate(foot_vector)) # also terrible
-
-
-
-    # # ok the hash for two feet that have the same values is the same, this might be an issue.
-    # # In fact hash for any stock flow with same arguments is same
-    # flattened_foot_int_indexed_vector::Vector{Tuple{Int, Int}} = [(sf_dict[stockflow_symbol], foot_dict2[foot]) for (stockflow_symbol, foot) ∈ flattened_foot_vector]
-
-
-
-    # # foot_index_dict = Dict{StockAndFlow0, Int}(foot => i for (i, foot) ∈ enumerate(foot_vector))
-
-    # # port_vector = [(]
-
-    # # println(flattened_foot_vector)
-
-    # # println(sf_vector, [gensym() for _ ∈ 1:length(foot_vector)], flattened_foot_int_indexed_vector, collect(1:length(flattened_foot_int_indexed_vector)) )
-
-    # uwd = create_uwd(Box=sf_vector, Junction=[gensym() for _ ∈ 1:length(foot_vector)], Port=flattened_foot_int_indexed_vector, OuterPort=collect(1:length(foot_vector)))
-
-    # # println(uwd)
-
 
 end
