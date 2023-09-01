@@ -65,7 +65,7 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 end
 
 """
-
+Print all symbols such that the corresponding int is 0, representing an unmapped object.
 """
 function print_unmapped(mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}}, name="STOCKFLOW")
     for (ints, dicts) in mappings
@@ -79,7 +79,7 @@ function print_unmapped(mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}}, nam
 end
 
 """
-Iterates over each line in a stratification quoteblock and updates the appropriate dictionaries
+Iterates over each line in a stratification quoteblock and updates the appropriate dictionaries.
 """
 function iterate_over_stratification_lines!(block, strata_names, type_names, aggregate_names, strata_mappings, aggregate_mappings; strict_matches=false, use_flags=true)
     current_phase = (_, _) -> ()
@@ -106,6 +106,59 @@ function iterate_over_stratification_lines!(block, strata_names, type_names, agg
         end
     end
 end
+
+"""
+Apply default mappings, infer mapping if there's only a single option, and convert from Dict{Int, Int} to vector{Int}
+"""
+function complete_mappings(strata_all_index_mappings::Vector{Dict{Int, Int}}, aggregate_all_index_mappings::Vector{Dict{Int, Int}}, sfstrata::AbstractStockAndFlowF, sftype::AbstractStockAndFlowF, sfaggregate::AbstractStockAndFlowF; strict_mappings = false)
+    # get the default value, if it has been assigned.  Use 0 if it hasn't.
+    default_index_strata_stock = get(strata_all_index_mappings[1], -1, 0)
+    default_index_strata_sum = get(strata_all_index_mappings[2], -1, 0)
+    default_index_strata_dyvar = get(strata_all_index_mappings[3], -1, 0)
+    default_index_strata_flow = get(strata_all_index_mappings[4], -1, 0)
+    default_index_strata_param = get(strata_all_index_mappings[5], -1, 0)
+
+    default_index_aggregate_stock = get(aggregate_all_index_mappings[1], -1, 0)
+    default_index_aggregate_sum = get(aggregate_all_index_mappings[2], -1, 0)
+    default_index_aggregate_dyvar = get(aggregate_all_index_mappings[3], -1, 0)
+    default_index_aggregate_flow = get(aggregate_all_index_mappings[4], -1, 0)
+    default_index_aggregate_param = get(aggregate_all_index_mappings[5], -1, 0)
+
+
+    # STEP 3
+    if !strict_mappings
+        one_type_stock = length(snames(sftype)) == 1 ? 1 : 0 # if there is only one stock, it needs to have index 1
+        one_type_flow = length(fnames(sftype)) == 1 ? 1 : 0
+        one_type_dyvar = length(vnames(sftype)) == 1 ? 1 : 0
+        one_type_param = length(pnames(sftype)) == 1 ? 1 : 0
+        one_type_sum = length(svnames(sftype)) == 1 ? 1 : 0
+    else
+        one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
+    end
+
+    # Convert back to vectors.  If you find a zero, check if there's a default and use that.  If there isn't a default, check if there's only one option and use that.
+    # Otherwise, there's an unassigned value which can't be inferred.
+    # Taking max because it's less verbose than ternary and accomplishes the same thing:
+    # - If both default_index and one_type are mapped, they must be mapped to the same thing, because one_type being mapped implies there's only one option.
+    # - If only one_type is mapped, then it will be positive, and default_infex will be 0
+    # - If only default_index is mapped, it will be positive and one_type will be 0
+
+    strata_stock_mappings::Vector{Int} = [get(strata_all_index_mappings[1], i, max(default_index_strata_stock, one_type_stock))  for i in 1:ns(sfstrata)]
+    strata_sum_mappings::Vector{Int} =  [get(strata_all_index_mappings[2], i,  max(default_index_strata_sum, one_type_sum))  for i in 1:nsv(sfstrata)]
+    strata_dyvar_mappings::Vector{Int} = [get(strata_all_index_mappings[3], i, max(default_index_strata_dyvar, one_type_dyvar))  for i in 1:nvb(sfstrata)]
+    strata_flow_mappings::Vector{Int} =  [get(strata_all_index_mappings[4], i, max(default_index_strata_flow, one_type_flow))  for i in 1:nf(sfstrata)]
+    strata_param_mappings::Vector{Int} = [get(strata_all_index_mappings[5], i,  max(default_index_strata_param, one_type_param))  for i in 1:np(sfstrata)]
+
+    aggregate_stock_mappings::Vector{Int} = [get(aggregate_all_index_mappings[1], i, max(default_index_aggregate_stock, one_type_stock))  for i in 1:ns(sfaggregate)]
+    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_all_index_mappings[2], i,  max(default_index_aggregate_sum, one_type_sum))  for i in 1:nsv(sfaggregate)]
+    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_all_index_mappings[3], i, max(default_index_aggregate_dyvar, one_type_dyvar))  for i in 1:nvb(sfaggregate)]
+    aggregate_flow_mappings::Vector{Int} =  [get(aggregate_all_index_mappings[4], i, max(default_index_aggregate_flow, one_type_flow))  for i in 1:nf(sfaggregate)]
+    aggregate_param_mappings::Vector{Int} = [get(aggregate_all_index_mappings[5], i,  max(default_index_aggregate_param, one_type_param))  for i in 1:np(sfaggregate)]
+
+
+    return ((strata_stock_mappings, strata_sum_mappings, strata_dyvar_mappings, strata_flow_mappings, strata_param_mappings), (aggregate_stock_mappings, aggregate_sum_mappings, aggregate_dyvar_mappings, aggregate_flow_mappings, aggregate_param_mappings))
+end
+
 
 
 """
@@ -169,8 +222,8 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     type_all_name_mappings::Vector{Dict{Symbol, Int}} = [type_snames, type_svnames, type_vnames, type_fnames, type_pnames]
     aggregate_all_name_mappings::Vector{Dict{Symbol, Int}} = [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames]
 
-    strata_all_index_mappings = [strata_stock_mappings_dict, strata_sum_mappings_dict, strata_dyvar_mappings_dict, strata_flow_mappings_dict, strata_param_mappings_dict]
-    aggregate_all_index_mappings = [aggregate_stock_mappings_dict, aggregate_sum_mappings_dict, aggregate_dyvar_mappings_dict, aggregate_flow_mappings_dict, aggregate_param_mappings_dict]
+    strata_all_index_mappings::Vector{Dict{Int, Int}} = [strata_stock_mappings_dict, strata_sum_mappings_dict, strata_dyvar_mappings_dict, strata_flow_mappings_dict, strata_param_mappings_dict]
+    aggregate_all_index_mappings::Vector{Dict{Int, Int}} = [aggregate_stock_mappings_dict, aggregate_sum_mappings_dict, aggregate_dyvar_mappings_dict, aggregate_flow_mappings_dict, aggregate_param_mappings_dict]
 
 
     if use_temp_strat_default
@@ -189,64 +242,24 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     iterate_over_stratification_lines!(block, strata_all_name_mappings, type_all_name_mappings, aggregate_all_name_mappings, strata_all_index_mappings, aggregate_all_index_mappings ; strict_matches=strict_matches, use_flags=use_flags)
 
 
-    # get the default value, if it has been assigned.  Use 0 if it hasn't.
-    default_index_strata_stock = get(strata_stock_mappings_dict, -1, 0)
-    default_index_strata_flow = get(strata_flow_mappings_dict, -1, 0)
-    default_index_strata_dyvar = get(strata_dyvar_mappings_dict, -1, 0)
-    default_index_strata_param = get(strata_param_mappings_dict, -1, 0)
-    default_index_strata_sum = get(strata_sum_mappings_dict, -1, 0)
+    strata_mappings, aggregate_mappings = complete_mappings(strata_all_index_mappings, aggregate_all_index_mappings, strata, type, aggregate ; strict_mappings=strict_mappings)
+    strata_stock_mappings, strata_sum_mappings, strata_dyvar_mappings, strata_flow_mappings, strata_param_mappings = strata_mappings
+    aggregate_stock_mappings, aggregate_sum_mappings, aggregate_dyvar_mappings, aggregate_flow_mappings, aggregate_param_mappings = aggregate_mappings
 
-    default_index_aggregate_stock = get(aggregate_stock_mappings_dict, -1, 0)
-    default_index_aggregate_flow = get(aggregate_flow_mappings_dict, -1, 0)
-    default_index_aggregate_dyvar = get(aggregate_dyvar_mappings_dict, -1, 0)
-    default_index_aggregate_param = get(aggregate_param_mappings_dict, -1, 0)
-    default_index_aggregate_sum = get(aggregate_sum_mappings_dict, -1, 0)
-
-
-    # STEP 3
-    if !strict_mappings
-        one_type_stock = length(snames(type)) == 1 ? 1 : 0 # if there is only one stock, it needs to have index 1
-        one_type_flow = length(fnames(type)) == 1 ? 1 : 0
-        one_type_dyvar = length(vnames(type)) == 1 ? 1 : 0
-        one_type_param = length(pnames(type)) == 1 ? 1 : 0
-        one_type_sum = length(svnames(type)) == 1 ? 1 : 0
-    else
-        one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
-    end
-
-    # Convert back to vectors.  If you find a zero, check if there's a default and use that.  If there isn't a default, check if there's only one option and use that.
-    # Otherwise, there's an unassigned value which can't be inferred.
-    # Taking max because it's less verbose than ternary and accomplishes the same thing:
-    # - If both default_index and one_type are mapped, they must be mapped to the same thing, because one_type being mapped implies there's only one option.
-    # - If only one_type is mapped, then it will be positive, and default_infex will be 0
-    # - If only default_index is mapped, it will be positive and one_type will be 0
-
-    strata_stock_mappings::Vector{Int} = [get(strata_stock_mappings_dict, i, max(default_index_strata_stock, one_type_stock))  for i in 1:ns(strata)]
-    strata_flow_mappings::Vector{Int} =  [get(strata_flow_mappings_dict, i, max(default_index_strata_flow, one_type_flow))  for i in 1:nf(strata)]
-    strata_dyvar_mappings::Vector{Int} = [get(strata_dyvar_mappings_dict, i, max(default_index_strata_dyvar, one_type_dyvar))  for i in 1:nvb(strata)]
-    strata_param_mappings::Vector{Int} = [get(strata_param_mappings_dict, i,  max(default_index_strata_param, one_type_param))  for i in 1:np(strata)]
-    strata_sum_mappings::Vector{Int} =  [get(strata_sum_mappings_dict, i,  max(default_index_strata_sum, one_type_sum))  for i in 1:nsv(strata)]
-
-    aggregate_stock_mappings::Vector{Int} = [get(aggregate_stock_mappings_dict, i, max(default_index_aggregate_stock, one_type_stock))  for i in 1:ns(aggregate)]
-    aggregate_flow_mappings::Vector{Int} =  [get(aggregate_flow_mappings_dict, i, max(default_index_aggregate_flow, one_type_flow))  for i in 1:nf(aggregate)]
-    aggregate_dyvar_mappings::Vector{Int} = [get(aggregate_dyvar_mappings_dict, i, max(default_index_aggregate_dyvar, one_type_dyvar))  for i in 1:nvb(aggregate)]
-    aggregate_param_mappings::Vector{Int} = [get(aggregate_param_mappings_dict, i,  max(default_index_aggregate_param, one_type_param))  for i in 1:np(aggregate)]
-    aggregate_sum_mappings::Vector{Int} =  [get(aggregate_sum_mappings_dict, i,  max(default_index_aggregate_sum, one_type_sum))  for i in 1:nsv(aggregate)]
-
-
-    # This bit is a bit verbose, but makes debugging when making a stratification easier.  Tells you exactly which ones you forgot to map.
 
     all_mappings = [strata_stock_mappings..., strata_flow_mappings..., strata_dyvar_mappings..., strata_param_mappings..., strata_sum_mappings..., aggregate_stock_mappings..., aggregate_flow_mappings..., aggregate_dyvar_mappings..., aggregate_param_mappings..., aggregate_sum_mappings...]
     
-    strata_mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}} = [strata_stock_mappings => snames(strata), strata_flow_mappings => fnames(strata), strata_dyvar_mappings => vnames(strata), strata_param_mappings => pnames(strata), strata_sum_mappings => svnames(strata)]
-    aggregate_mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}} = [aggregate_stock_mappings => snames(aggregate), aggregate_flow_mappings => fnames(aggregate), aggregate_dyvar_mappings => vnames(aggregate), aggregate_param_mappings => pnames(aggregate), aggregate_sum_mappings => svnames(aggregate)]
-
+    
     # STEP 4
+
+    # This bit makes debugging when making a stratification easier.  Tells you exactly which ones you forgot to map.
 
     #unmapped: 
     if !(all(x -> x != 0, all_mappings))
-        print_unmapped(strata_mappings, "STRATA")
-        print_unmapped(aggregate_mappings, "AGGREGATE")
+        strata_mappings_to_names::Vector{Pair{Vector{Int}, Vector{Symbol}}} = [strata_stock_mappings => snames(strata), strata_flow_mappings => fnames(strata), strata_dyvar_mappings => vnames(strata), strata_param_mappings => pnames(strata), strata_sum_mappings => svnames(strata)]
+        aggregate_mappings_to_names::Vector{Pair{Vector{Int}, Vector{Symbol}}} = [aggregate_stock_mappings => snames(aggregate), aggregate_flow_mappings => fnames(aggregate), aggregate_dyvar_mappings => vnames(aggregate), aggregate_param_mappings => pnames(aggregate), aggregate_sum_mappings => svnames(aggregate)]    
+        print_unmapped(strata_mappings_to_names, "STRATA")
+        print_unmapped(aggregate_mappings_to_names, "AGGREGATE")
         error("There is an unmapped value!")
     end
     
