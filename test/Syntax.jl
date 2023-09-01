@@ -1,3 +1,6 @@
+using Pkg;
+Pkg.activate(".")
+
 using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
@@ -10,6 +13,10 @@ end
 
 @testset "Composition DSL" begin
     include("Composition.jl")
+end
+
+@testset "Rewrite DSL" begin
+    include("Rewrite.jl")
 end
 
 @testset "is_binop_or_unary recognises binops" begin

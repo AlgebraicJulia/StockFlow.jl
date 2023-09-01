@@ -6,7 +6,7 @@ export sfrewrite
 
 using ...StockFlow
 using ..StockFlow.Syntax
-import ..StockFlow.Syntax: parse_dyvar!, parse_flow!, parse_sum!, parse_stock!, parse_param!, sf_to_block, StockAndFlowBlock, stock_and_flow_syntax_to_arguments
+import ..StockFlow.Syntax: parse_dyvar, parse_flow, parse_sum, parse_stock, parse_param, sf_to_block, StockAndFlowBlock, stock_and_flow_syntax_to_arguments
 using MLStyle
 
 
@@ -60,23 +60,26 @@ function add_swap!(sw, sfblock, all_names, modified_stocks, modified_flows, modi
 
 
         end
-        Expr(:(=), tgt, Expr(:call, :(=>), old, new)) => begin # sum = old => new, dv = old => new
-            temp_vector = [] # :)))))))
+        Expr(:(:=), tgt, new) => begin # sum := new, dv := new
             @match all_names[tgt][1] begin # tells us what type it is
             # Three cases: :V, :SV, :F
+            # S and P are just the same, since they're atomic
+
+                :S => push!(modified_stocks, tgt => new)
+                :P => push!(modified_params, tgt => new)
+
                 :V => begin
                     original_index = all_names[tgt][2]
                     original_definition = sfblock.dyvars[original_index]
-                    new_definition = parse_dyvar!(Vector{Tuple{Symbol,Expr}}(), Expr(:(=), tgt, new))[1]
+                    new_definition = parse_dyvar(Expr(:(=), tgt, new))
                     push!(modified_dyvars, original_definition => new_definition)
-                    # temp_vector = []
                 end
 
                 :SV => begin
                     original_index = all_names[tgt][2]
                     original_definition = sfblock.sums[original_index]
 
-                    new_definition = parse_sum!(Vector{Tuple{Symbol,Vector{Symbol}}}(), Expr(:(=), tgt, new))[1]
+                    new_definition = parse_sum(Expr(:(=), tgt, new))
                     push!(modified_sums, original_definition => new_definition)
                 end
 
@@ -84,12 +87,12 @@ function add_swap!(sw, sfblock, all_names, modified_stocks, modified_flows, modi
                     original_index = all_names[tgt][2]
                     original_definition = sfblock.flows[original_index]
 
-                    new_definition = parse_flow!(Vector{Tuple{Symbol,Expr,Symbol}}(), Expr(:(=), tgt, new))[1]
+                    new_definition = parse_flow(Expr(:(=), tgt, new))
                     push!(modified_flows, original_definition => new_definition)
                 end
             end
         end
-        _ => error("Unknown expression in swapping section.")
+        _ => error("Unknown expression in swaps section.")
     end
 end
 
@@ -123,12 +126,10 @@ function modify_rewrite_dict!(line, added_objects, removed_objects, parse_defini
         push!(added_objects, object_definition)
     end
         
-
         _ => error("Unknown expression $line ")
     end
 end
-# :)))))))))))))))))))))))))))))))))))))))))))))))
-        # TODO: Create versions of parse_stock, parse_dyvar, etc which dont need a vector
+
 
 """
 After a day and a half of work on this, I realized it made more sense to operate on StockAndFlowBlocks rather than StockAndFlows
@@ -196,23 +197,23 @@ function sfrewrite(sf::AbstractStockAndFlowF, block)
     current_phase = (_, _) -> ()
     for statement in block.args
         @match statement begin
-            QuoteNode(:swapping) => begin
+            QuoteNode(:swaps) => begin
                 current_phase = sw -> add_swap!(sw, sfblock, all_names, modified_stocks, modified_flows, modified_dyvars, modified_params, modified_sums) # this one will be different than the others
             end
             QuoteNode(:stocks) => begin
-                current_phase = s -> modify_rewrite_dict!(s, added_stocks, removed_stocks, x -> parse_stock!(Vector{Symbol}(), x)[1])
+                current_phase = s -> modify_rewrite_dict!(s, added_stocks, removed_stocks, x -> parse_stock(x))
             end
             QuoteNode(:parameters) => begin
-                current_phase = p -> modify_rewrite_dict!(p, added_params, removed_params, x -> parse_param!(Vector{Symbol}(), x)[1])
+                current_phase = p -> modify_rewrite_dict!(p, added_params, removed_params, x -> parse_param(x))
             end
             QuoteNode(:dynamic_variables) => begin
-                current_phase = v -> modify_rewrite_dict!(v, added_dyvars, removed_dyvars, x -> parse_dyvar!(Vector{Tuple{Symbol,Expr}}(), x)[1])
+                current_phase = v -> modify_rewrite_dict!(v, added_dyvars, removed_dyvars, x -> parse_dyvar(x))
             end
             QuoteNode(:flows) => begin
-                current_phase = f -> modify_rewrite_dict!(f, added_flows, removed_flows, x -> parse_flow!(Vector{Tuple{Symbol,Expr,Symbol}}(), x)[1])
+                current_phase = f -> modify_rewrite_dict!(f, added_flows, removed_flows, x -> parse_flow(x))
             end
             QuoteNode(:sums) => begin
-                current_phase = sv -> modify_rewrite_dict!(sv, added_sums, removed_sums, x -> parse_sum!(Vector{Tuple{Symbol,Vector{Symbol}}}(), x)[1])
+                current_phase = sv -> modify_rewrite_dict!(sv, added_sums, removed_sums, x -> parse_sum(x))
             end
             QuoteNode(kw) =>
                 error("Unknown block type for stratify syntax: " * String(kw))
