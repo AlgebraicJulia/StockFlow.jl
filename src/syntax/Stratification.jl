@@ -65,7 +65,16 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 end
 
 
-
+function print_unmapped(mappings, name="STOCKFLOW")
+    for (ints, dicts) in mappings
+        for (i, val) in enumerate(ints)
+            if val == 0
+                println("UNMAPPED IN $(name):")
+                println(dicts[i])
+            end
+        end
+    end
+end
 
 """
     sfstratify(strata, type, aggregate, block ; kwargs)
@@ -221,22 +230,8 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
 
     #unmapped: 
     if !(all(x -> x != 0, all_mappings))
-        for (ints, dicts) in strata_mappings
-            for (i, val) in enumerate(ints)
-                if val == 0
-                    println("UNMAPPED IN STRATA:")
-                    println(dicts[i])
-                end
-            end
-        end
-        for (ints, dicts) in aggregate_mappings
-            for (i, val) in enumerate(ints)
-                if val == 0
-                    println("UNMAPPED IN AGGREGATE:")
-                    println(dicts[i])
-                end
-            end
-        end
+        print_unmapped(strata_mappings, "STRATA")
+        print_unmapped(aggregate_mappings, "AGGREGATE")
         error("There is an unmapped value!")
     end
     
