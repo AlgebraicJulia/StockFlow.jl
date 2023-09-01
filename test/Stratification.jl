@@ -366,7 +366,7 @@ end
     end)
 
 
-    sfA = (@stock_and_flow begin; stocks; A; end;)
+    sfA = (@stock_and_flow begin; :stocks; A; end;)
 
     @test (sfstratify(A_, X_, B_, strat_AXB, use_temp_strat_default=false)
     == (@stock_and_flow begin
@@ -383,23 +383,20 @@ end
         __
     end))
 
-    @test_throws ErrorException (sfstratify(A_, X_, B_, strat_AXB, strict_matches=true) # A matches against A and ~A, which is disallowed with this flag.
-    == (@stock_and_flow begin
-        :stocks
-        AB
-        __
-    end))
+    @test_throws AssertionError (sfstratify(A_, X_, B_, strat_AXB, strict_matches=true)) # A matches against A and ~A, which is disallowed with this flag.
 
     @test_throws ErrorException (sfstratify(sfA,sfA,sfA,(quote end), strict_mappings=true)) # strict_mappings=false wouldn't throw an error, and would infer strata and aggregate need to map to the only stock.
+
+    nothing_sfA = map(sfA, Position=NothingFunction, Op=NothingFunction, Name=NothingFunction)
 
     @test (sfstratify(sfA,sfA,sfA,(quote end), return_homs=true) == (
     (@stock_and_flow begin
         :stocks
         AA
     end),
-    ACSetTransformation(sfA, sfA, S=[1], Position=NothingFunction, Op=NothingFunction, Name=NothingFunction), # strata -> type
-    ACSetTransformation(sfA, sfA, S=[1], Position=NothingFunction, Op=NothingFunction, Name=NothingFunction) # aggregate -> type
-    ))
+    ACSetTransformation(sfA, nothing_sfA ; S=[1], F=Vector{Int}(),V =Vector{Int}(),SV=Vector{Int}(),P=Vector{Int}(),LS=Vector{Int}(),I=Vector{Int}(),O=Vector{Int}(),LV=Vector{Int}(),LSV=Vector{Int}(),LVV=Vector{Int}(),LPV=Vector{Int}(), Position=NothingFunction, Op=NothingFunction, Name=NothingFunction), # strata -> type
+    ACSetTransformation(sfA, nothing_sfA ; S=[1], F=Vector{Int}(),V =Vector{Int}(),SV=Vector{Int}(),P=Vector{Int}(),LS=Vector{Int}(),I=Vector{Int}(),O=Vector{Int}(),LV=Vector{Int}(),LSV=Vector{Int}(),LVV=Vector{Int}(),LPV=Vector{Int}(), Position=NothingFunction, Op=NothingFunction, Name=NothingFunction) # aggregate -> type
+    )) # the empty lists are necessary for equality, but it'd still be an equivalent homomorphism if you didn't specify them.
 
 end
 
