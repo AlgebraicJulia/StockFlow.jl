@@ -28,8 +28,8 @@ function interpret_stratification_notation(mapping_pair::Expr)::Tuple{Vector{DSL
             end
             @match mapping_pair.args[middle_index] begin
                 :($stail => $t <= $ahead) => begin
-                    sdict = [[DSLArgument(ss, t) for ss in mapping_pair.args[1:middle_index-1]] ; DSLArgument(stail, t)]
-                    adict = [DSLArgument(ahead, t) ; [DSLArgument(as, t) for as in mapping_pair.args[middle_index+1:end]]]
+                sdict = [[DSLArgument(ss, t) for ss in mapping_pair.args[1:middle_index-1]] ; DSLArgument(stail, t)]
+                adict = [DSLArgument(ahead, t) ; [DSLArgument(as, t) for as in mapping_pair.args[middle_index+1:end]]]
                     return (sdict, adict)
                 end
                 _ => "Unknown format found for match; middle three values formatted incorrectly."
@@ -64,8 +64,10 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, strata_na
 
 end
 
+"""
 
-function print_unmapped(mappings, name="STOCKFLOW")
+"""
+function print_unmapped(mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}}, name="STOCKFLOW")
     for (ints, dicts) in mappings
         for (i, val) in enumerate(ints)
             if val == 0
@@ -75,6 +77,36 @@ function print_unmapped(mappings, name="STOCKFLOW")
         end
     end
 end
+
+"""
+Iterates over each line in a stratification quoteblock and updates the appropriate dictionaries
+"""
+function iterate_over_stratification_lines!(block, strata_names, type_names, aggregate_names, strata_mappings, aggregate_mappings; strict_matches=false, use_flags=true)
+    current_phase = (_, _) -> ()
+    for statement in block.args
+        @match statement begin
+            QuoteNode(:stocks) => begin
+                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, strata_names[1], type_names[1], aggregate_names[1], strata_mappings[1], aggregate_mappings[1]; strict_matches=strict_matches, use_flags=use_flags)
+            end
+            QuoteNode(:sums) => begin
+                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, strata_names[2], type_names[2], aggregate_names[2], strata_mappings[2], aggregate_mappings[2]; strict_matches=strict_matches, use_flags=use_flags)
+            end        
+            QuoteNode(:dynamic_variables) => begin
+                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, strata_names[3], type_names[3], aggregate_names[3], strata_mappings[3], aggregate_mappings[3]; strict_matches=strict_matches, use_flags=use_flags)
+            end       
+            QuoteNode(:flows) => begin
+                current_phase = f -> read_stratification_line_and_update_dictionaries!(f, strata_names[4], type_names[4], aggregate_names[4], strata_mappings[4], aggregate_mappings[4]; strict_matches=strict_matches, use_flags=use_flags)
+            end                    
+            QuoteNode(:parameters) => begin
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_names[5], type_names[5], aggregate_names[5], strata_mappings[5], aggregate_mappings[5]; strict_matches=strict_matches, use_flags=use_flags)
+            end
+            QuoteNode(kw) =>
+                error("Unknown block type for stratify syntax: " * String(kw))
+            _ => current_phase(statement)
+        end
+    end
+end
+
 
 """
     sfstratify(strata, type, aggregate, block ; kwargs)
@@ -107,7 +139,7 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     strata_fnames::Dict{Symbol, Int} = invert_vector(fnames(strata))
     strata_pnames::Dict{Symbol, Int} = invert_vector(pnames(strata))
 
-    type_snames::Dict{Symbol, Int} = invert_vector(snames(type))
+    type_snames::Dict{Symbol, Int} = invert_vector(snames(type)) 
     type_svnames::Dict{Symbol, Int} = invert_vector(svnames(type))
     type_vnames::Dict{Symbol, Int} = invert_vector(vnames(type))
     type_fnames::Dict{Symbol, Int} = invert_vector(fnames(type))
@@ -133,45 +165,28 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     aggregate_sum_mappings_dict::Dict{Int, Int} = Dict()
     
 
-    strata_all_names = [snames(strata), svnames(strata), vnames(strata), fnames(strata), pnames(strata)]
-    type_all_names = [snames(type), svnames(type), vnames(type), fnames(type), pnames(type)]
-    aggregate_all_names = [snames(aggregate), svnames(aggregate), vnames(aggregate), fnames(aggregate), pnames(aggregate)]
+    strata_all_name_mappings::Vector{Dict{Symbol, Int}} = [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames]
+    type_all_name_mappings::Vector{Dict{Symbol, Int}} = [type_snames, type_svnames, type_vnames, type_fnames, type_pnames]
+    aggregate_all_name_mappings::Vector{Dict{Symbol, Int}} = [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames]
+
+    strata_all_index_mappings = [strata_stock_mappings_dict, strata_sum_mappings_dict, strata_dyvar_mappings_dict, strata_flow_mappings_dict, strata_param_mappings_dict]
+    aggregate_all_index_mappings = [aggregate_stock_mappings_dict, aggregate_sum_mappings_dict, aggregate_dyvar_mappings_dict, aggregate_flow_mappings_dict, aggregate_param_mappings_dict]
+
 
     if use_temp_strat_default
+
+        strata_all_names::Vector{Vector{Symbol}} = [snames(strata), svnames(strata), vnames(strata), fnames(strata), pnames(strata)]
+        aggregate_all_names::Vector{Vector{Symbol}} = [snames(aggregate), svnames(aggregate), vnames(aggregate), fnames(aggregate), pnames(aggregate)]
+
         @assert all(x -> temp_strat_default ∉ keys(x), strata_all_names) "Strata contains $temp_strat_default !  Please change temp_strat_default to a different symbol or rename offending object."
-        @assert all(x -> temp_strat_default ∉ keys(x), type_all_names) "Type contains $temp_strat_default !  Please change temp_strat_default to a different symbol or rename offending object."
         @assert all(x -> temp_strat_default ∉ keys(x), aggregate_all_names) "Aggregate contains $temp_strat_default !  Please change temp_strat_default to a different symbol or rename offending object."
 
-        map(x -> (push!(x, (temp_strat_default => -1))), [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames])
-        map(x -> (push!(x, (temp_strat_default => -1))), [type_snames, type_svnames, type_vnames, type_fnames, type_pnames])
-        map(x -> (push!(x, (temp_strat_default => -1))), [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames])
+        map(x -> (push!(x, (temp_strat_default => -1))), strata_all_name_mappings)
+        map(x -> (push!(x, (temp_strat_default => -1))), aggregate_all_name_mappings)
     end
 
     # STEP 2
-    current_phase = (_, _) -> ()
-    for statement in block.args
-        @match statement begin
-            QuoteNode(:stocks) => begin
-                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, strata_snames, type_snames, aggregate_snames, strata_stock_mappings_dict, aggregate_stock_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
-            end
-            QuoteNode(:parameters) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_pnames, type_pnames, aggregate_pnames, strata_param_mappings_dict, aggregate_param_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
-            end
-            QuoteNode(:dynamic_variables) => begin
-                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
-            end            
-            QuoteNode(:flows) => begin
-                current_phase = f -> read_stratification_line_and_update_dictionaries!(f, strata_fnames, type_fnames, aggregate_fnames, strata_flow_mappings_dict, aggregate_flow_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
-            end                    
-                  
-            QuoteNode(:sums) => begin
-                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
-            end                    
-            QuoteNode(kw) =>
-                error("Unknown block type for stratify syntax: " * String(kw))
-            _ => current_phase(statement)
-        end
-    end
+    iterate_over_stratification_lines!(block, strata_all_name_mappings, type_all_name_mappings, aggregate_all_name_mappings, strata_all_index_mappings, aggregate_all_index_mappings ; strict_matches=strict_matches, use_flags=use_flags)
 
 
     # get the default value, if it has been assigned.  Use 0 if it hasn't.
@@ -223,8 +238,8 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
 
     all_mappings = [strata_stock_mappings..., strata_flow_mappings..., strata_dyvar_mappings..., strata_param_mappings..., strata_sum_mappings..., aggregate_stock_mappings..., aggregate_flow_mappings..., aggregate_dyvar_mappings..., aggregate_param_mappings..., aggregate_sum_mappings...]
     
-    strata_mappings = [strata_stock_mappings => snames(strata), strata_flow_mappings => fnames(strata), strata_dyvar_mappings => vnames(strata), strata_param_mappings => pnames(strata), strata_sum_mappings => svnames(strata)]
-    aggregate_mappings = [aggregate_stock_mappings => snames(aggregate), aggregate_flow_mappings => fnames(aggregate), aggregate_dyvar_mappings => vnames(aggregate), aggregate_param_mappings => pnames(aggregate), aggregate_sum_mappings => svnames(aggregate)]
+    strata_mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}} = [strata_stock_mappings => snames(strata), strata_flow_mappings => fnames(strata), strata_dyvar_mappings => vnames(strata), strata_param_mappings => pnames(strata), strata_sum_mappings => svnames(strata)]
+    aggregate_mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}} = [aggregate_stock_mappings => snames(aggregate), aggregate_flow_mappings => fnames(aggregate), aggregate_dyvar_mappings => vnames(aggregate), aggregate_param_mappings => pnames(aggregate), aggregate_sum_mappings => svnames(aggregate)]
 
     # STEP 4
 
