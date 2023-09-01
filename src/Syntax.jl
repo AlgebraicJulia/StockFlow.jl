@@ -1034,17 +1034,6 @@ end
 
 #############################################
 
-ISSUB_DEFAULT::String = "_"
-USE_ISSUB::Bool = true
-STRICT_MAPPINGS::Bool = false # whether you need to include all, or if you can infer those which only have one thing to map to.
-STRICT_MATCHES::Bool = false # each value is only allowed to match one line in its section, vs matching the first.  EG, if you had f_death as a stock:
-# :stocks
-# ~f_death => f_death <= fdeath
-# _ => f_id <= fid
-#
-# would throw an error if true, wouldn't if false.
-
-
 """
     infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf=nothing)
 

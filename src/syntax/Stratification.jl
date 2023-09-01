@@ -6,13 +6,7 @@ using ..Syntax
 using MLStyle
 import Base: get
 using Catlab.CategoricalAlgebra
-import ..Syntax: STRICT_MAPPINGS, STRICT_MATCHES, infer_links, substitute_symbols, DSLArgument, NothingFunction, invert_vector
-
-# Possible other settings: USE_FLAGS, USE_TEMP_STRAT_DEFAULT
-
-RETURN_HOMS = false
-
-TEMP_STRAT_DEFAULT = :_
+import ..Syntax: infer_links, substitute_symbols, DSLArgument, NothingFunction, invert_vector
 
 
 """
@@ -48,13 +42,13 @@ end
 
 
 
-function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int})
+function read_stratification_line_and_update_dictionaries!(line::Expr, strata_names::Dict{Symbol, Int}, type_names::Dict{Symbol, Int}, aggregate_names::Dict{Symbol, Int}, strata_mappings::Dict{Int, Int}, aggregate_mappings::Dict{Int, Int} ; strict_matches = false, use_flags = true)
     current_strata_symbol_dict, current_aggregate_symbol_dict = interpret_stratification_notation(line)
 
-    current_strata_dict = substitute_symbols(strata_names, type_names, current_strata_symbol_dict ; use_flags=true)
-    current_aggregate_dict = substitute_symbols(aggregate_names, type_names, current_aggregate_symbol_dict ; use_flags=true)
+    current_strata_dict = substitute_symbols(strata_names, type_names, current_strata_symbol_dict ; use_flags=use_flags)
+    current_aggregate_dict = substitute_symbols(aggregate_names, type_names, current_aggregate_symbol_dict ; use_flags=use_flags)
     
-    if STRICT_MATCHES
+    if strict_matches
         @assert (all(x -> x ∉ keys(strata_mappings), keys(current_strata_dict))) "Attempt to overwrite a mapping in strata!"
         # check that we're not overwriting a value which has already been assigned
         merge!(strata_mappings, current_strata_dict) # accumulate dictionary keys
@@ -74,14 +68,14 @@ end
 
 
 """
-    @stratify (strata, type, aggregate) begin ... end
+    sfstratify(strata, type, aggregate, block ; kwargs)
 
     Ok, so the general idea here is:
     1. Grab all names from strata, type and aggregate, and create dictionaries which map them to their indices
     2. iterate over each line in the block
         2a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
         2b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
-            2bα. If applicable, for symbols with TEMP_STRAT_DEFAULT as a prefix, find all matching symbols in the symbol dictionaries, and map all those
+            2bα. If applicable, for symbols with temp_strat_default as a prefix, find all matching symbols in the symbol dictionaries, and map all those
         2c. Accumulate respective dictionaries (optionally, only allow first match vs throw an error (STRICT_MATCHES = false vs true))
     3. Create an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate.   Insert into arrays all values from the two Int => Int dictionaries
         3a. If STRICT_MAPPINGS = false, if there only exists one option in type to map to, and it hasn't been explicitly specified, add it.  If STRICT_MAPPINGS = true and it hasn't been specified, throw an error.
@@ -91,7 +85,7 @@ end
     7. Construct strata -> type and aggregate -> type ACSetTransformations
     8. Return pullback (with flattened attributes)
 """
-function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockAndFlowStructureF, aggregate::AbstractStockAndFlowStructureF, block::Expr)
+function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockAndFlowStructureF, aggregate::AbstractStockAndFlowStructureF, block::Expr ; strict_mappings = false, strict_matches = false, temp_strat_default = :_, use_temp_strat_default = true, use_flags = true, return_homs = false)
 
     Base.remove_linenums!(block)
 
@@ -134,34 +128,35 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     type_all_names = [snames(type), svnames(type), vnames(type), fnames(type), pnames(type)]
     aggregate_all_names = [snames(aggregate), svnames(aggregate), vnames(aggregate), fnames(aggregate), pnames(aggregate)]
 
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), strata_all_names) "Strata contains $TEMP_STRAT_DEFAULT !  Please change TEMP_STRAT_DEFAULT to a different symbol or rename offending object."
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), type_all_names) "Type contains $TEMP_STRAT_DEFAULT !  Please change TEMP_STRAT_DEFAULT to a different symbol or rename offending object."
-    @assert all(x -> TEMP_STRAT_DEFAULT ∉ keys(x), aggregate_all_names) "Aggregate contains $TEMP_STRAT_DEFAULT !  Please change TEMP_STRAT_DEFAULT to a different symbol or rename offending object."
+    if use_temp_strat_default
+        @assert all(x -> temp_strat_default ∉ keys(x), strata_all_names) "Strata contains $temp_strat_default !  Please change temp_strat_default to a different symbol or rename offending object."
+        @assert all(x -> temp_strat_default ∉ keys(x), type_all_names) "Type contains $temp_strat_default !  Please change temp_strat_default to a different symbol or rename offending object."
+        @assert all(x -> temp_strat_default ∉ keys(x), aggregate_all_names) "Aggregate contains $temp_strat_default !  Please change temp_strat_default to a different symbol or rename offending object."
 
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames])
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), [type_snames, type_svnames, type_vnames, type_fnames, type_pnames])
-    map(x -> (push!(x, (TEMP_STRAT_DEFAULT => -1))), [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames])
-
+        map(x -> (push!(x, (temp_strat_default => -1))), [strata_snames, strata_svnames, strata_vnames, strata_fnames, strata_pnames])
+        map(x -> (push!(x, (temp_strat_default => -1))), [type_snames, type_svnames, type_vnames, type_fnames, type_pnames])
+        map(x -> (push!(x, (temp_strat_default => -1))), [aggregate_snames, aggregate_svnames, aggregate_vnames, aggregate_fnames, aggregate_pnames])
+    end
 
     # STEP 2
     current_phase = (_, _) -> ()
     for statement in block.args
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, strata_snames, type_snames, aggregate_snames, strata_stock_mappings_dict, aggregate_stock_mappings_dict)
+                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, strata_snames, type_snames, aggregate_snames, strata_stock_mappings_dict, aggregate_stock_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
             end
             QuoteNode(:parameters) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_pnames, type_pnames, aggregate_pnames, strata_param_mappings_dict, aggregate_param_mappings_dict)
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, strata_pnames, type_pnames, aggregate_pnames, strata_param_mappings_dict, aggregate_param_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
             end
             QuoteNode(:dynamic_variables) => begin
-                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict)
+                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, strata_vnames, type_vnames, aggregate_vnames, strata_dyvar_mappings_dict, aggregate_dyvar_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
             end            
             QuoteNode(:flows) => begin
-                current_phase = f -> read_stratification_line_and_update_dictionaries!(f, strata_fnames, type_fnames, aggregate_fnames, strata_flow_mappings_dict, aggregate_flow_mappings_dict)
+                current_phase = f -> read_stratification_line_and_update_dictionaries!(f, strata_fnames, type_fnames, aggregate_fnames, strata_flow_mappings_dict, aggregate_flow_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
             end                    
                   
             QuoteNode(:sums) => begin
-                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict)
+                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, strata_svnames, type_svnames, aggregate_svnames, strata_sum_mappings_dict, aggregate_sum_mappings_dict; strict_matches=strict_matches, use_flags=use_flags)
             end                    
             QuoteNode(kw) =>
                 error("Unknown block type for stratify syntax: " * String(kw))
@@ -185,7 +180,7 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
 
 
     # STEP 3
-    if !STRICT_MAPPINGS
+    if !strict_mappings
         one_type_stock = length(snames(type)) == 1 ? 1 : 0 # if there is only one stock, it needs to have index 1
         one_type_flow = length(fnames(type)) == 1 ? 1 : 0
         one_type_dyvar = length(vnames(type)) == 1 ? 1 : 0
@@ -280,7 +275,7 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     # STEP 8
     pullback_model = pullback(strata_to_type, aggregate_to_type) |> apex |> rebuildStratifiedModelByFlattenSymbols;
 
-    if RETURN_HOMS
+    if return_homs
         return pullback_model, strata_to_type, aggregate_to_type
     else
         return pullback_model
