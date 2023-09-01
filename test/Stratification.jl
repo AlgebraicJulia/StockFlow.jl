@@ -339,3 +339,67 @@ end
 end
 
 
+@testset "nondefault flags work as expected" begin
+    A_ = (@stock_and_flow begin
+        :stocks
+        A
+        _
+    end)
+
+    X_ = (@stock_and_flow begin
+        :stocks
+        X
+        _
+    end)
+
+    B_ = (@stock_and_flow begin
+        :stocks
+        B
+        _
+    end)
+
+    strat_AXB = (quote
+    :stocks
+    _ => _ <= _
+    A => X <= B
+    ~A => X <= ~B # everything is already assigned, so does nothing (or throws error if strict_matches is true)
+    end)
+
+
+    sfA = (@stock_and_flow begin; stocks; A; end;)
+
+    @test (sfstratify(A_, X_, B_, strat_AXB, use_temp_strat_default=false)
+    == (@stock_and_flow begin
+        :stocks
+        AB
+        __
+    end))
+
+    # doesn't show up anywhere, so doesn't affect anything.  Could also set it to something untypable in the DSL, like Symbol("")
+    @test (sfstratify(A_, X_, B_, strat_AXB, temp_strat_default=:ABABABABA) 
+    == (@stock_and_flow begin
+        :stocks
+        AB
+        __
+    end))
+
+    @test_throws ErrorException (sfstratify(A_, X_, B_, strat_AXB, strict_matches=true) # A matches against A and ~A, which is disallowed with this flag.
+    == (@stock_and_flow begin
+        :stocks
+        AB
+        __
+    end))
+
+    @test_throws ErrorException (sfstratify(sfA,sfA,sfA,(quote end), strict_mappings=true)) # strict_mappings=false wouldn't throw an error, and would infer strata and aggregate need to map to the only stock.
+
+    @test (sfstratify(sfA,sfA,sfA,(quote end), return_homs=true) == (
+    (@stock_and_flow begin
+        :stocks
+        AA
+    end),
+    ACSetTransformation(sfA, sfA, S=[1], Position=NothingFunction, Op=NothingFunction, Name=NothingFunction), # strata -> type
+    ACSetTransformation(sfA, sfA, S=[1], Position=NothingFunction, Op=NothingFunction, Name=NothingFunction) # aggregate -> type
+    ))
+
+end
+
