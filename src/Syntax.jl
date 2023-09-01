@@ -303,7 +303,14 @@ is currently done by this function.
 None. This mutates the given stocks vector.
 """
 function parse_stock!(stocks::Vector{Symbol}, stock::Symbol)
-    push!(stocks, stock)
+    push!(stocks, parse_stock(stock))
+end
+
+"""
+    parse_stock(stock :: Symbol)
+"""
+function parse_stock(stock::Symbol)
+    stock
 end
 
 """
@@ -324,6 +331,11 @@ None. This mutates the given params vector.
 function parse_param!(params::Vector{Symbol}, param::Symbol)
     push!(params, param)
 end
+
+function parse_param(param::Symbol)
+    param
+end
+
 
 """
    is_recursive_dyvar(dyvar_name :: Symbol, dyvar_def :: Expr)
@@ -359,10 +371,14 @@ Extract the dynamic variable name and defining expression from a Julia expressio
 None. This mutates the given dyvars vector.
 """
 function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
+   push!(dyvars, parse_dyvar(dyvar))
+end
+
+function parse_dyvar(dyvar::Expr)
     @match dyvar begin
         :($dyvar_name = $dyvar_def) =>
             if !is_recursive_dyvar(dyvar_name, dyvar_def)
-                push!(dyvars, (dyvar_name, dyvar_def))
+                return (dyvar_name, dyvar_def)
             else
                 error("Recursive dyvar detected in Symbol: " * String(dyvar_name))
             end
@@ -372,7 +388,7 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
 end
 
 """
-    parse_flow_io(flow_definition :: Expr)
+    parse_flow(flow_definition :: Expr)
 
 Given a flow definition of the form `SYMBOL => flow_name(flow_equation) => SYMBOL`,
 return a 3-tuple of its constituent parts: the start symbol, the end symbol,
@@ -390,7 +406,7 @@ may be :F_NONE for a flow from nowhere) and the flow equation as a julia express
 
 ### Examples
 ```julia-repl
-julia> Syntax.parse_flow_io(:(TODO => birthRate(a * b * c) => S))
+julia> Syntax.parse_flow(:(TODO => birthRate(a * b * c) => S))
 (:F_NONE, :(birthRate(a * b * c)), :S)
 ```
 """
@@ -440,8 +456,12 @@ Extract the sum name and the stocks that flow into it from a stock expression of
 None. This mutates the given sums vector.
 """
 function parse_sum!(sums::Vector{Tuple{Symbol,Vector{Symbol}}}, sum::Expr)
+    push!(sums, parse_sum(sum))
+end
+
+function parse_sum(sum::Expr)
     @match sum begin
-        :($sum_name = $equation) => push!(sums, (sum_name, equation.args))
+        :($sum_name = $equation) => return (sum_name, equation.args)
         Expr(c, _, _) || Expr(c, _, _, _) =>
             error("Unhandled expression in sum defintion " * String(c))
     end
