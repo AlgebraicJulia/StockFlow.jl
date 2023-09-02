@@ -1,5 +1,5 @@
 module Stratification
-export sfstratify
+export sfstratify, @stratify
 
 using ...StockFlow
 using ..Syntax
@@ -308,8 +308,50 @@ function sfstratify(strata::AbstractStockAndFlowStructureF, type::AbstractStockA
     
 end
 
+"""
+    stratify(strata, type, aggregate, block)
+Take three stockflows and a quote block describing where the first and third map on to the second, and get a new stratified stockflow.
+Left side are strata objects, middle are type, right are aggregate.  Each strata and aggregate object is associated with one type object.
+The resultant stockflow contains objects which are the product of strata and aggregate objects which map to the same type object.
+Use _ to match all objects in that category, ~ as a prefix to match all objects with the following string as a substring.  Objects always go with their first match.
+If the type model has a single object in a category, the mapping to it is automatically assumed.  In the below example, we wouldn't need to specify :stocks or :sums.
 
+```julia
 
+@stratify WeightModel l_type ageWeightModel begin
+    :stocks
+    _ => pop <= _
+    
+    :flows
+    ~Death => f_death <= ~Death
+    ~id => f_aging <= ~aging
+    ~Becoming => f_fstOrder <= ~id
+    _ => f_birth <= f_NB
+
+    
+    :dynamic_variables
+    v_NewBorn => v_birth <= v_NB
+    ~Death => v_death <= ~Death
+    ~id  => v_aging <= v_agingCA, v_agingAS
+    v_BecomingOverWeight, v_BecomingObese => v_fstOrder <= v_idC, v_idA, v_idS
+    
+    :parameters
+    μ => μ <= μ
+    δw, δo => δ <= δC, δA, δS
+    rw, ro => rFstOrder <= r
+    rage => rage <= rageCA, rageAS
+    
+    :sums
+    N => N <= N
+    
+end 
+```
+"""
+macro stratify(strata, type, aggregate, block)
+   quote
+        sfstratify($(esc(strata)), $(esc(type)), $(esc(aggregate)), $(esc(block)))
+    end
+end
 
 
 end

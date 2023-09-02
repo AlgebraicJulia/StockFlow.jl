@@ -1170,7 +1170,7 @@ end
 
 """
 Takes a symbol 'key', applys flags, finds matches in s, and returns a vector of matching keys.
-Currently, there are two options: no flags, in which case [key] is returned, or ~ is the only flag, in which case 
+Currently, there are two options: no flags, in which case [key] is returned, or ~ is the only flag, in which case all Symbols with matching substrings are returned.
 """
 function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector{Symbol} # Could make this a generator?
 
@@ -1229,7 +1229,7 @@ end
 Takes any arguments and returns nothing.
 Used so we can maintain equality when making ACSetTransformations.
 """
-NothingFunction(x...) = nothing;
+NothingFunction(x...)::Nothing = nothing;
 
 
 

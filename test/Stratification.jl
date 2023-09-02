@@ -179,7 +179,7 @@ using Catlab.CategoricalAlgebra
     
     # #########################################
     
-    age_weight_2 = sfstratify(WeightModel, l_type, ageWeightModel, quote 
+    age_weight_2 = @stratify WeightModel l_type ageWeightModel quote 
         :stocks
         NormalWeight, OverWeight, Obese => pop <= Child, Adult, Senior
     
@@ -204,10 +204,10 @@ using Catlab.CategoricalAlgebra
         :sums
         N => N <= N
         
-    end)
+    end
     #########################################
     
-    age_weight_3 =  sfstratify(WeightModel, l_type, ageWeightModel, quote
+    age_weight_3 =  @stratify WeightModel l_type ageWeightModel quote
     
         :flows
         f_NewBorn => f_birth <= f_NB
@@ -227,9 +227,9 @@ using Catlab.CategoricalAlgebra
         rage => rage <= rageCA, rageAS
         _ => rFstOrder <= _
     
-    end) 
+    end 
     
-    age_weight_4 =  sfstratify(WeightModel, l_type, ageWeightModel, quote
+    age_weight_4 =  @stratify WeightModel l_type ageWeightModel quote
     
         :flows
         ~NO_MATCHES => f_birth <= ~NO_MATCHES
@@ -252,7 +252,7 @@ using Catlab.CategoricalAlgebra
         rage => rage <= rageCA, rageAS
         _ => rFstOrder <= _
     
-    end) 
+    end
 
 
 
@@ -385,7 +385,8 @@ end
 
     @test_throws AssertionError (sfstratify(A_, X_, B_, strat_AXB, strict_matches=true)) # A matches against A and ~A, which is disallowed with this flag.
 
-    @test_throws ErrorException (sfstratify(sfA,sfA,sfA,(quote end), strict_mappings=true)) # strict_mappings=false wouldn't throw an error, and would infer strata and aggregate need to map to the only stock.
+    @test_throws ErrorException (sfstratify(sfA,sfA,sfA,(quote end) ; strict_mappings=true)) # strict_mappings=false wouldn't throw an error, and would infer strata and aggregate need to map to the only stock.
+
 
     nothing_sfA = map(sfA, Position=NothingFunction, Op=NothingFunction, Name=NothingFunction)
 
