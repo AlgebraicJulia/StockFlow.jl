@@ -1,3 +1,6 @@
+using Pkg;
+Pkg.activate(".")
+
 using Test
 using StockFlow
 using StockFlow.Syntax
@@ -8,29 +11,28 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
     empty_sf = StockAndFlowF()
 
 
-    @test sfcompose(quote # composing no stock flows returns an empty stock flow.
+    @test (@compose (quote # composing no stock flows returns an empty stock flow.
         ()
-    end) == empty_sf
+    end)) == empty_sf
 
-    @test sfcompose(empty_sf, quote
+    @test (@compose empty_sf quote
         (sf,)
     end) == empty_sf
 
-    @test sfcompose((@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; B; end;), quote
+    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; B; end;) (quote
         (sf1, sf2)
-    end) == (@stock_and_flow begin; :stocks; A; B; end;) # Combining without any composing
+    end)) == (@stock_and_flow begin; :stocks; A; B; end;) # Combining without any composing
 
-    @test sfcompose((@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;), quote
+    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; A; end;) (quote
         (sf1, sf2)
-    end) == (@stock_and_flow begin; :stocks; A; A; end;)
+    end)) == (@stock_and_flow begin; :stocks; A; A; end;)
 
-    @test sfcompose((@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;), quote
+    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; A; end;) (quote
         (sf1, sf2)
         sf1, sf2 ^ A => ()
-    end) == (@stock_and_flow begin; :stocks; A; end;)
+    end)) == (@stock_and_flow begin; :stocks; A; end;)
 
-    @test (sfcompose(
-        (@stock_and_flow begin
+    @test ((@compose (@stock_and_flow begin
         :stocks
         A
         B
@@ -40,8 +42,7 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
 
         :sums
         N = [A,B]
-    end),
-        (@stock_and_flow begin
+    end) (@stock_and_flow begin
             :stocks
             B
             C
@@ -51,11 +52,10 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
 
             :sums
             N = [B,C]
-        end),
-        quote
+        end) (quote
             (sfA, sfC)
             sfA, sfC ^ B => N
-        end)
+        end))
         ==
         (@stock_and_flow begin
             :stocks
@@ -69,8 +69,8 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
 
             :sums
             N = [A, B, C]
-        end)
-        )
+        end))
+        
 
 
 end
@@ -96,16 +96,16 @@ end
 end
 
 @testset "invalid sfcompose calls fail" begin
-    @test_throws AssertionError sfcompose((@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;), quote
+    @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1, sf2)
         sf1, sf2 ^ () => ()
     end) # not allowed to map to empty
-    @test_throws AssertionError sfcompose((@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;), quote
+    @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1, sf2)
         sf1 ^ A => ()
         sf2 ^ A => ()
     end) # not allowed to map to the same foot twice
-    @test_throws AssertionError sfcompose((@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;), quote
+    @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1,)
         sf1 ^ A => ()
     end) # incorrect number of symbols on the first line in the quote

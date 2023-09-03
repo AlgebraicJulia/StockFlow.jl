@@ -1,5 +1,5 @@
 module Composition
-export sfcompose
+export sfcompose, @compose
 
 using ...StockFlow
 using ..Syntax
@@ -79,24 +79,13 @@ Cannot use () => () as a foot,
 the length of the first tuple must be the same as the number of stock flows given as argument,
 and every foot can only be used once.
 """
-function sfcompose(args...) #(sf1, sf2, ..., block)
+function sfcompose(sfs::Vector{K}, block::Expr) where {K <: AbstractStockAndFlowF}#(sf1, sf2, ..., block)
 
-    @assert length(args) > 0 "Didn't get any arguments!"
-
-    block = args[end]
-    @assert typeof(block) == Expr "Didn't get an expression block for last argument!"
-    
-    sfs = args[1:end-1]
-
-
-    @assert all(sf -> typeof(sf) <: AbstractStockAndFlowF, sfs) "Not all arguments before the block are stock flows!"
 
 
     Base.remove_linenums!(block)
-    
-    sf_names::Vector{Symbol} = block.args[1].args # first line are the names you want to use for the ordered arguments.
-    # That is, first line needs to be a tuple, with the first argument being what you'll call the first stockflow
-
+    sf_names = block.args[1].args
+  
     if length(sfs) == 0 # Composing 0 stock flows should give you an empty stock flow
         return StockAndFlowF()
    end
@@ -157,5 +146,20 @@ function sfcompose(args...) #(sf1, sf2, ..., block)
     end
 
 end
+
+
+"""
+Compose models.
+"""
+macro compose(args...)
+    if length(args) == 0
+        return :(MethodError("No arguments provided!  Please provide some number of stockflows, then a quote block."))
+    elseif length(args) == 1
+        return Expr(:call, :sfcompose, :(Vector{AbstractStockAndFlowF}()), esc(args[1]))
+    else 
+        return Expr(:call, :sfcompose, Expr(:vect, esc.(args[1:end-1])...), esc(args[end]))
+    end
+end
+
 
 end
