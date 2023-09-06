@@ -401,3 +401,98 @@ end
 
 end
 
+
+
+
+@testset "n_stratify works as expected" begin
+
+
+    l_type = @stock_and_flow begin 
+        :stocks
+        pop
+        
+        :parameters
+        μ
+        δ
+        rFstOrder
+        rage
+        
+        :dynamic_variables
+        v_aging = pop * rage
+        v_fstOrder = pop * rFstOrder
+        v_birth = N * μ
+        v_death = pop * δ
+        
+        :flows
+        pop => f_aging(v_aging) => pop
+        pop => f_fstOrder(v_fstOrder) => pop
+        CLOUD => f_birth(v_birth) => pop
+        pop => f_death(v_death) => CLOUD
+        
+        :sums
+        N = [pop]
+        
+    end
+
+    chain_ltype = @stock_and_flow begin
+        :stocks
+        poppoppop
+    
+        :parameters
+        μμμ
+        δδδ
+        rFstOrderrFstOrderrFstOrder
+        rageragerage
+    
+        :dynamic_variables
+        v_agingv_agingv_aging = poppoppop * rageragerage
+        v_fstOrderv_fstOrderv_fstOrder = poppoppop * rFstOrderrFstOrderrFstOrder
+        v_birthv_birthv_birth = NNN * μμμ
+        v_deathv_deathv_death = poppoppop * δδδ
+    
+        :flows
+        poppoppop => f_agingf_agingf_aging(v_agingv_agingv_aging) => poppoppop
+        poppoppop => f_fstOrderf_fstOrderf_fstOrder(v_fstOrderv_fstOrderv_fstOrder) => poppoppop
+        CLOUD => f_birthf_birthf_birth(v_birthv_birthv_birth) => poppoppop
+        poppoppop => f_deathf_deathf_death(v_deathv_deathv_death) => CLOUD
+    
+        :sums
+        NNN = [poppoppop]
+    end
+
+    chain_ltype_nstratify = @n_stratify l_type l_type l_type l_type begin
+
+        :stocks
+        [(pop,), (~pop,), (_,)] => pop
+        
+        :parameters
+        [(μ,), (μ,), (μ,)] => μ
+        [(δ,), (δ,), (δ,)] => δ
+        [(rFstOrder,), (rFstOrder,), (rFstOrder,)] => rFstOrder
+        [(rage,), (rage,), (rage,)] => rage
+        
+        :dynamic_variables
+        [(v_aging,), (v_aging,), (v_aging,)] => v_aging
+        [(v_fstOrder,), (v_fstOrder,), (v_fstOrder,)] => v_fstOrder
+        [(v_birth,), (v_birth,), (v_birth,)] => v_birth
+        [(v_death,), (v_death,), (v_death,)] => v_death
+        
+        :flows
+        [(f_aging,), (f_aging,), (f_aging,)] => f_aging
+        [(f_fstOrder,), (f_fstOrder,), (f_fstOrder,)] => f_fstOrder
+        [(f_birth,), (f_birth,), (f_birth,)] => f_birth
+        [(f_death,), (f_death,), (f_death,)] => f_death
+        
+        :sums
+        [(N,), (N,), (N,)] => N
+    end
+
+    
+    @test chain_ltype == chain_ltype_nstratify
+        
+    
+end
+
+
+
+
