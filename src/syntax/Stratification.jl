@@ -121,11 +121,19 @@ end
 
 
 function interpret_stratification_generalized_notation(mapping_pair::Expr)::Vector{Vector{DSLArgument}}
+    # println(mapping_pair)
+    # println(mapping_pair.args)
+    # println(mapping_pair.args[1])
+    # println(mapping_pair.args[2])
+    # println(mapping_pair.args[3])
+    # println(typeof(mapping_pair.args[2].args[1].args))
     # TODO: add a crap ton of assert statements.
     # We're assuming it's gonna take the form [(a1, ..., an), ..., (k1, ..., km)] => t1
 
-    @assert length(mapping_pair.args) == 3 && typeof(mapping_pair.args[3]) == Symbol && length(mapping_pair.args[2]) && typeof(mapping_pair.args[2].args) == Vector
-
+    @assert length(mapping_pair.args) == 3 
+    @assert typeof(mapping_pair.args[3]) == Symbol
+    # @assert typeof(mapping_pair.args[2].args[1].args) == Vector
+    # length(mapping_pair.args[2][1]) &&
     # TODO: Include assert that length(mapping_pair.args[2].args) is the same as the number of stockflows
     # Maybe include an assert that each element of the vector contains only symbols
 
@@ -328,9 +336,9 @@ function sfstratify(others::Vector{K}, type::K, block::Expr ; use_standard_strat
 
     # STEP 8
 
-    pullback_model = pullback(all_transformations...) |> apex |> rebuildStratifiedModelByFlattenSymbols;
-  
-
+    # pullback_function = (prev, next) -> pullback(prev, next) |> apex |> rebuildStratifiedModelByFlattenSymbols;
+    # pullback_model = accumulate(pullback_function, all_transformations[2:end] ; init=all_transformations[1])
+    pullback_model = pullback(all_transformations) |> apex |> rebuildStratifiedModelByFlattenSymbols;
 
     if return_homs
         return pullback_model, all_transformations
@@ -390,11 +398,19 @@ macro n_stratify(args...)
     if length(args) < 2
         return :(MethodError("Too few arguments provided!  Please provide some number of stockflows, then the type stock flow, then a quote block."))
     else
-        # TODO: Potentially Expr(:quote, args[end])
-        if length(args) == 2
-            return Expr(:call, :sfnstratify, :(Vector{AbstractStockAndFlowF}()), esc(args[1]), esc(args[2]))
-        else 
-            return Expr(:call, :sfnstratify, Expr(:vect, esc.(args[1:end-2])...), esc(args[end-1]), esc(args[end]))
+
+
+        escaped_block = Expr(:quote, args[end])
+        other_sfs = esc.(args[1:end-2])
+        type = (esc(args[end-1]))
+        if length(other_sfs) == 0
+            quote
+                sfstratify(Vector{AbstractStockAndFlowF}, $type, $escaped_block ; use_standard_stratification_syntax = false)
+            end
+        else
+            quote
+                sfstratify([$(other_sfs...)], $type, $escaped_block ; use_standard_stratification_syntax = false)
+            end
         end
     end
 end
