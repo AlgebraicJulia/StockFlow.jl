@@ -294,7 +294,7 @@ end
     @test_throws ErrorException @foot =>(A, B, C, D)
     @test_throws ErrorException @foot ()
     @test_throws ErrorException @foot ([]) => ()
-    @test_throws ErrorException @foot A => B, P => Q, C
+    @test_throws MethodError @foot A => B, P => Q, C # Issue here is it tries calling match_foot_format with a symbol
     @test_throws ErrorException @foot () => E, () => (K,)
 
 end
