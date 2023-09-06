@@ -1,6 +1,6 @@
 using StockFlow.Syntax.Stratification
 
-using StockFlow.Syntax.Stratification: interpret_stratification_notation
+using StockFlow.Syntax.Stratification: interpret_stratification_standard_notation
 using StockFlow.Syntax: NothingFunction, DSLArgument, unwrap_expression, substitute_symbols
 
 using Catlab.WiringDiagrams
@@ -262,37 +262,37 @@ using Catlab.CategoricalAlgebra
     @test aged_weight == age_weight_4
 end
 
-@testset "Ensuring interpret_stratification_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
+@testset "Ensuring interpret_stratification_standard_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
     # Note the orders.  The lists produced go left to right.  A1, A2 => B <= C1, C2 results in [A1 => B, A2 => B], [C1 => B. C2 => B]
 
 
-    @test interpret_stratification_notation(:(A => B <= C)) == ([DSLArgument(:A, :B, Set{Symbol}())], [DSLArgument(:C, :B, Set{Symbol}())])
+    @test interpret_stratification_standard_notation(:(A => B <= C)) == [[DSLArgument(:A, :B, Set{Symbol}())], [DSLArgument(:C, :B, Set{Symbol}())]]
     
-    @test interpret_stratification_notation(:(A1, A2 => B <= C)) == (
+    @test interpret_stratification_standard_notation(:(A1, A2 => B <= C)) == [
         [DSLArgument(:A1, :B, Set{Symbol}()), DSLArgument(:A2, :B, Set{Symbol}())],
         [DSLArgument(:C, :B, Set{Symbol}())]
-    )
-    @test interpret_stratification_notation(:(A => B <= C1, C2)) == (
+    ]
+    @test interpret_stratification_standard_notation(:(A => B <= C1, C2)) == [
         [DSLArgument(:A, :B, Set{Symbol}())],
         [DSLArgument(:C1, :B, Set{Symbol}()), DSLArgument(:C2, :B, Set{Symbol}())],
-    )
-    @test interpret_stratification_notation(:(_ => B <= _)) == (
+    ]
+    @test interpret_stratification_standard_notation(:(_ => B <= _)) == [
         [DSLArgument(:_, :B, Set{Symbol}())],
         [DSLArgument(:_, :B, Set{Symbol}())],
-    )
-    @test interpret_stratification_notation(:(~A => B <= ~C)) == (
+    ]
+    @test interpret_stratification_standard_notation(:(~A => B <= ~C)) == [
         [DSLArgument(:A, :B, Set{Symbol}([:~]))],
         [DSLArgument(:C, :B, Set{Symbol}([:~]))],
-    )
-    @test interpret_stratification_notation(:(~A1, A2 => B <= ~C)) == (
+    ]
+    @test interpret_stratification_standard_notation(:(~A1, A2 => B <= ~C)) == [
         [DSLArgument(:A1, :B, Set{Symbol}([:~])), DSLArgument(:A2, :B, Set{Symbol}())],
         [DSLArgument(:C, :B, Set{Symbol}([:~]))],
-    )
+    ]
 
-    @test interpret_stratification_notation(:(~_ => B <= ~_, C)) == ( # Weird case.  Matches everything with _ as a substring.
+    @test interpret_stratification_standard_notation(:(~_ => B <= ~_, C)) == [ # Weird case.  Matches everything with _ as a substring.
         [DSLArgument(:_, :B, Set{Symbol}([:~]))],
         [DSLArgument(:_, :B, Set{Symbol}([:~])), DSLArgument(:C, :B, Set{Symbol}())]
-    )
+    ]
 
 end
 
@@ -368,7 +368,7 @@ end
 
     sfA = (@stock_and_flow begin; :stocks; A; end;)
 
-    @test (sfstratify(A_, X_, B_, strat_AXB, use_temp_strat_default=false)
+    @test (sfstratify([A_, B_], X_, strat_AXB, use_temp_strat_default=false)
     == (@stock_and_flow begin
         :stocks
         AB
@@ -376,27 +376,27 @@ end
     end))
 
     # doesn't show up anywhere, so doesn't affect anything.  Could also set it to something untypable in the DSL, like Symbol("")
-    @test (sfstratify(A_, X_, B_, strat_AXB, temp_strat_default=:ABABABABA) 
+    @test (sfstratify([A_, B_], X_, strat_AXB, temp_strat_default=:ABABABABA) 
     == (@stock_and_flow begin
         :stocks
         AB
         __
     end))
 
-    @test_throws AssertionError (sfstratify(A_, X_, B_, strat_AXB, strict_matches=true)) # A matches against A and ~A, which is disallowed with this flag.
+    @test_throws AssertionError (sfstratify([A_, B_], X_, strat_AXB, strict_matches=true)) # A matches against A and ~A, which is disallowed with this flag.
 
-    @test_throws ErrorException (sfstratify(sfA,sfA,sfA,(quote end) ; strict_mappings=true)) # strict_mappings=false wouldn't throw an error, and would infer strata and aggregate need to map to the only stock.
+    @test_throws ErrorException (sfstratify([sfA,sfA],sfA,(quote end) ; strict_mappings=true)) # strict_mappings=false wouldn't throw an error, and would infer strata and aggregate need to map to the only stock.
 
 
     nothing_sfA = map(sfA, Position=NothingFunction, Op=NothingFunction, Name=NothingFunction)
 
-    @test (sfstratify(sfA,sfA,sfA,(quote end), return_homs=true) == (
+    @test (sfstratify([sfA,sfA],sfA,(quote end), return_homs=true) == (
     (@stock_and_flow begin
         :stocks
         AA
     end),
-    ACSetTransformation(sfA, nothing_sfA ; S=[1], F=Vector{Int}(),V =Vector{Int}(),SV=Vector{Int}(),P=Vector{Int}(),LS=Vector{Int}(),I=Vector{Int}(),O=Vector{Int}(),LV=Vector{Int}(),LSV=Vector{Int}(),LVV=Vector{Int}(),LPV=Vector{Int}(), Position=NothingFunction, Op=NothingFunction, Name=NothingFunction), # strata -> type
-    ACSetTransformation(sfA, nothing_sfA ; S=[1], F=Vector{Int}(),V =Vector{Int}(),SV=Vector{Int}(),P=Vector{Int}(),LS=Vector{Int}(),I=Vector{Int}(),O=Vector{Int}(),LV=Vector{Int}(),LSV=Vector{Int}(),LVV=Vector{Int}(),LPV=Vector{Int}(), Position=NothingFunction, Op=NothingFunction, Name=NothingFunction) # aggregate -> type
+    [ACSetTransformation(sfA, nothing_sfA ; S=[1], F=Vector{Int}(),V =Vector{Int}(),SV=Vector{Int}(),P=Vector{Int}(),LS=Vector{Int}(),I=Vector{Int}(),O=Vector{Int}(),LV=Vector{Int}(),LSV=Vector{Int}(),LVV=Vector{Int}(),LPV=Vector{Int}(), Position=NothingFunction, Op=NothingFunction, Name=NothingFunction), # strata -> type
+    ACSetTransformation(sfA, nothing_sfA ; S=[1], F=Vector{Int}(),V =Vector{Int}(),SV=Vector{Int}(),P=Vector{Int}(),LS=Vector{Int}(),I=Vector{Int}(),O=Vector{Int}(),LV=Vector{Int}(),LSV=Vector{Int}(),LVV=Vector{Int}(),LPV=Vector{Int}(), Position=NothingFunction, Op=NothingFunction, Name=NothingFunction)] # aggregate -> type
     )) # the empty lists are necessary for equality, but it'd still be an equivalent homomorphism if you didn't specify them.
 
 end
