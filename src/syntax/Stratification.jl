@@ -121,22 +121,7 @@ end
 
 
 function interpret_stratification_generalized_notation(mapping_pair::Expr)::Vector{Vector{DSLArgument}}
-    # println(mapping_pair)
-    # println(mapping_pair.args)
-    # println(mapping_pair.args[1])
-    # println(mapping_pair.args[2])
-    # println(mapping_pair.args[3])
-    # println(typeof(mapping_pair.args[2].args[1].args))
-    # TODO: add a crap ton of assert statements.
-    # We're assuming it's gonna take the form [(a1, ..., an), ..., (k1, ..., km)] => t1
-
-    @assert length(mapping_pair.args) == 3 
-    @assert typeof(mapping_pair.args[3]) == Symbol
-    # @assert typeof(mapping_pair.args[2].args[1].args) == Vector
-    # length(mapping_pair.args[2][1]) &&
-    # TODO: Include assert that length(mapping_pair.args[2].args) is the same as the number of stockflows
-    # Maybe include an assert that each element of the vector contains only symbols
-
+    # asserts are covered before this function is called.
     other = mapping_pair.args[2].args # needs to be a vector of tuples of symbols
     type = mapping_pair.args[3] # needs to be a symbol
     return [[DSLArgument(sym, type) for sym ∈ tup.args] for tup ∈ other]
@@ -154,6 +139,14 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, other_nam
         interpret_stratification_notation_function = interpret_stratification_standard_notation
     else
         interpret_stratification_notation_function = interpret_stratification_generalized_notation
+
+        # need to do this here, since we know the number of other_mappings at this point, but not in the interpret_stratification_notation
+        @assert length(line.args) == 3 
+        @assert typeof(line.args[3]) == Symbol
+        @assert line.args[1] == :(=>)
+        @assert length(line.args[2].args) == length(other_names)
+        @assert all(tup -> length(tup.args) == 1, line.args[2].args) # every element of the vector is an expression of tuple.
+        @assert all(tup -> all(sym -> typeof(sym) <: Union{Symbol, Expr}, tup.args), line.args[2].args) # ensure all arguments in the tuples are expressions or symbols.
     end
     
     current_symbol_dict::Vector{Vector{DSLArgument}} = interpret_stratification_notation_function(line)
@@ -211,7 +204,7 @@ end
 """
 Apply default mappings, infer mapping if there's only a single option, and convert from Dict{Int, Int} to Vector{Int}
 """
-function complete_mappings!(sfm::SFNames, sftype::AbstractStockAndFlowF; strict_mappings = false)
+function complete_mappings!(sfm::SFNames, sftype::SFNames; strict_mappings = false)
     # get the default value, if it has been assigned.  Use 0 if it hasn't.
     all_index_mappings = get_mappings(sfm)
 
@@ -225,11 +218,11 @@ function complete_mappings!(sfm::SFNames, sftype::AbstractStockAndFlowF; strict_
 
     # STEP 3
     if !strict_mappings
-        one_type_stock = length(snames(sftype)) == 1 ? 1 : 0 # if there is only one stock, it needs to have index 1
-        one_type_flow = length(fnames(sftype)) == 1 ? 1 : 0
-        one_type_dyvar = length(vnames(sftype)) == 1 ? 1 : 0
-        one_type_param = length(pnames(sftype)) == 1 ? 1 : 0
-        one_type_sum = length(svnames(sftype)) == 1 ? 1 : 0
+        one_type_stock = length(sftype.snames) == 1 ? 1 : 0 # if there is only one stock, it needs to have index 1
+        one_type_flow = length(sftype.fnames) == 1 ? 1 : 0
+        one_type_dyvar = length(sftype.vnames) == 1 ? 1 : 0
+        one_type_param = length(sftype.pnames) == 1 ? 1 : 0
+        one_type_sum = length(sftype.svnames) == 1 ? 1 : 0
     else
         one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
     end
@@ -294,7 +287,7 @@ function sfstratify(others::Vector{K}, type::K, block::Expr ; use_standard_strat
     iterate_over_stratification_lines!(block, other_names, type_names ; use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
 
 
-    (sfn -> complete_mappings!(sfn, type ; strict_mappings=strict_mappings)).(other_names)
+    (sfn -> complete_mappings!(sfn, type_names ; strict_mappings=strict_mappings)).(other_names)
 
     # STEP 4
 
