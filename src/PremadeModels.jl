@@ -48,8 +48,8 @@ seir_model = @stock_and_flow begin
         tlatent
         trecovery
         δ
-        c 
-        
+        c
+
 
         :dynamic_variables
         v_prevalence = NI / NS
@@ -61,14 +61,14 @@ seir_model = @stock_and_flow begin
 
         v_inf = E / tlatent
 
-        v_rec = I / trecovery 
+        v_rec = I / trecovery
 
 
-        v_deathS = δ * S       
+        v_deathS = δ * S
         v_deathE = δ * E
         v_deathI = δ * I
         v_deathR = δ * R
-        
+
 
         :flows
         CLOUD => f_birth(v_birth) => S
@@ -92,7 +92,7 @@ sis_model = @stock_and_flow begin
     S
     I
 
-    
+
     :parameters
     μ
     β
@@ -100,7 +100,7 @@ sis_model = @stock_and_flow begin
     δ
     c
 
-      
+
     :dynamic_variables
     v_deathsX = δ * S
     v_births = μ * N
@@ -126,7 +126,7 @@ sis_model = @stock_and_flow begin
     N = [S, I]
     NI = [I]
     NS = [S, I]
-  
+
 end
 
 
@@ -135,35 +135,35 @@ sir_model = @stock_and_flow begin
     S
     I
     R
-    
+
     :parameters
     c
     β
     rRec
-    
+
     :dynamic_variables
     v_prevalence = NI / NS
     v_meanInfectiousContactsPerS = c * v_prevalence
     v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
     v_newInfections = S * v_perSIncidenceRate
     v_newRecovery = I * rRec
-    
+
     :flows
     S => f_inf(v_newInfections) => I
     I => f_rec(v_newRecovery) => R
-    
+
     :sums
     N = [S, I, R]
     NI = [I]
     NS = [S,I,R]
-    
-    
+
+
 end
 
 
 
 svi_model = @stock_and_flow begin
-    
+
     :stocks
     S
     V
@@ -177,9 +177,9 @@ svi_model = @stock_and_flow begin
     β
 
     :dynamic_variables
-    v_vacc = S * rvaccine 
+    v_vacc = S * rvaccine
     v_deathV = δ * V
-    
+
     v_prevalence = NI / NS
     v_meanInfectiousContactsPerS = c * v_prevalence
     v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
@@ -190,9 +190,9 @@ svi_model = @stock_and_flow begin
     :flows
     S => f_vacc(v_vacc) => V
     V => f_deathV(v_deathV) => CLOUD
-    V => f_infV(v_perSIncidenceVaccinated) => I 
+    V => f_infV(v_perSIncidenceVaccinated) => I
 
-    
+
     :sums
     N = [S, V, I]
     NI = [I]
