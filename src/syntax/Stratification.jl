@@ -81,7 +81,7 @@ function print_unmapped(mappings::Vector{Pair{Vector{Int}, Vector{Symbol}}}, nam
 end
 
 """
-Iterates over each line in a stratification quoteblock and updates the appropriate dictionaries.
+Iterates over each line in a stratification syntax block and updates the appropriate dictionaries.
 """
 function iterate_over_stratification_lines!(block, strata_names, type_names, aggregate_names, strata_mappings, aggregate_mappings; strict_matches=false, use_flags=true)
     current_phase = (_, _) -> ()
@@ -165,18 +165,17 @@ end
 """
     sfstratify(strata, type, aggregate, block ; kwargs)
 
-    Ok, so the general idea here is:
     1. Grab all names from strata, type and aggregate, and create dictionaries which map them to their indices
-    2. iterate over each line in the block
+    2. Iterate over each line in the block
         2a. Split each line into a dictionary which maps all strata to that type and all aggregate to that type
         2b. Convert from two Symbol => Symbol dictionaries to two Int => Int dictionaries, using the dictionaries from step 1
-            2bα. If applicable, for symbols with temp_strat_default as a prefix, find all matching symbols in the symbol dictionaries, and map all those
+            2bα. If applicable, for symbols with ~ as a prefix, find all symbols with matching substrings in the symbol dictionaries, and map all those
         2c. Accumulate respective dictionaries (optionally, only allow first match vs throw an error (strict_matches = false vs true))
     3. Create an array of 0s for stocks, flows, parameters, dyvars and sums for strata and aggregate.   Insert into arrays all values from the two Int => Int dictionaries
         3a. If strict_mappings = false, if there only exists one option in type to map to, and it hasn't been explicitly specified, add it.  If strict_mappings = true and it hasn't been specified, throw an error.
     4. Do a once-over of arrays and ensure there aren't any zeroes (unmapped values) remaining (helps with debugging when you screw up stratifying)
     5. Deal with attributes (create a copy of type sf with attributes mapped to nothing)
-    6. Infer LS, LSV, etc., if possible.
+    6. Infer LS, LSV, etc.
     7. Construct strata -> type and aggregate -> type ACSetTransformations
     8. Return pullback (with flattened attributes)
 """
@@ -310,7 +309,7 @@ end
 
 """
     stratify(strata, type, aggregate, block)
-Take three stockflows and a quote block describing where the first and third map on to the second, and get a new stratified stockflow.
+Take three stockflows and a block describing where the first and third map on to the second, and get a new stratified stockflow.
 Left side are strata objects, middle are type, right are aggregate.  Each strata and aggregate object is associated with one type object.
 The resultant stockflow contains objects which are the product of strata and aggregate objects which map to the same type object.
 Use _ to match all objects in that category, ~ as a prefix to match all objects with the following string as a substring.  Objects always go with their first match.
@@ -348,8 +347,9 @@ end
 ```
 """
 macro stratify(strata, type, aggregate, block)
-   quote
-        sfstratify($(esc(strata)), $(esc(type)), $(esc(aggregate)), $(esc(block)))
+    escaped_block = Expr(:quote, block)
+    quote
+        sfstratify($(esc(strata)), $(esc(type)), $(esc(aggregate)), $(esc(escaped_block)))
     end
 end
 

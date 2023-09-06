@@ -179,7 +179,7 @@ using Catlab.CategoricalAlgebra
     
     # #########################################
     
-    age_weight_2 = @stratify WeightModel l_type ageWeightModel quote 
+    age_weight_2 = @stratify WeightModel l_type ageWeightModel begin 
         :stocks
         NormalWeight, OverWeight, Obese => pop <= Child, Adult, Senior
     
@@ -207,7 +207,7 @@ using Catlab.CategoricalAlgebra
     end
     #########################################
     
-    age_weight_3 =  @stratify WeightModel l_type ageWeightModel quote
+    age_weight_3 =  @stratify WeightModel l_type ageWeightModel begin
     
         :flows
         f_NewBorn => f_birth <= f_NB
@@ -229,7 +229,7 @@ using Catlab.CategoricalAlgebra
     
     end 
     
-    age_weight_4 =  @stratify WeightModel l_type ageWeightModel quote
+    age_weight_4 =  @stratify WeightModel l_type ageWeightModel begin
     
         :flows
         ~NO_MATCHES => f_birth <= ~NO_MATCHES
@@ -358,7 +358,7 @@ end
         _
     end)
 
-    strat_AXB = (quote
+    strat_AXB = (quote # Note, we use a quote when calling the function, begin when calling the macro.
     :stocks
     _ => _ <= _
     A => X <= B
