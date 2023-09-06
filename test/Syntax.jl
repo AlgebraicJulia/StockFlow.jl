@@ -288,16 +288,14 @@ end
 end
 
 @testset "foot syntax disallows invalid feet" begin # note, @feet calls create_foot for each line, so this should apply to both @foot and @feet
-    @test_throws Exception create_foot(:(A => B => C)) # Invalid syntax for second argument of foot: B => C
-    @test_throws Exception create_foot(:(oooo2 + f => C)) # Invalid syntax for first argument of foot: oooo2 + f
-    @test_throws Exception create_foot(:(A + B)) # Invalid syntax function for foot: +
-    @test_throws Exception create_foot(:(=>)) # no method matching create_foot(::Symbol)
-    @test_throws Exception create_foot(:(=>(A, B, C, D)))
-    @test_throws Exception create_foot(:())
-    @test_throws Exception create_foot(:(([]) => ()))
-
-    @test_throws Exception create_foot(:(A => B, P => Q, C))
-    @test_throws Exception create_foot(:(() => E, () => (K,)))
+    @test_throws ErrorException @foot A => B => C # Invalid syntax for second argument of foot: B => C
+    @test_throws ErrorException @foot oooo2 + f => C # Invalid syntax for first argument of foot: oooo2 + f
+    @test_throws ErrorException @foot A + B # Invalid syntax function for foot: +
+    @test_throws ErrorException @foot =>(A, B, C, D)
+    @test_throws ErrorException @foot ()
+    @test_throws ErrorException @foot ([]) => ()
+    @test_throws ErrorException @foot A => B, P => Q, C
+    @test_throws ErrorException @foot () => E, () => (K,)
 
 end
 
@@ -339,7 +337,7 @@ end
 end
 
 @testset "feet syntax fails on invalid feet" begin # mostly to check that an exception is thrown even if some of the feet are valid.
-    @test_throws Exception @eval @feet A => B => C # eval required so the errors occur at runtime, rather than at compilation
-    @test_throws Exception @eval @feet begin A => B; =>(D,E,F) end
-    @test_throws Exception @eval @feet begin A => B; 1 => 2; end
+    @test_throws ErrorException @feet A => B => C # eval required so the errors occur at runtime, rather than at compilation
+    @test_throws ErrorException @feet begin A => B; =>(D,E,F) end
+    @test_throws ErrorException @feet begin A => B; 1 => 2; end
 end
