@@ -1,3 +1,12 @@
+using Pkg;
+Pkg.activate(".")
+using StockFlow
+using StockFlow.Syntax
+using Test
+
+
+
+
 using StockFlow.Syntax.Stratification
 
 using StockFlow.Syntax.Stratification: interpret_stratification_standard_notation
@@ -69,7 +78,7 @@ using Catlab.CategoricalAlgebra
         
         :flows
         CLOUD => f_NewBorn(v_NewBorn) => NormalWeight
-        NormalWeight => f_DeathNormalWeight(v_DeathNormalWeight) => ClOUD
+        NormalWeight => f_DeathNormalWeight(v_DeathNormalWeight) => CLOUD
         NormalWeight => f_BecomingOverWeight(v_BecomingOverWeight) => OverWeight
         OverWeight => f_DeathOverWeight(v_DeathOverWeight) => CLOUD
         
@@ -463,7 +472,7 @@ end
     chain_ltype_nstratify = @n_stratify l_type l_type l_type l_type begin
 
         :stocks
-        [(pop,), (~pop,), (_,)] => pop
+        [pop, ~pop, _] => pop
         
         :parameters
         [(μ,), (μ,), (μ,)] => μ
@@ -489,6 +498,36 @@ end
 
     
     @test chain_ltype == chain_ltype_nstratify
+
+
+
+    # empty_ltype_nstratify = @n_stratify l_type begin
+    #     :stocks
+	# [] => pop
+        
+    #     :parameters
+	# [] => μ
+	# [] => δ
+	# [] => rFstOrder
+	# [] => rage
+        
+    #     :dynamic_variables
+	# [] => v_aging
+	# [] => v_fstOrder
+	# [] => v_birth
+	# [] => v_death
+        
+    #     :flows
+	# [] => f_aging
+	# [] => f_fstOrder
+	# [] => f_birth
+	# [] => f_death
+        
+    #     :sums
+	# [] => N
+    # end
+
+    # @test empty_ltype_nstratify == StockAndFlowF() # Pretty sure this is right...
         
     
 end

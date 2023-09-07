@@ -124,7 +124,7 @@ function interpret_stratification_generalized_notation(mapping_pair::Expr)::Vect
     # asserts are covered before this function is called.
     other = mapping_pair.args[2].args # needs to be a vector of tuples of symbols
     type = mapping_pair.args[3] # needs to be a symbol
-    return [[DSLArgument(sym, type) for sym ∈ tup.args] for tup ∈ other]
+    return [((typeof(tup) == Expr) && (tup.head == :tuple)) ? [DSLArgument(sym, type) for sym ∈ tup.args] : [DSLArgument(tup, type)] for tup ∈ other]
 end
 
 
@@ -145,8 +145,10 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, other_nam
         @assert typeof(line.args[3]) == Symbol
         @assert line.args[1] == :(=>)
         @assert length(line.args[2].args) == length(other_names)
-        @assert all(tup -> length(tup.args) == 1, line.args[2].args) # every element of the vector is an expression of tuple.
-        @assert all(tup -> all(sym -> typeof(sym) <: Union{Symbol, Expr}, tup.args), line.args[2].args) # ensure all arguments in the tuples are expressions or symbols.
+        @assert all(tup -> typeof(tup) == Symbol || tup.args[1] == :~ || length(tup.args) == 1, line.args[2].args) # every element of the vector is an expression of tuple.
+        @assert all(tup -> typeof(tup) == Symbol || tup.args[1] == :~ || all(sym -> typeof(sym) <: Union{Symbol, Expr}, tup.args), line.args[2].args) # ensure all arguments in the tuples are expressions or symbols.
+        # In the future, if we have additional flags, may need to check for them as well.
+        # These asserts are a bit sloppy
     end
     
     current_symbol_dict::Vector{Vector{DSLArgument}} = interpret_stratification_notation_function(line)
@@ -180,19 +182,19 @@ function iterate_over_stratification_lines!(block, other_names::Vector{SFNames},
     for statement in block.args
         @match statement begin
             QuoteNode(:stocks) => begin
-                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, getfield.(other_names, :s), type_names.s, getfield.(other_names, :ms); use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
+                current_phase = s -> read_stratification_line_and_update_dictionaries!(s, (getfield.(other_names, :s))::Vector{Dict{Symbol, Int}}, type_names.s, (getfield.(other_names, :ms))::Vector{Dict{Int, Int}}; use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
             end
             QuoteNode(:sums) => begin
-                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, getfield.(other_names, :sv), type_names.sv, getfield.(other_names, :msv); use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
+                current_phase = sv -> read_stratification_line_and_update_dictionaries!(sv, (getfield.(other_names, :sv))::Vector{Dict{Symbol, Int}}, type_names.sv, (getfield.(other_names, :msv))::Vector{Dict{Int, Int}}; use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
             end        
             QuoteNode(:dynamic_variables) => begin
-                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, getfield.(other_names, :v), type_names.v, getfield.(other_names, :mv); use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
+                current_phase = v -> read_stratification_line_and_update_dictionaries!(v, (getfield.(other_names, :v))::Vector{Dict{Symbol, Int}}, type_names.v, (getfield.(other_names, :mv))::Vector{Dict{Int, Int}}; use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
             end       
             QuoteNode(:flows) => begin
-                current_phase = f -> read_stratification_line_and_update_dictionaries!(f,getfield.(other_names, :f), type_names.f, getfield.(other_names, :mf); use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
+                current_phase = f -> read_stratification_line_and_update_dictionaries!(f, (getfield.(other_names, :f))::Vector{Dict{Symbol, Int}}, type_names.f, (getfield.(other_names, :mf))::Vector{Dict{Int, Int}}; use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
             end                    
             QuoteNode(:parameters) => begin
-                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, getfield.(other_names, :p), type_names.p, getfield.(other_names, :mp); use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
+                current_phase = p -> read_stratification_line_and_update_dictionaries!(p, (getfield.(other_names, :p))::Vector{Dict{Symbol, Int}}, type_names.p, (getfield.(other_names, :mp))::Vector{Dict{Int, Int}}; use_standard_stratification_syntax=use_standard_stratification_syntax, strict_matches=strict_matches, use_flags=use_flags)
             end
             QuoteNode(kw) =>
                 error("Unknown block type for stratify syntax: " * String(kw))
@@ -387,23 +389,19 @@ macro stratify(strata, type, aggregate, block)
     end
 end
 
+
+```
+Alternate syntax for stratification, allows for an arbitrary number of stockflows in a pullback.
+Second last argument must be the type stockflow, last must be the block describing how the stratificaition is done.  All arguments before that must be stockflows.
+
+
+```
 macro n_stratify(args...)
-    if length(args) < 2
+    if length(args) < 3
         return :(MethodError("Too few arguments provided!  Please provide some number of stockflows, then the type stock flow, then a quote block."))
     else
-
-
-        escaped_block = Expr(:quote, args[end])
-        other_sfs = esc.(args[1:end-2])
-        type = (esc(args[end-1]))
-        if length(other_sfs) == 0
-            quote
-                sfstratify(Vector{AbstractStockAndFlowF}, $type, $escaped_block ; use_standard_stratification_syntax = false)
-            end
-        else
-            quote
-                sfstratify([$(other_sfs...)], $type, $escaped_block ; use_standard_stratification_syntax = false)
-            end
+        quote
+            sfstratify([$(other_sfs...)], $type, $escaped_block ; use_standard_stratification_syntax = false)
         end
     end
 end
