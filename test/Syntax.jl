@@ -394,7 +394,7 @@ end
             p_rec
 
 
-            :flowssaff_args
+            :flows
             S => f_StoI(p_inf * S) => I
             I => f_ItoR(I * p_rec) => R
 
