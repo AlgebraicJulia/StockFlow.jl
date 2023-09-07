@@ -1,12 +1,3 @@
-using Pkg;
-Pkg.activate(".")
-using StockFlow
-using StockFlow.Syntax
-using Test
-
-
-
-
 using StockFlow.Syntax.Stratification
 
 using StockFlow.Syntax.Stratification: interpret_stratification_standard_notation
@@ -263,12 +254,64 @@ using Catlab.CategoricalAlgebra
     
     end
 
+    age_weight_5 = @n_stratify WeightModel ageWeightModel l_type begin
+        :stocks
+        [_, _] => pop
+        
+        :flows
+        [~Death, ~Death] => f_death
+        [~id, ~aging] => f_aging 
+        [~Becoming, ~id] => f_fstOrder
+        [_, f_NB] => f_birth
+    
+        
+        :dynamic_variables
+        [v_NewBorn, v_NB] => v_birth
+        [~Death, ~Death] => v_death
+        [~id, (v_agingCA, v_agingAS)] => v_aging
+        [(v_BecomingOverWeight, v_BecomingObese), (v_idC, v_idA, v_idS)] => v_fstOrder
+        
+        :parameters
+        [μ, μ] => μ
+        [(δw, δo), (δC, δA, δS)] => δ
+        [(rw, ro), r] => rFstOrder
+        [rage, (rageCA, rageAS)] => rage
+        
+        :sums
+        [N,N] => N
+    end
+
+    age_weight_6 = @n_stratify WeightModel ageWeightModel l_type begin
+
+        :flows
+        [~Death, ~Death] => f_death
+        [~id, ~aging] => f_aging 
+        [~Becoming, ~id] => f_fstOrder
+        [_, f_NB] => f_birth
+    
+        
+        :dynamic_variables
+        [v_NewBorn, v_NB] => v_birth
+        [~Death, ~Death] => v_death
+        [~id, (v_agingCA, v_agingAS)] => v_aging
+        [(v_BecomingOverWeight, v_BecomingObese), (v_idC, v_idA, v_idS)] => v_fstOrder
+        
+        :parameters
+        [μ, μ] => μ
+        [(δw, δo), (δC, δA, δS)] => δ
+        [(rw, ro), r] => rFstOrder
+        [rage, (rageCA, rageAS)] => rage
+
+    end
 
 
 
     @test aged_weight == age_weight_2
     @test aged_weight == age_weight_3
     @test aged_weight == age_weight_4
+    @test aged_weight == age_weight_5
+    @test aged_weight == age_weight_6
+
 end
 
 @testset "Ensuring interpret_stratification_standard_notation correctly reads lines" begin # This should be all valid cases.  There's always going to be at least one value on both sides.
@@ -475,59 +518,59 @@ end
         [pop, ~pop, _] => pop
         
         :parameters
-        [(μ,), (μ,), (μ,)] => μ
-        [(δ,), (δ,), (δ,)] => δ
-        [(rFstOrder,), (rFstOrder,), (rFstOrder,)] => rFstOrder
-        [(rage,), (rage,), (rage,)] => rage
+        [μ, μ, μ] => μ
+        [δ, δ, δ] => δ
+        [rFstOrder, rFstOrder, rFstOrder] => rFstOrder
+        [rage, rage, rage] => rage
         
         :dynamic_variables
-        [(v_aging,), (v_aging,), (v_aging,)] => v_aging
-        [(v_fstOrder,), (v_fstOrder,), (v_fstOrder,)] => v_fstOrder
-        [(v_birth,), (v_birth,), (v_birth,)] => v_birth
-        [(v_death,), (v_death,), (v_death,)] => v_death
+        [v_aging, v_aging, v_aging] => v_aging
+        [v_fstOrder, v_fstOrder, v_fstOrder] => v_fstOrder
+        [v_birth, v_birth, v_birth] => v_birth
+        [v_death, v_death, v_death] => v_death
         
         :flows
-        [(f_aging,), (f_aging,), (f_aging,)] => f_aging
-        [(f_fstOrder,), (f_fstOrder,), (f_fstOrder,)] => f_fstOrder
-        [(f_birth,), (f_birth,), (f_birth,)] => f_birth
-        [(f_death,), (f_death,), (f_death,)] => f_death
+        [f_aging, f_aging, f_aging] => f_aging
+        [f_fstOrder, f_fstOrder, f_fstOrder] => f_fstOrder
+        [f_birth, f_birth, f_birth] => f_birth
+        [f_death, f_death, f_death] => f_death
         
         :sums
-        [(N,), (N,), (N,)] => N
+        [N, N, N] => N
     end
 
     
     @test chain_ltype == chain_ltype_nstratify
 
 
+    ltype_nstratify = @n_stratify l_type l_type begin
 
-    # empty_ltype_nstratify = @n_stratify l_type begin
-    #     :stocks
-	# [] => pop
+        :stocks
+        [pop] => pop
         
-    #     :parameters
-	# [] => μ
-	# [] => δ
-	# [] => rFstOrder
-	# [] => rage
+        :parameters
+        [μ] => μ
+        [δ] => δ
+        [rFstOrder] => rFstOrder
+        [rage] => rage
         
-    #     :dynamic_variables
-	# [] => v_aging
-	# [] => v_fstOrder
-	# [] => v_birth
-	# [] => v_death
+        :dynamic_variables
+        [v_aging] => v_aging
+        [v_fstOrder] => v_fstOrder
+        [v_birth] => v_birth
+        [v_death] => v_death
         
-    #     :flows
-	# [] => f_aging
-	# [] => f_fstOrder
-	# [] => f_birth
-	# [] => f_death
+        :flows
+        [f_aging] => f_aging
+        [f_fstOrder] => f_fstOrder
+        [f_birth] => f_birth
+        [f_death] => f_death
         
-    #     :sums
-	# [] => N
-    # end
+        :sums
+        [N] => N
+    end
 
-    # @test empty_ltype_nstratify == StockAndFlowF() # Pretty sure this is right...
+    @test ltype_nstratify == l_type
         
     
 end

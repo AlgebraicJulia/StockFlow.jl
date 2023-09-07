@@ -145,7 +145,7 @@ function read_stratification_line_and_update_dictionaries!(line::Expr, other_nam
         @assert typeof(line.args[3]) == Symbol
         @assert line.args[1] == :(=>)
         @assert length(line.args[2].args) == length(other_names)
-        @assert all(tup -> typeof(tup) == Symbol || tup.args[1] == :~ || length(tup.args) == 1, line.args[2].args) # every element of the vector is an expression of tuple.
+        @assert all(tup -> typeof(tup) == Symbol || tup.args[1] == :~ || tup.head == :tuple, line.args[2].args) # every element of the vector is an expression of tuple.
         @assert all(tup -> typeof(tup) == Symbol || tup.args[1] == :~ || all(sym -> typeof(sym) <: Union{Symbol, Expr}, tup.args), line.args[2].args) # ensure all arguments in the tuples are expressions or symbols.
         # In the future, if we have additional flags, may need to check for them as well.
         # These asserts are a bit sloppy
@@ -400,6 +400,9 @@ macro n_stratify(args...)
     if length(args) < 3
         return :(MethodError("Too few arguments provided!  Please provide some number of stockflows, then the type stock flow, then a quote block."))
     else
+        escaped_block = Expr(:quote, args[end])
+        other_sfs = esc.(args[1:end-2])
+        type = (esc(args[end-1]))
         quote
             sfstratify([$(other_sfs...)], $type, $escaped_block ; use_standard_stratification_syntax = false)
         end
