@@ -8,6 +8,7 @@ using Catlab.GATs.Presentations # Not required here.
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames
 
+
 @present TheoryCausalLoop(FreeSchema) begin
   E::Ob
   N::Ob
@@ -31,6 +32,10 @@ add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)
 add_edge!(c::AbstractCausalLoop,s,t;kw...) = add_part!(c,:E,s=s,t=t;kw...) 
 add_edges!(c::AbstractCausalLoop,n,s,t;kw...) = add_parts!(c,:E,n,s=s,t=t;kw...)
 
+"""
+    CausalLoop(ns,es)
+Create causal loop diagram from collection of nodes and collection of edges.
+"""
 CausalLoop(ns,es) = begin
     c = CausalLoop()
     ns = vectorify(ns)
@@ -47,14 +52,21 @@ CausalLoop(ns,es) = begin
 end
 
 # return the count of each components
+""" return count of nodes of CLD """
 nn(c::AbstractCausalLoop) = nparts(c,:N) #nodes
+""" return count of edges of CLD """
 ne(c::AbstractCausalLoop) = nparts(c,:E) #edges
 
+""" return node's name with index n """
 nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
+""" return edge's name with target number t """
 sedge(c::AbstractCausalLoop,e) = subpart(c,e,:s)
+""" return edge's name with edge number e """
 tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
 
+""" return node names of CLD """
 nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
+
 
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     
@@ -78,6 +90,11 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     return CausalLoop(ns,es)
 end
 
+"""
+Convert StockFlow to CLD.
+Nodes: stocks, flows, sum variables, parameters, nonflow dynamic variables
+Edges: morphisms in stock flow
+"""
 function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     
     sns=snames(p)
