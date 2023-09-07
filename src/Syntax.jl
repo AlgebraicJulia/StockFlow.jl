@@ -136,7 +136,7 @@ Compiles stock and flow syntax of the line-based block form
     symbol_r => flow_name_1(dyvar_k) => symbol_q
     symbol_z => flow_name_2(dyvar_g * param_v) => symbol_p
     ☁       => flow_name_3(symbol_c + dyvar_b) => symbol_r
-    symbol_j => flow_name_4(param_l + symbol_m) => TODO
+    symbol_j => flow_name_4(param_l + symbol_m) => CLOUD
     ...
     symbol_y => flow_name_n(dyvar_f) => ☁
 ```
@@ -144,15 +144,18 @@ into a StockAndFlowF data type for use with the StockFlow.jl modelling system.
 """
 macro stock_and_flow(block)
     Base.remove_linenums!(block)
-    syntax_lines = parse_stock_and_flow_syntax(block.args)
-    saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
-    return StockAndFlowF(
-        saff_args.stocks,
-        saff_args.params,
-        map(kv -> kv.first => get(kv.second), saff_args.dyvars),
-        saff_args.flows,
-        saff_args.sums,
-    )
+    block_args = block.args
+    return quote
+      local syntax_lines = parse_stock_and_flow_syntax($block_args)
+      local saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
+      StockAndFlowF(
+          saff_args.stocks,
+          saff_args.params,
+          map(kv -> kv.first => get(kv.second), saff_args.dyvars),
+          saff_args.flows,
+          saff_args.sums,
+      )
+    end
 end
 
 """
@@ -380,7 +383,7 @@ and the flow equations's definition as an expression.
 ### Input
 - `flow_definition` -- A flow definition of the form
                        `SYMBOL => flow_name(flow_equation) => SYMBOL`,
-                       where SYMBOL can be an arbitrary name or special cases of ☁ or TODO,
+                       where SYMBOL can be an arbitrary name or special cases of ☁ or CLOUD,
                        which corresponds to a flow from nowhere.
 
 ### Output
@@ -389,15 +392,15 @@ may be :F_NONE for a flow from nowhere) and the flow equation as a julia express
 
 ### Examples
 ```julia-repl
-julia> Syntax.parse_flow_io(:(TODO => birthRate(a * b * c) => S))
+julia> Syntax.parse_flow_io(:(CLOUD => birthRate(a * b * c) => S))
 (:F_NONE, :(birthRate(a * b * c)), :S)
 ```
 """
 function parse_flow(flow_definition::Expr)
     @match flow_definition begin
-        :(TODO => $flow => $stock_out) || :(☁ => $flow => $stock_out) =>
+        :(CLOUD => $flow => $stock_out) || :(☁ => $flow => $stock_out) =>
             (:F_NONE, flow, stock_out)
-        :($stock_in => $flow => TODO) || :($stock_in => $flow => ☁) =>
+        :($stock_in => $flow => CLOUD) || :($stock_in => $flow => ☁) =>
             (stock_in, flow, :F_NONE)
         :($stock_in => $flow => $stock_out) => (stock_in, flow, stock_out)
         Expr(en, _, _, _) || Expr(en, _, _) =>
@@ -472,6 +475,17 @@ function assemble_stock_definitions(
     flows::Vector{Tuple{Symbol,Expr,Symbol}},
     sum_variables::Vector{Tuple{Symbol,Vector{Symbol}}},
 )
+    # Check that all of the stocks involved in flow definitions exist
+    stock_set = Set(stocks)
+    push!(stock_set, :F_NONE) # for error handling step: any 'clouds' should be F_NONE by now.
+    for (start_object, flow, end_object) in flows
+        if !(start_object in stock_set)
+            error(String(start_object) * " is not a known stock.")
+        elseif !(end_object in stock_set)
+            error(String(end_object) * " is not a known stock.")
+        end
+    end
+
     formatted_stocks = []
     for stock in stocks
         input_arrows::Vector{Symbol} = []
@@ -976,7 +990,7 @@ end
 
 Create foot (StockAndFlow0) using format A => B, where A is a stock and B is a sum variable.  Use () to represent no stock or sum variable.
 To have multiple stocks or sum variables, chain together multiple pairs with commas.  Repeated occurences of the same symbol will be treated as the same stock or sum variable.
-You cannot create distinct stocks or sum variables with the same name using this format. 
+You cannot create distinct stocks or sum variables with the same name using this format.
 
 ```julia
 standard_foot = @foot A => N
@@ -991,8 +1005,8 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 function create_foot(block::Expr)
     @match block.head begin
 
-        :tuple => begin 
-            if isempty(block.args) # case for create_foot(:()) 
+        :tuple => begin
+            if isempty(block.args) # case for create_foot(:())
                 error("Cannot create foot with no arguments.")
             end
             foot_s = Vector{Symbol}()
@@ -1018,7 +1032,7 @@ Takes as argument an expression of the form A => B and returns a tuple in a form
 Return type is Tuple{Union{Tuple{}, Symbol}, Union{Tuple{}, Symbol}, Union{Tuple{}, Pair{Symbol, Symbol}}}.  The empty tuple represents no stocks, no flows, or no links.
 
 """
-function match_foot_format(footblock::Expr) 
+function match_foot_format(footblock::Expr)
     @match footblock begin
         :(()              => ())              => ((), (), ())
         :($(s :: Symbol)  => ())              => (s, (), ())

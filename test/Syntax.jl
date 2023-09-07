@@ -257,16 +257,23 @@ end
 
 end
 @testset "recursive definitions should be disallowed" begin
-    expr = quote
+    @test_throws Exception @stock_and_flow begin
         :dynamic_variables
         v = v + v
     end
-    # When used as a macro -- @stock_and_flow -- this exception is thrown
-    # at a point that @test_throws cannot capture it.
-    @test_throws Exception stock_and_flow(expr)
 end
 
+@testset "the existence of references is checked" begin
+    @test_throws Exception @stock_and_flow begin
+        :stocks
+        A
+        B
+        C
 
+        :flows
+        a => f(A * B) => B
+    end
+end
 
 @testset "foot syntax can create all types of feet" begin
     @test (@foot A => B) == foot(:A, :B, :A => :B)
@@ -274,7 +281,7 @@ end
     @test (@foot () => Q) == foot((), :Q, ())
     @test (@foot () => ()) == foot((),(),())
 
-    @test (@foot =>((), SV)) == foot((),:SV,()) 
+    @test (@foot =>((), SV)) == foot((),:SV,())
     @test (@foot A11 => B22) == foot(:A11, :B22, :A11 => :B22)
 
     @test (@foot () => B, A => ()) == foot(:A, :B, ())
@@ -301,7 +308,7 @@ end
 @testset "feet syntax can create feet" begin
 
     @test (@feet begin
-        
+
         A => B
         C => D
         () => ()
@@ -387,7 +394,7 @@ end
             p_rec
 
 
-            :flows
+            :flowssaff_args
             S => f_StoI(p_inf * S) => I
             I => f_ItoR(I * p_rec) => R
 
@@ -490,6 +497,63 @@ end
     Dict{Symbol, Vector{Int64}}(:S => [1], :V => [1,1])))
 
     
+
+    # Mapping it all to I
+
+    # This one fails when trying to figure out the inflow.  Stock maps to 2, and flow maps to 2,
+    # But inflows on the target have (1,2) and (2,3)
+
+    # This also wouldn't work if we tried mapping flow to 1 instead.  Outflows expect 1,1 or 2,2,
+    # so it fails on (2,1).
+     @test_throws  KeyError (infer_links(
+        (@stock_and_flow begin
+        :stocks
+        pop
+
+        :parameters
+        p_generic
+
+
+        :flows
+        pop => f_generic(p_generic * pop) => pop
+
+        :sums
+        N = [pop]
+        NI = [pop]
+        NS = [pop]
+    end),
+    (@stock_and_flow begin
+        :stocks
+        S
+        I
+        R
+
+        :parameters
+        p_inf
+        p_rec
+
+
+        :flows
+        S => f_StoI(p_inf * S) => I
+        I => f_ItoR(I * p_rec) => R
+
+        :sums
+        N = [S,I,R]
+        NI = [I]
+        NS = [S,I,R]
+    end),
+    Dict{Symbol, Vector{Int64}}(:S => [2], :F => [2], :SV => [1,2,3], :P => [2], :V => [2])))
+
+end
+
+@testset "Applying flags throws on invalid inputs" begin
+    @test_throws ErrorException apply_flags(:f_, Set([:+]), [:f_death, :f_birth]) # fails because :+ is not a defined operation
+    @test_throws ErrorException apply_flags(:f_birth, Set([:~, :+]), [:f_death, :f_birth]) # also fails for same reason
+
+    @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), Vector{Symbol}()) # fails because it's not looking for substrings, and :NOMATCH isn't in the list of options.
+    @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), [:nomatch]) # same reason
+
+end
 
     # Mapping it all to I
 
