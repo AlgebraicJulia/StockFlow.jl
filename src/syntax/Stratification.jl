@@ -390,12 +390,42 @@ macro stratify(strata, type, aggregate, block)
 end
 
 
-```
+"""
 Alternate syntax for stratification, allows for an arbitrary number of stockflows in a pullback.
 Second last argument must be the type stockflow, last must be the block describing how the stratificaition is done.  All arguments before that must be stockflows.
 
+```julia
+
+@n_stratify WeightModel ageWeightModel l_type begin
+    :stocks
+    [_, _] => pop
+    
+    :flows
+    [~Death, ~Death] => f_death
+    [~id, ~aging] => f_aging 
+    [~Becoming, ~id] => f_fstOrder
+    [_, f_NB] => f_birth
+
+    
+    :dynamic_variables
+    [v_NewBorn, v_NB] => v_birth
+    [~Death, ~Death] => v_death
+    [~id, (v_agingCA, v_agingAS)] => v_aging
+    [(v_BecomingOverWeight, v_BecomingObese), (v_idC, v_idA, v_idS)] => v_fstOrder
+    
+    :parameters
+    [μ, μ] => μ
+    [(δw, δo), (δC, δA, δS)] => δ
+    [(rw, ro), r] => rFstOrder
+    [rage, (rageCA, rageAS)] => rage
+    
+    :sums
+    [N,N] => N
+end
 
 ```
+
+"""
 macro n_stratify(args...)
     if length(args) < 3
         return :(MethodError("Too few arguments provided!  Please provide some number of stockflows, then the type stock flow, then a quote block."))
