@@ -1,0 +1,50 @@
+name: Check notebook examples for regressions
+
+on: [push, pull_request]
+
+env:
+  JULIA_NUM_THREADS: 'auto'
+jobs:
+  notebooks-examples-regression-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: 1.9
+      - name: Cache Julia dependencies
+        uses: julia-actions/cache@v1
+      - name: Add IJulia Jupyter kernel
+        run: julia --color=yes --project=. -e 'ENV["JULIA_PKG_PRECOMPILE_AUTO"]=0; using Pkg; pkg"add IJulia"'
+      - name: Install Julia dependencies
+        run: julia --color=yes --project=. -e 'import Pkg; Pkg.instantiate(); Pkg.resolve(); Pkg.precompile()'
+      - uses: yaananth/run-notebook@v2
+        env:
+          RUNNER: ${{ toJson(runner) }}
+          SECRETS: ${{ toJson(secrets) }}
+          GITHUB: ${{ toJson(github) }}
+        with:
+          notebook: "examples/full_fledged_schema_examples_new/stratification/diabetes_diagnose.ipynb"
+      - uses: yaananth/run-notebook@v2
+        env:
+          RUNNER: ${{ toJson(runner) }}
+          SECRETS: ${{ toJson(secrets) }}
+          GITHUB: ${{ toJson(github) }}
+        with:
+          notebook: "examples/full_fledged_schema_examples_new/composition/diabetes_model.ipynb"
+      - uses: yaananth/run-notebook@v2
+        env:
+          RUNNER: ${{ toJson(runner) }}
+          SECRETS: ${{ toJson(secrets) }}
+          GITHUB: ${{ toJson(github) }}
+        with:
+          notebook: "examples/full_fledged_schema_examples_new/CausalLoopDiagrams/convert_from_SEIR_stockFlowDiagram.ipynb"
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: output
+          path: ${{ RUNNER.temp }}/nb-runner
+        env:
+          RUNNER: ${{ toJson(runner) }}
