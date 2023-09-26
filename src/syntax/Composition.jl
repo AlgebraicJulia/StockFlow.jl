@@ -154,11 +154,21 @@ Compose models.
 macro compose(args...)
     if length(args) == 0
         return :(MethodError("No arguments provided!  Please provide some number of stockflows, then a quote block."))
-    elseif length(args) == 1
-        return Expr(:call, :sfcompose, :(Vector{AbstractStockAndFlowF}()), esc(args[1]))
-    else 
-        return Expr(:call, :sfcompose, Expr(:vect, esc.(args[1:end-1])...), esc(args[end]))
     end
+    escaped_block = Expr(:quote, args[end])
+    sfs = esc.(args[1:end-1])
+    quote
+        if length($sfs) == 0
+            sfcompose(Vector{StockAndFlowF}(), $escaped_block)
+        else
+            sfcompose([$(sfs...)], $escaped_block)
+        end
+    end
+    # elseif length(args) == 1
+    #     return Expr(:call, :sfcompose, :(Vector{AbstractStockAndFlowF}()), esc(args[1]))
+    # else 
+    #     return Expr(:call, :sfcompose, Expr(:vect, esc.(args[1:end-1])...), esc(args[end]))
+    # end
 end
 
 

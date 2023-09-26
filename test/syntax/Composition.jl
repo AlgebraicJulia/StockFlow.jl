@@ -8,23 +8,23 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
     empty_sf = StockAndFlowF()
 
 
-    @test (@compose (quote # composing no stock flows returns an empty stock flow.
+    @test (@compose (begin # composing no stock flows returns an empty stock flow.
         ()
     end)) == empty_sf
 
-    @test (@compose empty_sf quote
+    @test (@compose empty_sf begin
         (sf,)
     end) == empty_sf
 
-    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; B; end;) (quote
+    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; B; end;) (begin
         (sf1, sf2)
     end)) == (@stock_and_flow begin; :stocks; A; B; end;) # Combining without any composing
 
-    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; A; end;) (quote
+    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; A; end;) (begin
         (sf1, sf2)
     end)) == (@stock_and_flow begin; :stocks; A; A; end;)
 
-    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; A; end;) (quote
+    @test (@compose (@stock_and_flow begin; :stocks; A; end;) (@stock_and_flow begin; :stocks; A; end;) (begin
         (sf1, sf2)
         sf1, sf2 ^ A => ()
     end)) == (@stock_and_flow begin; :stocks; A; end;)
@@ -49,7 +49,7 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
 
             :sums
             N = [B,C]
-        end) (quote
+        end) (begin
             (sfA, sfC)
             sfA, sfC ^ B => N
         end))
