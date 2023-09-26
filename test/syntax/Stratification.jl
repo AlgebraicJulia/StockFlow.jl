@@ -368,12 +368,11 @@ end
     @test substitute_symbols(s1, t1, m1₂) == Dict(1 => 2) # A=>B -> 1=>2
     @test substitute_symbols(s1, t1, m1₂, use_flags=false) == Dict(1 => 2) # A=>B -> 1=>2
 
-    s2 = Dict(:A1 => 10, :A2 => 20, :A3 => 30) # Unfortunately, cannot do substring matches starting with numbers, since it would require a symbol starting with a numbre.  Might need to add something for this...
+    s2 = Dict(:A1 => 10, :A2 => 20, :A3 => 30) # Unfortunately, cannot do substring matches starting with numbers, since it would require a symbol starting with a number.  Might need to add something for this...
     t2 = Dict(:B1 => 1, :B2 => 2)
     m2₁ = [DSLArgument(:A, :B1, Set{Symbol}([:~]))]
 
     @test substitute_symbols(s2, t2, m2₁) == Dict(10 => 1, 20 => 1, 30 => 1) #~A=>B -> 10=>1, 20=>1, 30=>1
-    # @test substitute_symbols(s2, t2, m2₁, use_flags=false) == Dict()  # deliberately throws an error
 
     s3 = Dict{Symbol, Int}()
     t3 = Dict{Symbol, Int}()

@@ -331,8 +331,6 @@ function sfstratify(others::Vector{K}, type::K, block::Expr ; use_standard_strat
 
     # STEP 8
 
-    # pullback_function = (prev, next) -> pullback(prev, next) |> apex |> rebuildStratifiedModelByFlattenSymbols;
-    # pullback_model = accumulate(pullback_function, all_transformations[2:end] ; init=all_transformations[1])
     pullback_model = pullback(all_transformations) |> apex |> rebuildStratifiedModelByFlattenSymbols;
 
     if return_homs
