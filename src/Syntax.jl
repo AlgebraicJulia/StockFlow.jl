@@ -1045,5 +1045,6 @@ function match_foot_format(footblock::Expr)
 end
 
 
+include("syntax/Composition.jl")
 
 end
