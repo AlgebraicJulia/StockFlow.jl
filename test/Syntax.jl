@@ -8,6 +8,10 @@ using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_bi
     include("./syntax/Stratification.jl")
 end
 
+@testset "Composition DSL" begin
+    include("syntax/Composition.jl")
+end
+
 @testset "is_binop_or_unary recognises binops" begin
     @test is_binop_or_unary(:(a + b))
     @test is_binop_or_unary(:(f(a, b)))
