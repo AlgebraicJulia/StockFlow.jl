@@ -1249,7 +1249,7 @@ NothingFunction(x...)::Nothing = nothing;
 
 
 
-
+include("syntax/Composition.jl")
 include("syntax/Stratification.jl")
 
 end
