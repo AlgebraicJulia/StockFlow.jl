@@ -990,6 +990,11 @@ macro feet(block::Expr)
     end
 end
 
+macro feet()
+    quote
+        Vector{StockAndFlow0}()
+    end
+end
 
 """
     create_foot(block :: Expr)
@@ -1011,8 +1016,8 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 function create_foot(block::Expr)
     @match block.head begin
         :tuple => begin
-            if length(block.args) < 2 # case for create_foot(:())
-                return error("Cannot create foot with no arguments.")
+            if isempty(block.args) # case for create_foot(:())
+                error("Cannot create foot with zero arguments.")
             end
             foot_s = Vector{Symbol}()
             foot_sv = Vector{Symbol}()

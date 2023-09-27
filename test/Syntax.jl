@@ -2,7 +2,7 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags, substitute_symbols
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags, substitute_symbols, DSLArgument
 
 @testset "Stratification DSL" begin
     include("syntax/Stratification.jl")
@@ -342,10 +342,11 @@ end
         foot(:J, (:K, :Q), (:J => :K, :J => :Q))
     ]
 
+    @test (@feet ) == Vector{StockAndFlow0}();
 end
 
 @testset "feet syntax fails on invalid feet" begin # mostly to check that an exception is thrown even if some of the feet are valid.
-    @test_throws ErrorException @feet A => B => C # eval required so the errors occur at runtime, rather than at compilation
+    @test_throws ErrorException @feet A => B => C 
     @test_throws ErrorException @feet begin A => B; =>(D,E,F) end
     @test_throws ErrorException @feet begin A => B; 1 => 2; end
 end
