@@ -48,6 +48,7 @@ makedocs(
   checkdocs   = :none,
   pages       = Any[
     "StockFlow.jl" => "index.md",
+    "Serialization" => "json.md",
   ]
 )
 
