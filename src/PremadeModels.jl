@@ -4,18 +4,30 @@ using ..StockFlow.Syntax
 
 export seir, sis, sir, svi
 
+"""
+Return a new SEIR model
+"""
 function seir()
     return deepcopy(seir_model)
 end
 
+"""
+Return a new SIS model
+"""
 function sis()
     return deepcopy(sis_model)
 end
 
+"""
+Return a new SIR model
+"""
 function sir()
     return deepcopy(sir_model)
 end
 
+"""
+Return a new SVI model
+"""
 function svi()
     return deepcopy(svi_model)
 end
