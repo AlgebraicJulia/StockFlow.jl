@@ -212,7 +212,7 @@ extracVAndAttrStructureAndFlatten(p::AbstractStockAndFlowF) = begin
     if nvb(p)>0
         for v in 1:nvb(p)
             vn = flattenTupleNames(vname(p,v))
-            v_op = foldr(==,vop(p,v)) ? vop(p,v)[1] : error("operators $(vop(p,v)) in the stratified model's auxiliary variable: $(join(vname(p,v))) should be the same!")
+            v_op = allequal(vop(p,v)) ? vop(p,v)[1] : error("operators $(vop(p,v)) in the stratified model's auxiliary variable: $(join(vname(p,v))) should be the same!")
             vnp = vn=>(args(p,v)=>v_op)
             vs = vcat(vs,vnp)
         end
