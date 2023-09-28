@@ -1,3 +1,12 @@
+"""
+DSL for stratification.
+Takes two different forms.  @stratify takes two stockflows and a type model
+stockflow, @n_stratify takes an arbitrary number of stockflows and a type model
+stockflow.
+
+Both call sfstratify.
+
+"""
 module Stratification
 export sfstratify, @stratify, @n_stratify
 

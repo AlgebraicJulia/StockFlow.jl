@@ -1,3 +1,7 @@
+"""
+DSL for composition.
+Macro @compose calls function sfcompose.
+"""
 module Composition
 export sfcompose, @compose
 
