@@ -26,22 +26,22 @@ function hom(sf1, sf2, block)
   for statement in block.args
       @match statement begin
           QuoteNode(:stocks) => begin
-              current_phase = s -> push!(stocks, s)
+            current_phase = s -> push!(stocks, s)
           end
           QuoteNode(:parameters) => begin
-              current_phase = p -> push!(params, p)
+            current_phase = p -> push!(params, p)
           end
           QuoteNode(:dynamic_variables) => begin
-              current_phase = d -> push!(dyvars, d)
+            current_phase = d -> push!(dyvars, d)
           end
           QuoteNode(:flows) => begin
-              current_phase = f -> push!(flows, f)
+            current_phase = f -> push!(flows, f)
           end
           QuoteNode(:sums) => begin
-              current_phase = s -> push!(sums, s)
+            current_phase = s -> push!(sums, s)
           end
           QuoteNode(kw) =>
-              error("Unknown block type for homomorphism syntax: " * String(kw))
+            error("Unknown block type for homomorphism syntax: " * String(kw))
           :($A => $B) => current_phase(A => B)
           _ => error("Unknown symbol format.  Must be A => B.")
       end
