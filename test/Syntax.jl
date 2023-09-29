@@ -2,7 +2,9 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags, substitute_symbols
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, 
+fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, 
+create_foot, apply_flags, substitute_symbols
 
 @testset "Stratification DSL" begin
   include("syntax/Stratification.jl")
@@ -290,12 +292,15 @@ end
 
   @test (@foot () => B, A => ()) == foot(:A, :B, ())
   @test (@foot A => B, A => C) == foot(:A, (:B, :C), (:A => :B, :A => :C))
-  @test (@foot A => B, A => B, A => B) == foot(:A, :B, (:A => :B, :A => :B, :A => :B)) # at present, it deduplicates stocks and sums, but not links.
+
+  # at present, it deduplicates stocks and sums, but not links.
+  @test (@foot A => B, A => B, A => B) == foot(:A, :B, (:A => :B, :A => :B, :A => :B)) 
   @test (@foot P => Q, R => (), () => ()) == foot((:P, :R), (:Q), (:P => :Q))
   @test (@foot () => (), () => ()) == foot((), (), ())
 end
 
-@testset "foot syntax disallows invalid feet" begin # note, @feet calls create_foot for each line, so this should apply to both @foot and @feet
+ # note, @feet calls create_foot for each line, so this should apply to both @foot and @feet
+@testset "foot syntax disallows invalid feet" begin
   @test_throws Exception create_foot(:(A => B => C)) # Invalid syntax for second argument of foot: B => C
   @test_throws Exception create_foot(:(oooo2 + f => C)) # Invalid syntax for first argument of foot: oooo2 + f
   @test_throws Exception create_foot(:(A + B)) # Invalid syntax function for foot: +
@@ -346,8 +351,9 @@ end
 
 end
 
-@testset "feet syntax fails on invalid feet" begin # mostly to check that an exception is thrown even if some of the feet are valid.
-  @test_throws Exception @eval @feet A => B => C # eval required so the errors occur at runtime, rather than at compilation
+ # Check that an exception is thrown even if some of the feet are valid.
+@testset "feet syntax fails on invalid feet" begin
+  @test_throws Exception @eval @feet A => B => C
   @test_throws Exception @eval @feet begin A => B; =>(D,E,F) end
   @test_throws Exception @eval @feet begin A => B; 1 => 2; end
 end
@@ -366,10 +372,6 @@ end
     Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [1], :P => [], :V => []))
   == Dict(:LS => [1], :LSV => [], :LV => [], :I => [], :O => [], :LPV => [], :LVV => []))
 
-  # annoying exanmple, required me to add code to disambiguate using position
-  # that is, vA = A + A, vA -> vB, A -> implies that the As in the vA definition map to the Bs in the vB definition
-  # But both As link to the same stock and dynamic variable so just looking at those isn't enough to figure out what it maps to.
-  # There will exist cases where it's impossible to tell - eg, when there exist multiple duplicate links, and some positions don't match up.
    
   # It does not currently look at the operator.  You could therefore map vA = A + A -> vB = B * B
   # I can see this being useful, actually, specifically when mapping between + and -, * and /, etc.  Probably logs and powers too.
@@ -446,9 +448,6 @@ end
 
 
 @testset "substitute_symbols will correctly associate values of the two provided dictionaries based on user defined mappings" begin
-  # substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
-
-
   # Note, these dictionaries represent a vector where all the entries are unique, and the values are the original indices.
   # So, both keys and values should be unique.
   # For stratification, first dictionary is strata or aggregate, second is type, and the vector of DSLArgument are the user-defined maps.
