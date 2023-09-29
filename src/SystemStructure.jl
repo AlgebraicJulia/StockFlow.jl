@@ -2,12 +2,11 @@ export convertStockFlowToSystemStructure, convertSystemStructureToStockFlow, reb
 extracStocksStructureAndFlatten,extracFlowsStructureAndFlatten,extracSumVStructureAndFlatten,extracVStructureAndFlatten,extracPsStructureAndFlatten,
 extracVAndAttrStructureAndFlatten, extracVStructureAndFlatten, args_vname, args, add_prefix!, add_suffix!
 
-using Catlab.CategoricalAlgebra.StructuredCospans
-
 flattenTupleNames(sn::Tuple)=Symbol(foldr(string,map(x->string(x), sn)))
 flattenTupleNames(sn::Symbol)=sn
 flattenTupleNames(sn::SubArray{Symbol})=sn
 flattenTupleNames(sn::SubArray)=map(y->Symbol(foldr(string,map(x->string(x), y))),sn)
+flattenTupleNames(sn::Vector)=[flattenTupleNames(x) for x in sn]
 
 
 function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructure)
@@ -39,6 +38,9 @@ function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructure)
     return s
 end
 
+"""
+Return stock names as Symbol, along with the linked flows and sum variables
+"""
 function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     s=[]
     
@@ -65,6 +67,9 @@ function extracStocksStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     return s
 end
 
+"""
+Return flow names as Symbol, along with the linked flow variables
+"""
 function extracFlowsStructureAndFlatten(p::AbstractStockAndFlowStructure)
     f=[]
     
@@ -84,6 +89,9 @@ function extracFlowsStructureAndFlatten(p::AbstractStockAndFlowStructure)
     return f
 end
 
+"""
+Return parameter names as Symbol
+"""
 function extracPsStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     pns=[]
     
@@ -118,6 +126,9 @@ function extracSumVStructureAndFlatten(p::AbstractStockAndFlowStructure)
     return sv
 end
 
+"""
+Return sum variable names as Symbol, along with the linked dynamic variables
+"""
 function extracSumVStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     sv=[]
     
@@ -132,6 +143,9 @@ function extracSumVStructureAndFlatten(p::AbstractStockAndFlowStructureF)
     return sv
 end
 
+"""
+Return a Tuple of Vectors of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
+"""
 function args_vname(p::AbstractStockAndFlowStructureF,v)
     srcsv=map(i->(flattenTupleNames(sname(p,i))),stocksv(p,v))
     srcsvv=map(i->(flattenTupleNames(svname(p,i))),svsv(p,v))
@@ -141,20 +155,19 @@ function args_vname(p::AbstractStockAndFlowStructureF,v)
     return (srcsv,srcsvv,srcpv,srcvv)
 end
 
-function args_vnamexxxx(p::AbstractStockAndFlowStructureF,v)
-    srcsv=map(i->Symbol(join(sname(p,i))),stocksv(p,v))
-    srcsvv=map(i->Symbol(join(svname(p,i))),svsv(p,v))
-    srcpv=map(i->Symbol(join(pname(p,i))),vpsrc(p,v))
-    srcvv=map(i->Symbol(join(vname(p,i))),vsrc(p,v))
-
-    return (srcsv,srcsvv,srcpv,srcvv)
-end
-
+"""
+    args(p::AbstractStockAndFlowStructureF,v)
+Return a Vector of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
+"""
 function args(p::AbstractStockAndFlowStructureF,v)
     (srcsv,srcsvv,srcpv,srcvv)=args_vname(p,v)
     return vcat(srcsv,srcsvv,srcpv,srcvv)
 end
 
+"""
+    args(p::AbstractStockAndFlowF,v)
+Return a Vector of Symbols of flattened stocks, sums, parameters and source dynamic variables a dynamic variable at index v links to.
+"""
 function args(p::AbstractStockAndFlowF,v)
     (srcsv,srcsvv,srcpv,srcvv)=args_vname(p,v)
        
@@ -171,6 +184,9 @@ function args(p::AbstractStockAndFlowF,v)
     return srcs
 end
 
+"""
+Return dynamic variable definitions as Vector with elements of form :dv => [:arg1, :arg2]
+"""
 extracVStructureAndFlatten(p::AbstractStockAndFlowStructureF) = begin
 
     vs=[]
@@ -186,6 +202,9 @@ extracVStructureAndFlatten(p::AbstractStockAndFlowStructureF) = begin
     
 end
 
+"""
+Convert dynamic variable names to Symbol, convert all operators to a single operator if they are equal else throw an error, and  
+"""
 extracVAndAttrStructureAndFlatten(p::AbstractStockAndFlowF) = begin
 
     vs=[]
@@ -193,7 +212,7 @@ extracVAndAttrStructureAndFlatten(p::AbstractStockAndFlowF) = begin
     if nvb(p)>0
         for v in 1:nvb(p)
             vn = flattenTupleNames(vname(p,v))
-            v_op = foldr(==,vop(p,v)) ? vop(p,v)[1] : error("operators $(vop(p,v)) in the stratified model's auxiliary variable: $(join(vname(p,v))) should be the same!")
+            v_op = allequal(vop(p,v)) ? vop(p,v)[1] : error("operators $(vop(p,v)) in the stratified model's auxiliary variable: $(join(vname(p,v))) should be the same!")
             vnp = vn=>(args(p,v)=>v_op)
             vs = vcat(vs,vnp)
         end
@@ -210,6 +229,9 @@ function rebuildStratifiedModelByFlattenSymbols(p::AbstractStockAndFlowStructure
     return StockAndFlowStructure(s,f,sv)
 end
 
+"""
+Return a new stock flow with flattened names, operators and positions from the old
+"""
 function rebuildStratifiedModelByFlattenSymbols(p::AbstractStockAndFlowF)
     s=extracStocksStructureAndFlatten(p)
     pr=extracPsStructureAndFlatten(p)
@@ -220,7 +242,6 @@ function rebuildStratifiedModelByFlattenSymbols(p::AbstractStockAndFlowF)
     return StockAndFlowF(s,pr,v,f,sv)
 end
 
-
 function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructure,v)   
     s=extracStocksStructureAndFlatten(p)
     f=extracFlowsStructureAndFlatten(p)
@@ -229,6 +250,13 @@ function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructure,v)
     return StockAndFlow(s,f,v,sv)
 end
 
+"""
+Return a new stock flow with flattened names, operators and positions from an AbstractStockAndFlowStructureF.
+Need to provide dynamic variable definitions, eg
+```julia
+convertSystemStructureToStockFlow(MyStockFlowStructure, (:v_prevalence=>(:I,:N,:/),:v_meanInfectiousContactsPerS=>(:c,:v_prevalence,:*)))
+```
+"""
 function convertSystemStructureToStockFlow(p::AbstractStockAndFlowStructureF,v)   
     s=extracStocksStructureAndFlatten(p)
     pr=extracPsStructureAndFlatten(p)
@@ -247,6 +275,9 @@ function convertStockFlowToSystemStructure(p::AbstractStockAndFlow)
     return StockAndFlowStructure(s,f,sv)
 end
 
+""" 
+Return a new StockAndFlowStructureF with flattened names, operators and positions from an AbstractStockAndFlowF.
+"""
 function convertStockFlowToSystemStructure(p::AbstractStockAndFlowF)
     
     s=extracStocksStructureAndFlatten(p)
@@ -265,8 +296,10 @@ Concatenate Symbols.
 ++(a::Symbol,b::Symbol) = Symbol(string(a, b))
 
 """
-Modify a AbstractStockAndFlowStructureF so named elements end with suffix.
-"""
+    add_suffix!(sf::AbstractStockAndFlow0, suffix)
+
+Modify a AbstractStockAndFlow0 so named elements end with suffix.
+Suffix can be anything which can be cast to a Symbol."""
 function add_suffix!(sf::AbstractStockAndFlowStructureF, suffix)
     suffix = Symbol(suffix)
     set_snames!(sf, snames(sf) .++ suffix)
@@ -279,7 +312,10 @@ end
 
 
 """
+    add_suffix!(sf::AbstractStockAndFlow0, suffix)
+
 Modify a AbstractStockAndFlow0 so named elements end with suffix.
+Suffix can be anything which can be cast to a Symbol.
 For feet.
 """
 function add_suffix!(sf::AbstractStockAndFlow0, suffix)
@@ -290,7 +326,10 @@ function add_suffix!(sf::AbstractStockAndFlow0, suffix)
 end
 
 """
+    add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
+
 Modify a AbstractStockAndFlowStructureF so named elements begin with prefix
+Prefix can be anything which can be cast to a Symbol.
 """
 function add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
     prefix = Symbol(prefix)
@@ -303,10 +342,12 @@ function add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
 end
 
 """
-Modify a AbstractStockAndFlow0 so named elements begin with prefix.
-For feet.
+    add_prefix!(sf::AbstractStockAndFlowStructureF, prefix)
+
+Modify a AbstractStockAndFlowStructureF so named elements begin with prefix
+Prefix can be anything which can be cast to a Symbol.For feet.
 """
-function add_prefix!(sf::AbstractStockAndFlow0, suffix)
+function add_prefix!(sf::AbstractStockAndFlow0, prefix)
     prefix = Symbol(prefix)
     set_snames!(sf, prefix .++ snames(sf))
     set_svnames!(sf, prefix .++ svnames(sf))

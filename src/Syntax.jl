@@ -103,11 +103,13 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, @hom, apply_hom
+export @stock_and_flow, @foot, @feet, @hom, infer_links, apply_hom
 
 using ..StockFlow
 using MLStyle
 using Catlab.CategoricalAlgebra
+
+import Base: ==, Iterators.flatmap
 
 """
     stock_and_flow(block :: Expr)
@@ -135,7 +137,7 @@ Compiles stock and flow syntax of the line-based block form
     symbol_r => flow_name_1(dyvar_k) => symbol_q
     symbol_z => flow_name_2(dyvar_g * param_v) => symbol_p
     ☁       => flow_name_3(symbol_c + dyvar_b) => symbol_r
-    symbol_j => flow_name_4(param_l + symbol_m) => TODO
+    symbol_j => flow_name_4(param_l + symbol_m) => CLOUD
     ...
     symbol_y => flow_name_n(dyvar_f) => ☁
 ```
@@ -143,15 +145,18 @@ into a StockAndFlowF data type for use with the StockFlow.jl modelling system.
 """
 macro stock_and_flow(block)
     Base.remove_linenums!(block)
-    syntax_lines = parse_stock_and_flow_syntax(block.args)
-    saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
-    return StockAndFlowF(
-        saff_args.stocks,
-        saff_args.params,
-        map(kv -> kv.first => get(kv.second), saff_args.dyvars),
-        saff_args.flows,
-        saff_args.sums,
-    )
+    block_args = block.args
+    return quote
+      local syntax_lines = parse_stock_and_flow_syntax($block_args)
+      local saff_args = stock_and_flow_syntax_to_arguments(syntax_lines)
+      StockAndFlowF(
+          saff_args.stocks,
+          saff_args.params,
+          map(kv -> kv.first => get(kv.second), saff_args.dyvars),
+          saff_args.flows,
+          saff_args.sums,
+      )
+    end
 end
 
 """
@@ -379,7 +384,7 @@ and the flow equations's definition as an expression.
 ### Input
 - `flow_definition` -- A flow definition of the form
                        `SYMBOL => flow_name(flow_equation) => SYMBOL`,
-                       where SYMBOL can be an arbitrary name or special cases of ☁ or TODO,
+                       where SYMBOL can be an arbitrary name or special cases of ☁ or CLOUD,
                        which corresponds to a flow from nowhere.
 
 ### Output
@@ -388,15 +393,15 @@ may be :F_NONE for a flow from nowhere) and the flow equation as a julia express
 
 ### Examples
 ```julia-repl
-julia> Syntax.parse_flow_io(:(TODO => birthRate(a * b * c) => S))
+julia> Syntax.parse_flow_io(:(CLOUD => birthRate(a * b * c) => S))
 (:F_NONE, :(birthRate(a * b * c)), :S)
 ```
 """
 function parse_flow(flow_definition::Expr)
     @match flow_definition begin
-        :(TODO => $flow => $stock_out) || :(☁ => $flow => $stock_out) =>
+        :(CLOUD => $flow => $stock_out) || :(☁ => $flow => $stock_out) =>
             (:F_NONE, flow, stock_out)
-        :($stock_in => $flow => TODO) || :($stock_in => $flow => ☁) =>
+        :($stock_in => $flow => CLOUD) || :($stock_in => $flow => ☁) =>
             (stock_in, flow, :F_NONE)
         :($stock_in => $flow => $stock_out) => (stock_in, flow, stock_out)
         Expr(en, _, _, _) || Expr(en, _, _) =>
@@ -471,6 +476,17 @@ function assemble_stock_definitions(
     flows::Vector{Tuple{Symbol,Expr,Symbol}},
     sum_variables::Vector{Tuple{Symbol,Vector{Symbol}}},
 )
+    # Check that all of the stocks involved in flow definitions exist
+    stock_set = Set(stocks)
+    push!(stock_set, :F_NONE) # for error handling step: any 'clouds' should be F_NONE by now.
+    for (start_object, flow, end_object) in flows
+        if !(start_object in stock_set)
+            error(String(start_object) * " is not a known stock.")
+        elseif !(end_object in stock_set)
+            error(String(end_object) * " is not a known stock.")
+        end
+    end
+
     formatted_stocks = []
     for stock in stocks
         input_arrows::Vector{Symbol} = []
@@ -975,7 +991,7 @@ end
 
 Create foot (StockAndFlow0) using format A => B, where A is a stock and B is a sum variable.  Use () to represent no stock or sum variable.
 To have multiple stocks or sum variables, chain together multiple pairs with commas.  Repeated occurences of the same symbol will be treated as the same stock or sum variable.
-You cannot create distinct stocks or sum variables with the same name using this format. 
+You cannot create distinct stocks or sum variables with the same name using this format.
 
 ```julia
 standard_foot = @foot A => N
@@ -990,8 +1006,8 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 function create_foot(block::Expr)
     @match block.head begin
 
-        :tuple => begin 
-            if isempty(block.args) # case for create_foot(:()) 
+        :tuple => begin
+            if isempty(block.args) # case for create_foot(:())
                 error("Cannot create foot with no arguments.")
             end
             foot_s = Vector{Symbol}()
@@ -1017,7 +1033,7 @@ Takes as argument an expression of the form A => B and returns a tuple in a form
 Return type is Tuple{Union{Tuple{}, Symbol}, Union{Tuple{}, Symbol}, Union{Tuple{}, Pair{Symbol, Symbol}}}.  The empty tuple represents no stocks, no flows, or no links.
 
 """
-function match_foot_format(footblock::Expr) 
+function match_foot_format(footblock::Expr)
     @match footblock begin
         :(()              => ())              => ((), (), ())
         :($(s :: Symbol)  => ())              => (s, (), ())
@@ -1031,6 +1047,7 @@ function match_foot_format(footblock::Expr)
     end
 end
 
+#############################################
 
 macro hom(block)
     Base.remove_linenums!(block)
@@ -1108,91 +1125,214 @@ function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
 
 end
 
-function infer_links(sfsrc, sftgt, necMaps) # necMaps::Dict{Symbol, Vector{Int64}}
-    LS = :LS => infer_particular_link(sfsrc, sftgt, :lss => necMaps[:S], :lssv => necMaps[:SV])
-    I = :I => infer_particular_link(sfsrc, sftgt, :ifn => necMaps[:F], :is => necMaps[:S])
-    O = :O => infer_particular_link(sfsrc, sftgt, :ofn => necMaps[:F], :os => necMaps[:S])
-    LV = :LV => infer_particular_link(sfsrc, sftgt, :lvs => necMaps[:S], :lvv => necMaps[:V])
-    LSV = :LSV => infer_particular_link(sfsrc, sftgt, :lsvsv => necMaps[:SV], :lsvv => necMaps[:V])
-    LVV = :LVV => infer_particular_link(sfsrc, sftgt, :lvsrc => necMaps[:V], :lvtgt => necMaps[:V])
-    LPV = :LPV => infer_particular_link(sfsrc, sftgt, :lpvp => necMaps[:P], :lpvv => necMaps[:V])
-    return Dict(LS, I, O, LV, LSV, LVV, LPV)
+
+"""
+    infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf=nothing)
+
+infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps, get_lvvposition) # LV
+
+If we're mapping the same value to multiple positions, it doesn't matter which one goes where.
+We have a few options, on how we want to distribute mappings.  Way it's done here, always goes to the last position.
+
+"""
+function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector)
+        
+    hom1′_mappings = f1(sftgt)
+    hom2′_mappings = f2(sftgt)
+
+    tgt::Dict{Tuple{Int, Int}, Int} = Dict((hom1′, hom2′) => i for (i, (hom1′, hom2′)) in enumerate(zip(hom1′_mappings, hom2′_mappings))) # ISSUE: If there are two matches, second one overwrites the first.
+    # SOLUTION: Who cares.  Just map to the last.
+    for (i, (hom1, hom2)) in enumerate(zip(f1(sfsrc), f2(sfsrc)))
+        mapped_index1 = map1[hom1]
+        mapped_index2 = map2[hom2]
+
+        linkmap = tgt[(mapped_index1, mapped_index2)]
+
+        
+
+        destination_vector[i] = linkmap # updated
+    end
+    return destination_vector
+
 end
 
 
+"""
+    infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
+
+Infer LS, I, O, LV, LSV, LVV, LPV mappings for an ACSetTransformation.
+Returns dictionary of Symbols to lists of indices, corresponding to an ACSetTransformation argument.
+If there exist no such mappings (eg, no LVV), that pairing will not be included in the returned dictionary.
+
+If A <- C -> B, and we have A -> A' and B -> B' and a unique C' such that A' <- C' -> B', we can assume C -> C'.
+
+:S => [2,4,1,3], :F => [1,2,4,3], ...
+
+NecMaps must contain keys S, F, SV, P, V, each pointing to a (possibly empty) array of indices
+"""
+function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
 
 
+    stockmaps = NecMaps[:S]
+    flowmaps = NecMaps[:F]
+    summaps = NecMaps[:SV]
+    parammaps = NecMaps[:P]
+    dyvarmaps = NecMaps[:V]
+
+    lsmaps = zeros(Int, nls(sfsrc))
+    imaps = zeros(Int, ni(sfsrc))
+    omaps = zeros(Int, no(sfsrc))
+    lvmaps = zeros(Int, nlv(sfsrc))
+    lsvmaps = zeros(Int, nlsv(sfsrc))
+    lvvmaps = zeros(Int, nlvv(sfsrc))
+    lpvmaps = zeros(Int, nlpv(sfsrc))
+    # After the following calls, there should be no zeroes.
+
+
+    infer_particular_link!(sfsrc, sftgt, get_lss, get_lssv, stockmaps, summaps, lsmaps) # LS
+    infer_particular_link!(sfsrc, sftgt, get_ifn, get_is, flowmaps, stockmaps, imaps) # I
+    infer_particular_link!(sfsrc, sftgt, get_ofn, get_os, flowmaps, stockmaps, omaps) # O
+    infer_particular_link!(sfsrc, sftgt, get_lvs, get_lvv, stockmaps, dyvarmaps, lvmaps) # LV
+    infer_particular_link!(sfsrc, sftgt, get_lsvsv, get_lsvv, summaps, dyvarmaps, lsvmaps) # LSV
+    infer_particular_link!(sfsrc, sftgt, get_lvsrc, get_lvtgt, dyvarmaps, dyvarmaps, lvvmaps) # LVV
+    infer_particular_link!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps) # LPV
+
+    return Dict(:LS => lsmaps, :LSV => lsvmaps, :LV => lvmaps, :I => imaps, :O => omaps, :LPV => lpvmaps, :LVV => lvvmaps)
+
+include("syntax/Composition.jl")
+
+end
+
+
+struct DSLArgument
+    key::Symbol
+    value::Symbol
+    flags::Set{Symbol} # At present, the only flag that exists is ~
+    DSLArgument(kv::Pair{Union{Expr, Symbol}, Symbol}) = begin # this constructor seemed to fail... need to figure out why.  Maybe it can't call other constructors.
+        key, flags = unwrap_expression(first(kv))
+        new(key, second(kv), flags)
+    end
+    DSLArgument(k::Union{Expr, Symbol}, v::Symbol) = begin
+        key, flags = unwrap_expression(k)
+        new(key, v, flags)
+    end
+    DSLArgument(k::Symbol, v::Symbol, f::Set{Symbol}) = new(k, v, f)
+end
+
+==(a::DSLArgument, b::DSLArgument) = a.key == b.key && a.value == b.value && a.flags == b.flags
+
+
+function unwrap_expression(x::Union{Symbol, Expr}, flags::Set{Symbol}=Set{Symbol}())::Tuple{Symbol, Set{Symbol}} # No mutable default arguments.
+    if typeof(x) == Symbol
+        return (x, flags)
+    else
+        return unwrap_expression(x.args[2], push!(flags, x.args[1]))
+    end
+end
 
 
 """
-I wrote this a few months ago, so it may need some rewrites.
+S₁ => I₁
+S₂ => I₂
+S₁ => S₂
+
+⊢
+
+I₁ => I₂
+
+Determine what index an element e maps to based upon what f we have in the mapping such that e -> f
 """
-#link::Pair{Symbol, Vector{Int64}}
-function infer_particular_link(sfsrc, sftgt, link1, link2) # linkname isn't necessary but means we don't need to check all subparts
-    # maps go index -> index.  EG, [1,3,2] means 1 -> 1, 2 -> 3, 3 -> 2
-    # linkmap = collect(zip(map1, map2))::Vector{Tuple{Int64, Int64}}
+function connect_by_value(; src::Dict{T,U}, mapping::Dict{T,T}, tgt::Dict{T,U})::Dict{U, U}  where {T, U}
+    @assert allunique(values(src))
 
-    linkname1, map1 = link1
-    linkname2, map2 = link2
+    @assert all(x -> x ∈ keys(mapping), keys(src))
+    @assert all(x -> x ∈ keys(tgt), values(mapping))
 
-    link_domain = extract_subpart_ordered_tuple(sfsrc, linkname1, linkname2) # ::Vector{Vector{Int64}} (at present, it's just Vector{Vector{Any}})
-    # Corresponds to column 2 and 3 when printing the sf
-    # Note, does NOT currently include position, which could lead to ambiguity
-    link_codomain = extract_subpart_ordered_tuple(sftgt, linkname1, linkname2) # ::Vector{Vector{Int64}}
-    # link_codomain = collect(zip(extract_subpart_ordered(sftgt, linkname1), extract_subpart_ordered(sftgt, linkname2)))
+    return Dict(src[key] => tgt[value] for (key, value) in mapping)
 
-    # link_maps = [map1, map2]
+end
 
-    inferred_links = Vector{Int64}() # points to index should map to
-    for (i, (x1, x2)) in enumerate(link_domain) # eg, v1 is a stock, v2 is a sum variable, and they have a link.  Let's say stock A -> A′, sv N -> N′.
-        # We're checking that there exists a unique link between A′ and N′.
-        # We do this by grabbing all the links L in the domain and L′ in the codomain, converting L based on what its constituents map to, checking that
-        # there's a unique match, and appending the unique match's index to a vector (of int64, since everything is just an int)
-        
-        m1, m2 = map1[x1], map2[x2] 
-        
-        potential_values = Vector{Int64}()
-        for (j, (y1, y2)) in enumerate(link_codomain)
-            if (m1 == y1) && (m2 == y2)
-                push!(potential_values, j)
+
+"""
+Filter a vector for all elements with substr as a substring.
+"""
+function substring_matches(v::Vector, substr::String)::Vector
+    return filter(x -> occursin(substr, string(x)), v)
+end
+
+
+"""
+Takes a symbol 'key', applys flags, finds matches in s, and returns a vector of matching keys.
+Currently, there are two options: no flags, in which case [key] is returned, or ~ is the only flag, in which case all Symbols with matching substrings are returned.
+"""
+function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector{Symbol} # Could make this a generator?
+
+    if isempty(flags)
+        @assert (key ∈ s) "$s does not contain key $key !  Did you forget to prefix ~?"
+        return [key] # potentially inefficient
+    elseif :~ ∈ flags
+
+        matches = collect(substring_matches(s, string(key)))
+
+        new_flags = copy(flags) # copy isn't necessary, probably
+        pop!(new_flags, :~) 
+
+        return collect(flatmap(x -> apply_flags(x, new_flags, s), matches)) # this is just in case we add additional flags.  As is, the recursion is unnecessary.
+    else
+        error("Unknown flag found!  $(flags)")
+    end
+end
+
+"""
+    substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
+
+Convert Dict(SymA => IntA), Dict(SymB => IntB), Dict(SymA => SymB) into Dict{IntA => IntB}
+Using original sf defintions, and the user defined mappings, transform user defined symbol mappings to index mappings.
+"""
+function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vector{DSLArgument} ; use_flags::Bool=true)::Dict{Int, Int}
+    if !use_flags
+        mapping = Dict(arg.key => arg.value for arg in m)
+        return connect_by_value(src=s, mapping=mapping, tgt=t)
+    else
+        master_dict::Dict{Int, Int} = Dict()
+        for statement in m
+            key_matches = apply_flags(statement.key, statement.flags, collect(keys(s))) # Vector of Symbol
+            if isempty(key_matches)
+                println("WARNING!  No matches on $(statement.key) with flags $(statement.flags)")
+            else
+                mergewith!((x...) -> first(x), master_dict, Dict(s[match] => t[statement.value] for match ∈ key_matches))
             end
         end
-        # potential_values = filter(((index, (i, j)),) -> i == m1 && j == m2, [(index, (i, j)) for (index, (i,j)) in enumerate(link_codomain)])
-        @assert length(potential_values) == 1 "Didn't find one value to map ($x1, $x2) to for $linkname1, $linkname2 !  Found: $(potential_values)"
-        push!(inferred_links, potential_values[1])
+        return master_dict
     end
-
-    return inferred_links
 end
 
-function extract_subpart_ordered_tuple(sf, subpart::Symbol...)::Vector{Vector{Any}} # usually Int64 but works with names too.  Might just be Int64 and Symbol
-    if isempty(subpart)
-        return []
-    end
 
-    subparts = [extract_subpart_ordered(sf, sp) for sp in subpart]
-    # println(subparts)
-    # println("HERE")
-    # collected_tuples = [tuple(vec...) for vec in zip(subparts...)]
-    collected_tuples = [collect(vec) for vec in zip(subparts...)]
-
-    # println(collected_tuples)
-    return collected_tuples
-    # k = collect([extract_subpart_ordered(sf, sp) for sp in subpart])
-    # println(k)apply_homo
-    # return k
+"""
+Convert a vector of unique elements to a dictionary with each element pointing to their original index.
+"""
+function invert_vector(v::Vector{K})::Dict{K, Int} where {K} # Elements of v must be hashable
+    new_dict = Dict(val => i for (i, val) ∈ enumerate(v))
+    @assert length(new_dict) == length(v) "Nonunique key in vector v: $v"
+    return new_dict
 end
 
-function extract_subpart_ordered(sf, subpart::Symbol)
-    return [k[2] for k in extract_subpart(sf, subpart)] # Here's hoping it's ordered, heh.  It should be.
-    # As in, the pairs should be 1 => _, 2 => _, ..., rather than 5 => _, 14 => _, ...
+
+"""
+Takes any arguments and returns nothing.
+Used so we can maintain equality when making ACSetTransformations.
+"""
+NothingFunction(x...)::Nothing = nothing;
+
+
+
+
+include("syntax/Composition.jl")
+include("syntax/Stratification.jl")
+
 end
 
-function extract_subpart(sf, subpart::Symbol)
-    println(subpart)
-    println("printing in extract_subpart in Syntax")
-    return (getfield(sf, :subparts)[subpart]).m
-end
 
-    
-end
+
+
+
