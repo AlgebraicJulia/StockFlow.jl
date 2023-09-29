@@ -1,4 +1,5 @@
 [deps]
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
