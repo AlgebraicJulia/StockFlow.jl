@@ -293,62 +293,62 @@ get_lvtgt(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
 
 StockAndFlowStructure(s,f,sv) = begin
 
-    p = StockAndFlowStructure()
+  p = StockAndFlowStructure()
 
-    s = vectorify(s)
-    f = vectorify(f)
-    sv = vectorify(sv)
+  s = vectorify(s)
+  f = vectorify(f)
+  sv = vectorify(sv)
 
-    sname = map(first,s)
-    fname = map(first, f)
-    vname = map(last, f)
-    svname = map(first, sv)
-    s_idx = state_dict(sname)
-    f_idx = state_dict(fname)
-    v_idx = state_dict(vname)
-    sv_idx = state_dict(svname)
+  sname = map(first,s)
+  fname = map(first, f)
+  vname = map(last, f)
+  svname = map(first, sv)
+  s_idx = state_dict(sname)
+  f_idx = state_dict(fname)
+  v_idx = state_dict(vname)
+  sv_idx = state_dict(svname)
 
-    # adding the objects that do not have out-morphisms firstly
-    add_variables!(p, length(vname), vname=vname)    # add objects :V (auxiliary variables)
-    add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum auxiliary variables)
-    add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
+  # adding the objects that do not have out-morphisms firstly
+  add_variables!(p, length(vname), vname=vname)    # add objects :V (auxiliary variables)
+  add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum auxiliary variables)
+  add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
 
-    # Parse the elements included in "s" -- stocks
-    for (i, (name,(ins,outs,vs,svs))) in enumerate(s)
-      i = add_stock!(p,sname=name) # add objects :S (stocks)
-      ins=vectorify(ins) # inflows of each stock
-      outs=vectorify(outs) # outflows of each stock
-      vs=vectorify(vs) # auxiliary variables depends on the stock
-      svs=vectorify(svs) # sum auxiliary variables depends on the stock
-      # filter out the fake (empty) elements
-      ins = ins[ins .!= FK_FLOW_NAME]
-      outs = outs[outs .!= FK_FLOW_NAME]
-      vs = vs[vs .!= FK_VARIABLE_NAME]
-      svs = svs[svs .!= FK_SVARIABLE_NAME]
+  # Parse the elements included in "s" -- stocks
+  for (i, (name,(ins,outs,vs,svs))) in enumerate(s)
+    i = add_stock!(p,sname=name) # add objects :S (stocks)
+    ins=vectorify(ins) # inflows of each stock
+    outs=vectorify(outs) # outflows of each stock
+    vs=vectorify(vs) # auxiliary variables depends on the stock
+    svs=vectorify(svs) # sum auxiliary variables depends on the stock
+    # filter out the fake (empty) elements
+    ins = ins[ins .!= FK_FLOW_NAME]
+    outs = outs[outs .!= FK_FLOW_NAME]
+    vs = vs[vs .!= FK_VARIABLE_NAME]
+    svs = svs[svs .!= FK_SVARIABLE_NAME]
 
-      if length(ins)>0
-        add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
-      end
-      if length(outs)>0
-        add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
-      end
-      if length(vs)>0
-        add_Vlinks!(p, length(vs), repeat([i], length(vs)), map(x->v_idx[x], vs)) # add objects :LV (links from Stock to dynamic variable)
-      end
-      if length(svs)>0
-        add_Slinks!(p, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
-      end
+    if length(ins)>0
+      add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
     end
-
-    # Parse the elements included in "sv" -- sum auxiliary vairables
-    for (i, (svname,vs)) in enumerate(sv)
-      vs=vectorify(vs)
-      vs = vs[vs .!= FK_SVVARIABLE_NAME]
-      if length(vs)>0
-        add_SVlinks!(p, length(vs), repeat(collect(sv_idx[svname]), length(vs)), map(x->v_idx[x], collect(vs)))
-      end
+    if length(outs)>0
+      add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
     end
-    p
+    if length(vs)>0
+      add_Vlinks!(p, length(vs), repeat([i], length(vs)), map(x->v_idx[x], vs)) # add objects :LV (links from Stock to dynamic variable)
+    end
+    if length(svs)>0
+      add_Slinks!(p, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
+    end
+  end
+
+  # Parse the elements included in "sv" -- sum auxiliary vairables
+  for (i, (svname,vs)) in enumerate(sv)
+    vs=vectorify(vs)
+    vs = vs[vs .!= FK_SVVARIABLE_NAME]
+    if length(vs)>0
+      add_SVlinks!(p, length(vs), repeat(collect(sv_idx[svname]), length(vs)), map(x->v_idx[x], collect(vs)))
+    end
+  end
+  p
 end
 
 ###### TODO #### delete??
@@ -362,62 +362,62 @@ end
 
 StockAndFlow(s,f,v,sv) = begin
 
-    p = StockAndFlow()
+  p = StockAndFlow()
 
-    s = vectorify(s)
-    f = vectorify(f)
-    v = vectorify(v)
-    sv = vectorify(sv)
+  s = vectorify(s)
+  f = vectorify(f)
+  v = vectorify(v)
+  sv = vectorify(sv)
 
-    sname = map(first,s)
-    fname = map(first, f)
-    vname = map(first, v)
-    svname = map(first, sv)
-    s_idx = state_dict(sname)
-    f_idx = state_dict(fname)
-    v_idx = state_dict(vname)
-    sv_idx = state_dict(svname)
+  sname = map(first,s)
+  fname = map(first, f)
+  vname = map(first, v)
+  svname = map(first, sv)
+  s_idx = state_dict(sname)
+  f_idx = state_dict(fname)
+  v_idx = state_dict(vname)
+  sv_idx = state_dict(svname)
 
-    # adding the objects that do not have out-morphisms firstly
-    add_variables!(p, length(vname), vname=vname, funcDynam=map(last, v))    # add objects :V (auxiliary variables)
-    add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum auxiliary variables)
-    add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
+  # adding the objects that do not have out-morphisms firstly
+  add_variables!(p, length(vname), vname=vname, funcDynam=map(last, v))    # add objects :V (auxiliary variables)
+  add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum auxiliary variables)
+  add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
 
-    # Parse the elements included in "s" -- stocks
-    for (i, (name,(ins,outs,vs,svs))) in enumerate(s)
-      i = add_stock!(p,sname=name) # add objects :S (stocks)
-      ins=vectorify(ins) # inflows of each stock
-      outs=vectorify(outs) # outflows of each stock
-      vs=vectorify(vs) # auxiliary variables depends on the stock
-      svs=vectorify(svs) # sum auxiliary variables depends on the stock
-      # filter out the fake (empty) elements
-      ins = ins[ins .!= FK_FLOW_NAME]
-      outs = outs[outs .!= FK_FLOW_NAME]
-      vs = vs[vs .!= FK_VARIABLE_NAME]
-      svs = svs[svs .!= FK_SVARIABLE_NAME]
-      if length(ins)>0
-        add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
-      end
-      if length(outs)>0
-        add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
-      end
-      if length(vs)>0
-        add_Vlinks!(p, length(vs), repeat([i], length(vs)), map(x->v_idx[x], vs)) # add objects :LV (links from Stock to dynamic variable)
-      end
-      if length(svs)>0
-        add_Slinks!(p, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
-      end
+  # Parse the elements included in "s" -- stocks
+  for (i, (name,(ins,outs,vs,svs))) in enumerate(s)
+    i = add_stock!(p,sname=name) # add objects :S (stocks)
+    ins=vectorify(ins) # inflows of each stock
+    outs=vectorify(outs) # outflows of each stock
+    vs=vectorify(vs) # auxiliary variables depends on the stock
+    svs=vectorify(svs) # sum auxiliary variables depends on the stock
+    # filter out the fake (empty) elements
+    ins = ins[ins .!= FK_FLOW_NAME]
+    outs = outs[outs .!= FK_FLOW_NAME]
+    vs = vs[vs .!= FK_VARIABLE_NAME]
+    svs = svs[svs .!= FK_SVARIABLE_NAME]
+    if length(ins)>0
+      add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
     end
-
-    # Parse the elements included in "sv" -- sum auxiliary vairables
-    for (i, (svname,vs)) in enumerate(sv)
-      vs=vectorify(vs)
-      vs = vs[vs .!= FK_SVVARIABLE_NAME]
-      if length(vs)>0
-        add_SVlinks!(p, length(vs), repeat(collect(sv_idx[svname]), length(vs)), map(x->v_idx[x], collect(vs)))
-      end
+    if length(outs)>0
+      add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
     end
-    p
+    if length(vs)>0
+      add_Vlinks!(p, length(vs), repeat([i], length(vs)), map(x->v_idx[x], vs)) # add objects :LV (links from Stock to dynamic variable)
+    end
+    if length(svs)>0
+      add_Slinks!(p, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
+    end
+  end
+
+  # Parse the elements included in "sv" -- sum auxiliary vairables
+  for (i, (svname,vs)) in enumerate(sv)
+    vs=vectorify(vs)
+    vs = vs[vs .!= FK_SVVARIABLE_NAME]
+    if length(vs)>0
+      add_SVlinks!(p, length(vs), repeat(collect(sv_idx[svname]), length(vs)), map(x->v_idx[x], collect(vs)))
+    end
+  end
+  p
 end
 
 add_parameter!(p::AbstractStockAndFlowStructureF;kw...) = add_part!(p,:P;kw...)
@@ -639,11 +639,11 @@ fvs(p::AbstractStockAndFlowStructure)=[fv(p,f) for f in 1:nf(p)]
 
 """ return the pair of names of (stock, sum-auxiliary-variable) for all linkages between them """
 lsnames(p::AbstractStockAndFlow0) = begin
-    s = map(x->subpart(p,x,:lss),collect(1:nls(p)))
-    sv = map(x->subpart(p,x,:lssv),collect(1:nls(p)))
-    sn = map(x->sname(p,x),s)
-    svn = map(x->svname(p,x),sv)
-    pssv = collect(zip(sn, svn))
+  s = map(x->subpart(p,x,:lss),collect(1:nls(p)))
+  sv = map(x->subpart(p,x,:lssv),collect(1:nls(p)))
+  sn = map(x->sname(p,x),s)
+  svn = map(x->svname(p,x),sv)
+  pssv = collect(zip(sn, svn))
 end
 
 """ return inflows of stock index s """
@@ -695,56 +695,56 @@ lpvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lpvv),:lpvppo
 
 # create a dictionary
 make_dict(ks, vs) = begin
-    @assert length(ks)==length(vs)
-    dic=()
-    for (k,v) in zip(ks,vs)
-        dic=(dic...,(k,v))
-    end
-    return Dict(dic)
+  @assert length(ks)==length(vs)
+  dic=()
+  for (k,v) in zip(ks,vs)
+      dic=(dic...,(k,v))
+  end
+  return Dict(dic)
 end
 """ create expresision of an auxiliary variable v """
 function make_v_expr(p::AbstractStockAndFlowF,v)
 
-    op = vop(p,v)
-    srcsv=map(i->sname(p,i),stocksv(p,v))
-    srcsvv=map(i->svname(p,i),svsv(p,v))
-    srcpv=map(i->pname(p,i),vpsrc(p,v))
-    srcvv=map(i->vname(p,i),vsrc(p,v))
+  op = vop(p,v)
+  srcsv=map(i->sname(p,i),stocksv(p,v))
+  srcsvv=map(i->svname(p,i),svsv(p,v))
+  srcpv=map(i->pname(p,i),vpsrc(p,v))
+  srcvv=map(i->vname(p,i),vsrc(p,v))
 
-    lvvp=lvvposition(p,v)
-    lvtgtp=lvtgtposition(p,v)
-    lsvvp=lsvvposition(p,v)
-    lpvvp=lpvvposition(p,v)
+  lvvp=lvvposition(p,v)
+  lvtgtp=lvtgtposition(p,v)
+  lsvvp=lsvvposition(p,v)
+  lpvvp=lpvvposition(p,v)
 
-    if length(srcvv)>0
-        srcvv=map(x->make_v_expr(p,vsrc(p,v)[x]),1:length(vsrc(p,v)))
-    end
+  if length(srcvv)>0
+      srcvv=map(x->make_v_expr(p,vsrc(p,v)[x]),1:length(vsrc(p,v)))
+  end
 
-    # create dictionary of (key=position, value=symbole of source argument)
-    position_src=merge(make_dict(lvvp,srcsv),make_dict(lsvvp,srcsvv),make_dict(lpvvp,srcpv),make_dict(lvtgtp,srcvv))
-    ordered_position_src=sort(collect(position_src), by = x->x[1])
-    srcs=map(x->last(x),ordered_position_src)
+  # create dictionary of (key=position, value=symbole of source argument)
+  position_src=merge(make_dict(lvvp,srcsv),make_dict(lsvvp,srcsvv),make_dict(lpvvp,srcpv),make_dict(lvtgtp,srcvv))
+  ordered_position_src=sort(collect(position_src), by = x->x[1])
+  srcs=map(x->last(x),ordered_position_src)
 
-    return math_expr(op,srcs...)
+  return math_expr(op,srcs...)
 end
 # genreate an array of all arguments of an expression
 generate_expr_args(expr) = begin
-    args=expr.args
-    argsarray=[]
-    for arg in args
-        if arg isa Expr
-            argsarray=vcat(argsarray,generate_expr_args(arg))
-        else
-            argsarray=vcat(argsarray,arg)
-        end
-    end
-    ops=vcat(collect(values(Operators))...)
-    return setdiff(unique(argsarray),ops)
+  args=expr.args
+  argsarray=[]
+  for arg in args
+      if arg isa Expr
+          argsarray=vcat(argsarray,generate_expr_args(arg))
+      else
+          argsarray=vcat(argsarray,arg)
+      end
+  end
+  ops=vcat(collect(values(Operators))...)
+  return setdiff(unique(argsarray),ops)
 end
 # evaluate an expression to a function
 eval_function(expr,s,sv,p,us,uNs,ps) = begin
-    f=eval(Expr(:->, Expr(:tuple, s..., sv..., p...), Expr(:block,:(()),expr)))
-    return @eval $f($(us...), $(uNs...), $(ps...))
+  f=eval(Expr(:->, Expr(:tuple, s..., sv..., p...), Expr(:block,:(()),expr)))
+  return @eval $f($(us...), $(uNs...), $(ps...))
 end
 
 
@@ -771,20 +771,20 @@ funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
     funcDynam(sf::AbstractStockAndFlowF,v)
 return the functions of variables give index v """
 funcDynam(sf::AbstractStockAndFlowF,v) = begin
-    expr=make_v_expr(sf,v)
-    args=generate_expr_args(expr)
+  expr=make_v_expr(sf,v)
+  args=generate_expr_args(expr)
 
-    args_s=args[findall(in(snames(sf)),args)]
-    args_sv=args[findall(in(svnames(sf)),args)]
-    args_p=args[findall(in(pnames(sf)),args)]
+  args_s=args[findall(in(snames(sf)),args)]
+  args_sv=args[findall(in(svnames(sf)),args)]
+  args_p=args[findall(in(pnames(sf)),args)]
 
-    f(u,uN,p,t)=begin
-        us=map(i->u[i],args_s)
-        uNs=map(i->uN[i](u,t),args_sv)
-        ps=map(i->p[i],args_p)
-        return eval_function(expr,args_s,args_sv,args_p,us,uNs,ps)
-    end
-    return f
+  f(u,uN,p,t)=begin
+    us=map(i->u[i],args_s)
+    uNs=map(i->uN[i](u,t),args_sv)
+    ps=map(i->p[i],args_p)
+    return eval_function(expr,args_s,args_sv,args_p,us,uNs,ps)
+  end
+  return f
 end
 
 """ return the auxiliary variable's index that related to the flow with index of f """
@@ -798,29 +798,29 @@ funcFlowsRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
 end
 """ generate the function substituting sum variables in with flow index fn """
 funcFlow(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}, fn) = begin
-    func=funcFlowRaw(pn,fn)
-    f(u,p,t) = begin
-        uN=funcSVs(pn)
-        return valueat(func,u,uN,p,t)
-    end
+  func=funcFlowRaw(pn,fn)
+  f(u,p,t) = begin
+      uN=funcSVs(pn)
+      return valueat(func,u,uN,p,t)
+  end
 end
 """ return the LVector of pairs: fname => function (with function of sum variables substitue in) """
 funcFlows(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF})=begin
-    fnames = [fname(p, f) for f in 1:nf(p)]
-    LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
+  fnames = [fname(p, f) for f in 1:nf(p)]
+  LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
 end
 
 
 """ generate the function of a sum auxiliary variable (index sv) with the sum of all stocks links to it """
 funcSV(p::AbstractStockAndFlow0,sv) = begin
-    uN(u,t) = begin
-        sumS = 0
-        for i in stockssv(p,sv)
-            sumS=sumS+u[sname(p,i)]
-        end
-        return sumS
-    end
-    return uN
+  uN(u,t) = begin
+      sumS = 0
+      for i in stockssv(p,sv)
+          sumS=sumS+u[sname(p,i)]
+      end
+      return sumS
+  end
+  return uN
 end
 """ return the LVector of pairs: svname => function """
 funcSVs(p::AbstractStockAndFlow0) = begin
@@ -834,11 +834,11 @@ end
 
 # given a stock and flow diagram in schema "StockAndFlow", return a stock and flow diagram in schema "StockAndFlow0"
 object_shift_right(p::StockAndFlowStructure) = begin
-    s = snames(p)
-    sv = svnames(p)
-    ssv = map(y->map(x->(sname(p,y),x),svname(p,svsstock(p,y))),collect(1:ns(p)))
-    ssv = vcat(ssv...)
-    StockAndFlow0(s,sv,ssv)
+  s = snames(p)
+  sv = svnames(p)
+  ssv = map(y->map(x->(sname(p,y),x),svname(p,svsstock(p,y))),collect(1:ns(p)))
+  ssv = vcat(ssv...)
+  StockAndFlow0(s,sv,ssv)
 end
 
 # create open acset, as the structured cospan
@@ -853,27 +853,27 @@ foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
 
 leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowStructureF,StockAndFlowF}) = begin
-    if ns(a)>0 # if have stocks
-      ϕs = ntcomponent(snames(a), snames(x))
-    else
-      ϕs = Int[]
-    end
+  if ns(a)>0 # if have stocks
+    ϕs = ntcomponent(snames(a), snames(x))
+  else
+    ϕs = Int[]
+  end
 
-    if nsv(a) > 0  # if have sum-auxiliary-variable
-      ϕsv = ntcomponent(svnames(a), svnames(x))
-    else
-      ϕsv = Int[]
-    end
+  if nsv(a) > 0  # if have sum-auxiliary-variable
+    ϕsv = ntcomponent(svnames(a), svnames(x))
+  else
+    ϕsv = Int[]
+  end
 
-    if nls(a)>0 # if have links between stocks and sum-auxiliary-variables
-      ϕls = ntcomponent(lsnames(a), lsnames(x))
-    else
-      ϕls = Int[]
-    end
+  if nls(a)>0 # if have links between stocks and sum-auxiliary-variables
+    ϕls = ntcomponent(lsnames(a), lsnames(x))
+  else
+    ϕls = Int[]
+  end
 
-    result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv)
+  result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv)
 
-    result
+  result
 end
 
 Open(p::StockAndFlow, feet...) = begin
