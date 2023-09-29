@@ -50,6 +50,7 @@ fNewRecovery = "u.I/p.tr"
 sir = NewStockAndFlowSymbolic((:S, :I, :R), 
    ((:NewIncidence=>fNewIncidence, :S=>:I)=>(:S,:I),
     (:NewRecovery=>fNewRecovery, :I=>:R)=>:I))
+```
 
 ```@example JSON
 JSON3.pretty(generate_json_acset(sir))
