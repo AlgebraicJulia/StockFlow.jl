@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, @hom, infer_links, apply_hom
+export @stock_and_flow, @foot, @feet, @hom, infer_links
 
 using ..StockFlow
 using MLStyle
@@ -1049,82 +1049,6 @@ end
 
 #############################################
 
-macro hom(block)
-    Base.remove_linenums!(block)
-    stocks::Vector{Pair{Symbol,Symbol}} = []
-    params::Vector{Pair{Symbol,Symbol}} = []
-    dyvars::Vector{Pair{Symbol,Symbol}} = []
-    flows::Vector{Pair{Symbol,Symbol}} = []
-    sums::Vector{Pair{Symbol,Symbol}} = []
-    current_phase = (_, _) -> ()
-    for statement in block.args
-        @match statement begin
-            QuoteNode(:stocks) => begin
-                current_phase = s -> push!(stocks, s)
-            end
-            QuoteNode(:parameters) => begin
-                current_phase = p -> push!(params, p)
-            end
-            QuoteNode(:dynamic_variables) => begin
-                current_phase = d -> push!(dyvars, d)
-            end
-            QuoteNode(:flows) => begin
-                current_phase = f -> push!(flows, f)
-            end
-            QuoteNode(:sums) => begin
-                current_phase = s -> push!(sums, s)
-            end
-            QuoteNode(kw) =>
-                error("Unknown block type for homomorphism syntax: " * String(kw))
-            :($A => $B) => current_phase(A => B)
-            _ => error("Unknown symbol format.  Must be A => B.")
-        end
-    end
-    return Dict(:stocks => stocks, :flows => flows, :dyvars => dyvars, :params => params, :sums => sums)
-end
-
-function names_to_index(sf, func)
-    Dict(name => i for (i, name) in enumerate(func(sf)))
-end
-
-function all_names_to_index(sf)
-    Dict(:stocks => names_to_index(sf, snames),
-    :flows => names_to_index(sf, fnames),
-    :dyvars => names_to_index(sf, vnames),
-    :params => names_to_index(sf, pnames),
-    :sums => names_to_index(sf, svnames)
-    )
-end
-
-
-function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
-    srcnames = all_names_to_index(sf1)
-    tgtnames = all_names_to_index(sf2)
-
-    homstocks = [srcnames[:stocks][name1] => tgtnames[:stocks][name2] for (name1, name2) in hom[:stocks]]
-    homflows = [srcnames[:flows][name1] => tgtnames[:flows][name2] for (name1, name2) in hom[:flows]]
-    homparams = [srcnames[:params][name1] => tgtnames[:params][name2] for (name1, name2) in hom[:params]]
-    homdyvars = [srcnames[:dyvars][name1] => tgtnames[:dyvars][name2] for (name1, name2) in hom[:dyvars]]
-    homsums = [srcnames[:sums][name1] => tgtnames[:sums][name2] for (name1, name2) in hom[:sums]]
-
-
-    necMaps = Dict(:S => map(first, sort!(homstocks, by=x -> x[2])), 
-    :F => map(first, sort!(homflows, by=x -> x[2])), 
-    :SV => map(first, sort!(homsums, by=x -> x[2])), 
-    :P => map(first, sort!(homparams, by=x -> x[2])), 
-    :V => map(first, sort!(homdyvars, by=x -> x[2]))
-    )
-
-    println(necMaps)
-    links = infer_links(sf1, sf2, necMaps)
-    println(links)
-
-
-    ACSetTransformation(sf1, sf2, ; filter(kv -> !isempty(kv[2]), necMaps)..., filter(kv -> !isempty(kv[2]), links)...,)
-
-
-end
-
 
 """
     infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector, posf=nothing)
@@ -1198,8 +1122,6 @@ function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: 
     infer_particular_link!(sfsrc, sftgt, get_lpvp, get_lpvv, parammaps, dyvarmaps, lpvmaps) # LPV
 
     return Dict(:LS => lsmaps, :LSV => lsvmaps, :LV => lvmaps, :I => imaps, :O => omaps, :LPV => lpvmaps, :LVV => lvvmaps)
-
-include("syntax/Composition.jl")
 
 end
 
@@ -1329,6 +1251,7 @@ NothingFunction(x...)::Nothing = nothing;
 
 include("syntax/Composition.jl")
 include("syntax/Stratification.jl")
+include("syntax/Homomorphism.jl")
 
 end
 
