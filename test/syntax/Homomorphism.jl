@@ -3,6 +3,7 @@ using StockFlow.Syntax
 using StockFlow.Syntax: NothingFunction
 using StockFlow.Syntax.Homomorphism
 
+
 using StockFlow.PremadeModels
 
 
@@ -10,12 +11,12 @@ using Catlab.CategoricalAlgebra
 
 @testset "hom macro creates correct homomorphisms" begin
   empty = @stock_and_flow begin end
-  empty_hom = ACSetTransformation(empty, empty; :Op => NothingFunction, :Position => NothingFunction, :Name => NothingFunction )
+  empty_hom = ACSetTransformation(empty, map(empty, Op = NothingFunction, Position = NothingFunction, Name = NothingFunction); :Op => NothingFunction, :Position => NothingFunction, :Name => NothingFunction )
   @test (@hom empty empty begin end) == empty_hom
 
   sfA = @stock_and_flow begin; :stocks; A; end;
   sfB = @stock_and_flow begin; :stocks; B; end;
-  @test (@hom sfA sfB begin; :stocks; A => B; end;) == ACSetTransformation(sfA, sfB ; :S => [1], :Op => NothingFunction, :Position => NothingFunction, :Name => NothingFunction)
+  @test (@hom sfA sfB begin; :stocks; A => B; end;) == ACSetTransformation(sfA, map(sfB, Op = NothingFunction, Position = NothingFunction, Name = NothingFunction) ; :S => [1], :Op => NothingFunction, :Position => NothingFunction, :Name => NothingFunction)
 
   seir = PremadeModels.seir()
 
@@ -61,7 +62,7 @@ using Catlab.CategoricalAlgebra
     N => N
     NI => NI
     NS => NS
-  end) == ACSetTransformation(seir, seir ; :S => (1:4), :F => (1:8), :V => (1:11),
+  end) == ACSetTransformation(seir,map(seir, Op = NothingFunction, Position = NothingFunction, Name = NothingFunction)  ; :S => (1:4), :F => (1:8), :V => (1:11),
     :SV => (1:3), :P => (1:6), :LS => (1:9), :I => (1:4), :O => (1:7), :LV => (1:7),
     :LSV => (1:3), :LVV => (1:3), :LPV => (1:9), 
     :Op => NothingFunction, :Position => NothingFunction, :Name => NothingFunction)
@@ -155,7 +156,10 @@ using Catlab.CategoricalAlgebra
     
   end;
 
-  typed_WeightModel=ACSetTransformation(WeightModel, l_type,
+  l_type_noatts = map(l_type, Name=NothingFunction, Op=NothingFunction, Position=NothingFunction);
+
+
+  typed_WeightModel=ACSetTransformation(WeightModel, l_type_noatts,
   S = [s,s,s],
   SV = [N],
   LS = [lsn,lsn,lsn],   
@@ -170,7 +174,7 @@ using Catlab.CategoricalAlgebra
   Name=NothingFunction, Op=NothingFunction, Position=NothingFunction
 );
 
-(@hom WeightModel l_type begin
+@test (@hom WeightModel l_type begin
   :stocks
   NormalWeight => pop
   OverWeight => pop
@@ -211,7 +215,34 @@ using Catlab.CategoricalAlgebra
 
 end) == typed_WeightModel
 
+@test (@hom WeightModel l_type begin
+  :stocks
+  NormalWeight => pop
+  OverWeight => pop
+  Obese => pop
 
+  :parameters
+  μ => μ
+  ~δ => δ
+  rage => rage
+  _ => rFstOrder
+
+  :dynamic_variables
+  v_NewBorn => v_birth
+  ~Becoming => v_fstOrder
+  ~Death => v_death
+  _ => v_aging
+
+  :flows
+  f_NewBorn => f_birth
+  ~Becoming => f_fstOrder
+  ~Death => f_death
+  ~id => f_aging
+  _ => f_death
+
+
+
+end) == typed_WeightModel
 
 
 

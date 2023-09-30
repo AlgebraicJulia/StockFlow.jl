@@ -109,7 +109,7 @@ using ..StockFlow
 using MLStyle
 using Catlab.CategoricalAlgebra
 
-import Base: ==, Iterators.flatmap
+import Base: ==, Iterators.flatmap, get
 
 """
     stock_and_flow(block :: Expr)
@@ -1257,10 +1257,14 @@ end
 Convert a vector of unique elements to a dictionary with each element pointing
 to their original index.
 """
-function invert_vector(v::Vector{K})::Dict{K, Int} where {K} # Elements of v must be hashable
+function invert_vector(v::Union{Vector{Any}, Vector{K}}, ::Type{K})::Dict{K, Int} where {K} # Elements of v must be hashable
   new_dict = Dict(val => i for (i, val) ∈ enumerate(v))
   @assert length(new_dict) == length(v) "Nonunique key in vector v: $v"
   return new_dict
+end
+
+function invert_vector(v::Vector{K})::Dict{K, Int} where {K}
+  invert_vector(v, K)
 end
 
 
@@ -1269,6 +1273,63 @@ Takes any arguments and returns nothing. Used so we can maintain equality when
 making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
+
+
+
+
+
+
+function complete_mappings(sf1::K, sf2::K, all_index_mappings::Vector{Dict{Int, Int}}; strict_mappings = false)::Dict{Symbol, Vector{Int}} where {K <: AbstractStockAndFlowStructureF}
+
+  default_index_stock = get(all_index_mappings[1], -1, 0)
+  default_index_sum = get(all_index_mappings[2], -1, 0)
+  default_index_dyvar = get(all_index_mappings[3], -1, 0)
+  default_index_flow = get(all_index_mappings[4], -1, 0)
+  default_index_param = get(all_index_mappings[5], -1, 0)
+
+
+
+  # STEP 3
+  if !strict_mappings # if there is only one stock, it needs to have index 1
+    one_type_stock = length(snames(sf2)) == 1 ? 1 : 0 
+    one_type_flow = length(fnames(sf2)) == 1 ? 1 : 0
+    one_type_dyvar = length(vnames(sf2)) == 1 ? 1 : 0
+    one_type_param = length(pnames(sf2)) == 1 ? 1 : 0
+    one_type_sum = length(svnames(sf2)) == 1 ? 1 : 0
+  else
+    one_type_stock = one_type_flow = one_type_dyvar = one_type_param = one_type_sum = 0
+  end
+
+  # Convert back to vectors.  If you find a zero, check if there's a default and
+  # use that.  If there isn't a default, check if there's only one option and
+  # use that. Otherwise, there's an unassigned value which can't be inferred.
+  # Taking max because it's less verbose than ternary and accomplishes the same
+  # thing:
+  # - If both default_index and one_type are mapped, they must be mapped to the
+  #   same thing, because one_type being mapped implies there's only one option.
+  # - If only one_type is mapped, then it will be positive, and default_infex
+  #   will be 0
+  # - If only default_index is mapped, it will be positive and one_type will be
+  #   0
+
+  stock_mappings::Vector{Int} = [get(all_index_mappings[1], i, 
+    max(default_index_stock, one_type_stock))  for i ∈ 1:ns(sf1)]
+  sum_mappings::Vector{Int} =  [get(all_index_mappings[2], i,  
+    max(default_index_sum, one_type_sum))  for i ∈ 1:nsv(sf1)]
+  dyvar_mappings::Vector{Int} = [get(all_index_mappings[3], i, 
+    max(default_index_dyvar, one_type_dyvar))  for i ∈ 1:nvb(sf1)]
+  flow_mappings::Vector{Int} =  [get(all_index_mappings[4], i, 
+    max(default_index_flow, one_type_flow))  for i ∈ 1:nf(sf1)]
+  param_mappings::Vector{Int} = [get(all_index_mappings[5], i,  
+    max(default_index_param, one_type_param))  for i ∈ 1:np(sf1)]
+
+  return Dict(:S => stock_mappings, :SV => sum_mappings, :V => dyvar_mappings, :F => flow_mappings, :P => param_mappings)
+
+end
+
+
+
+
 
 
 
