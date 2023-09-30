@@ -67,23 +67,24 @@ end
 function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
   srcnames = all_names_to_index(sf1)
   tgtnames = all_names_to_index(sf2)
-  println(srcnames)
-  println(tgtnames)
 
   homstocks = [srcnames[:S][name1] => tgtnames[:S][name2] for (name1, name2) in hom[:S]]
+
   homflows = [srcnames[:F][name1] => tgtnames[:F][name2] for (name1, name2) in hom[:F]]
   homparams = [srcnames[:P][name1] => tgtnames[:P][name2] for (name1, name2) in hom[:P]]
   homdyvars = [srcnames[:V][name1] => tgtnames[:V][name2] for (name1, name2) in hom[:V]]
   homsums = [srcnames[:SV][name1] => tgtnames[:SV][name2] for (name1, name2) in hom[:SV]]
 
+  # nec_maps = Dict{Symbol, Vector{Int64}}(
+  #   :S => map()
+  # )
 
-  nec_maps = Dict{Symbol, Vector{Int64}}(:S => map(first, sort!(homstocks, by=x -> x[2])), 
-  :F => map(first, sort!(homflows, by=x -> x[2])), 
-  :SV => map(first, sort!(homsums, by=x -> x[2])), 
-  :P => map(first, sort!(homparams, by=x -> x[2])), 
-  :V => map(first, sort!(homdyvars, by=x -> x[2]))
+  nec_maps = Dict{Symbol, Vector{Int64}}(:S => map(last, sort!(homstocks, by=x -> x[1])), 
+  :F => map(last, sort!(homflows, by=x -> x[1])), 
+  :SV => map(last, sort!(homsums, by=x -> x[1])), 
+  :P => map(last, sort!(homparams, by=x -> x[1])), 
+  :V => map(last, sort!(homdyvars, by=x -> x[1]))
   )
-  println(nec_maps)
 
   links = infer_links(sf1, sf2, nec_maps)
 
