@@ -1119,7 +1119,7 @@ array of indices
 """
 function infer_links(sfsrc :: StockAndFlowF, sftgt :: StockAndFlowF, NecMaps :: Dict{Symbol, Vector{Int64}})
 
-
+  println(NecMaps)
   stockmaps = NecMaps[:S]
   flowmaps = NecMaps[:F]
   summaps = NecMaps[:SV]

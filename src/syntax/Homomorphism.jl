@@ -67,6 +67,8 @@ end
 function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
   srcnames = all_names_to_index(sf1)
   tgtnames = all_names_to_index(sf2)
+  println(srcnames)
+  println(tgtnames)
 
   homstocks = [srcnames[:S][name1] => tgtnames[:S][name2] for (name1, name2) in hom[:S]]
   homflows = [srcnames[:F][name1] => tgtnames[:F][name2] for (name1, name2) in hom[:F]]
@@ -81,6 +83,7 @@ function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
   :P => map(first, sort!(homparams, by=x -> x[2])), 
   :V => map(first, sort!(homdyvars, by=x -> x[2]))
   )
+  println(nec_maps)
 
   links = infer_links(sf1, sf2, nec_maps)
 
