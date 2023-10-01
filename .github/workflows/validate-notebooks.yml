@@ -14,8 +14,6 @@ jobs:
         uses: julia-actions/setup-julia@v1
         with:
           version: 1.9
-      - name: Cache Julia dependencies
-        uses: julia-actions/cache@v1
       - name: Add IJulia Jupyter kernel
         run: julia --color=yes --project=. -e 'ENV["JULIA_PKG_PRECOMPILE_AUTO"]=0; using Pkg; pkg"add IJulia"'
       - name: Install Julia dependencies
