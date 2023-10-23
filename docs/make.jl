@@ -53,8 +53,8 @@ makedocs(
       "generated/Covid19_composition_model_in_paper.md"
     ],
     "Exercises" => Any[
-      "exercises/SEIRVD/SEIRVD_model_hard.md",
-      "exercises/SIRV/SIRV_composition_model_simple.md"
+      "practices/SEIRVD/SEIRVD_model_hard.md",
+      "practices/SIRV/SIRV_composition_model_simple.md"
     ]
   ]
 )
