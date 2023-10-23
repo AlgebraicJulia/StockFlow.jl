@@ -1,8 +1,8 @@
 # AlgebraicStockFlow
+
 [![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://algebraicjulia.github.io/StockFlow.jl/dev/)
 [![Tests](https://github.com/AlgebraicJulia/StockFlow.jl/actions/workflows/tests.yml/badge.svg)](https://github.com/AlgebraicJulia/StockFlow.jl/actions/workflows/tests.yml)
 <!-- TODO: Set up on codecov.io for repo [![codecov](https://codecov.io/github/AlgebraicJulia/StockFlow.jl/branch/maaster/graph/badge.svg)](https://app.codecov.io/github/AlgebraicJulia/StockFlow.jl) -->
-
 
 StockFlow.jl is a Julia library for the creation and execution of [stock and flow modeling diagrams](https://en.wikipedia.org/wiki/System_dynamics#Stock_and_flow_diagrams), designed with model composition and stratification in mind through a [categorical approach](https://arxiv.org/abs/2211.01290).
 
