@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>COVID-19 Composition Model · StockFlow.jl</title><meta name="title" content="COVID-19 Composition Model · StockFlow.jl"/><meta property="og:title" content="COVID-19 Composition Model · StockFlow.jl"/><meta property="twitter:title" content="COVID-19 Composition Model · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><script src="../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li class="is-active"><a class="tocitem" href>COVID-19 Composition Model</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/composition/COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/composition/curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/composition/diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../full_fledged_schema_examples_new/stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>COVID-19 Composition Model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>COVID-19 Composition Model</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/Covid19_composition_model_in_paper.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="COVID-19-Composition-Model"><a class="docs-heading-anchor" href="#COVID-19-Composition-Model">COVID-19 Composition Model</a><a id="COVID-19-Composition-Model-1"></a><a class="docs-heading-anchor-permalink" href="#COVID-19-Composition-Model" title="Permalink"></a></h1><pre><code class="language-julia hljs">using StockFlow
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.WiringDiagrams
+
+display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=&gt;&quot;1&quot;));</code></pre><p>Define functions ϕ of flows in the SEIRH model</p><pre><code class="language-julia hljs">fNewIncidence(u,p,t)=p.β*u.S*u.I/p.N
+fNewInfectious(u,p,t)=u.E*p.ri
+fNewRecovery(u,p,t)=u.I/p.tr * (1.0-p.fH )
+fWaningImmunityR(u,p,t)=u.R/p.tw
+fHICUAdmission(u,p,t) = u.I/p.tr * p.fH * p.fICU
+fHNICUAdmission(u,p,t) = u.I/p.tr * p.fH * (1.0-p.fICU)
+fOutICU(u,p,t) = u.HICU/p.tICU
+fRecoveryH(u,p,t)= u.HNICU/p.tH</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">fRecoveryH (generic function with 1 method)</code></pre><p>StockAndFlowp(stocks,               (flow=&gt;function, upstream=&gt;downstream) =&gt; stocks linked)</p><pre><code class="language-julia hljs">seirh = StockAndFlowp((:S, :E, :I, :R, :HICU, :HNICU),
+   ((:NewIncidence=&gt;fNewIncidence, :S=&gt;:E) =&gt; (:S, :I),
+    (:NewInfectious=&gt;fNewInfectious, :E=&gt;:I) =&gt; :E,
+    (:NewRecovery=&gt;fNewRecovery, :I=&gt;:R) =&gt; :I,
+    (:WaningImmunityR=&gt;fWaningImmunityR, :R=&gt;:S) =&gt; :R,
+    (:HICUAdmission=&gt;fHICUAdmission, :I=&gt;:HICU) =&gt; :I,
+    (:HNICUAdmission=&gt;fHNICUAdmission, :I=&gt;:HNICU) =&gt; :I,
+    (:OutICU=&gt;fOutICU, :HICU=&gt;:HNICU) =&gt; :HICU,
+    (:RecoveryH=&gt;fRecoveryH, :HNICU=&gt;:R) =&gt; :HNICU))</code></pre><div class="c-set">
+<span class="c-set-summary">StockAndFlowp {Flow:8, Stock:6, Link:9, Name:0, FuncFlow:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Flow</th>
+      <th style = "text-align: right;">u</th>
+      <th style = "text-align: right;">d</th>
+      <th style = "text-align: right;">fname</th>
+      <th style = "text-align: right;">ϕf</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidence</td>
+      <td style = "text-align: right;">fNewIncidence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">NewInfectious</td>
+      <td style = "text-align: right;">fNewInfectious</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">NewRecovery</td>
+      <td style = "text-align: right;">fNewRecovery</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">WaningImmunityR</td>
+      <td style = "text-align: right;">fWaningImmunityR</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">HICUAdmission</td>
+      <td style = "text-align: right;">fHICUAdmission</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">HNICUAdmission</td>
+      <td style = "text-align: right;">fHNICUAdmission</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">OutICU</td>
+      <td style = "text-align: right;">fOutICU</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">RecoveryH</td>
+      <td style = "text-align: right;">fRecoveryH</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Stock</th>
+      <th style = "text-align: right;">sname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">E</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">I</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">HICU</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">HNICU</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Link</th>
+      <th style = "text-align: right;">s</th>
+      <th style = "text-align: right;">t</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">8</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Graph(primitive stock-flow model, direction of the diagram - the default value is &quot;LR&quot; from left to right; users could also use &quot;TB&quot; from top to bottom) Graph(seirh)</p><p>Define functions ϕ of flows in the Vaccine model</p><pre><code class="language-julia hljs">fFirstdoseVaccine(u,p,t) = u.S * p.rv
+fSeconddoseVaccine(u,p,t) = u.VP * p.rv
+fWaningImmunityVP(u,p,t) = u.VP / p.tw
+fWaningImmunityVF(u,p,t) = u.VF / p.tw
+fNewIncidenceVP(u,p,t) = p.β*u.VP*u.I*(1.0-p.eP)/p.N
+fNewIncidenceVF(u,p,t) = p.β*u.VF*u.I*(1.0-p.eF)/p.N</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">fNewIncidenceVF (generic function with 1 method)</code></pre><p>Stock and flow diagram of Vaccine model</p><pre><code class="language-julia hljs">v = StockAndFlowp((:S, :E, :I, :VP, :VF),
+   ((:FirstdoseVaccine=&gt;fFirstdoseVaccine, :S=&gt;:VP) =&gt; :S,
+    (:SeconddoseVaccine=&gt;fSeconddoseVaccine, :VP=&gt;:VF) =&gt; :VP,
+    (:WaningImmunityVP=&gt;fWaningImmunityVP, :VP=&gt;:S) =&gt; :VP,
+    (:WaningImmunityVF=&gt;fWaningImmunityVF, :VF=&gt;:VP) =&gt; :VF,
+    (:NewIncidenceVP=&gt;fNewIncidenceVP, :VP=&gt;:E) =&gt; (:VP, :I),
+    (:NewIncidenceVF=&gt;fNewIncidenceVF, :VF=&gt;:E) =&gt; (:VF, :I)))</code></pre><div class="c-set">
+<span class="c-set-summary">StockAndFlowp {Flow:6, Stock:5, Link:8, Name:0, FuncFlow:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Flow</th>
+      <th style = "text-align: right;">u</th>
+      <th style = "text-align: right;">d</th>
+      <th style = "text-align: right;">fname</th>
+      <th style = "text-align: right;">ϕf</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">FirstdoseVaccine</td>
+      <td style = "text-align: right;">fFirstdoseVaccine</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">SeconddoseVaccine</td>
+      <td style = "text-align: right;">fSeconddoseVaccine</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">WaningImmunityVP</td>
+      <td style = "text-align: right;">fWaningImmunityVP</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">WaningImmunityVF</td>
+      <td style = "text-align: right;">fWaningImmunityVF</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidenceVP</td>
+      <td style = "text-align: right;">fNewIncidenceVP</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidenceVF</td>
+      <td style = "text-align: right;">fNewIncidenceVF</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Stock</th>
+      <th style = "text-align: right;">sname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">E</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">I</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">VP</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">VF</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Link</th>
+      <th style = "text-align: right;">s</th>
+      <th style = "text-align: right;">t</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Graph(v,&quot;TB&quot;)</p><p>Define functions ϕ of flows in the Persist Asymptomaticity model</p><pre><code class="language-julia hljs">fNewPersistentAsymptomaticity(u,p,t) = u.E * p.ria
+fNewRecoveryIA(u,p,t) = u.IA / p.tr</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">fNewRecoveryIA (generic function with 1 method)</code></pre><p>Stock and flow diagram of Persistent Asymptomaticity Model</p><pre><code class="language-julia hljs">ia = StockAndFlowp((:E, :IA, :R),
+   ((:NewPersistentAsymptomaticity=&gt;fNewPersistentAsymptomaticity, :E=&gt;:IA) =&gt; :E,
+    (:NewRecoveryIA=&gt;fNewRecoveryIA, :IA=&gt;:R) =&gt; :IA))</code></pre><div class="c-set">
+<span class="c-set-summary">StockAndFlowp {Flow:2, Stock:3, Link:2, Name:0, FuncFlow:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Flow</th>
+      <th style = "text-align: right;">u</th>
+      <th style = "text-align: right;">d</th>
+      <th style = "text-align: right;">fname</th>
+      <th style = "text-align: right;">ϕf</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewPersistentAsymptomaticity</td>
+      <td style = "text-align: right;">fNewPersistentAsymptomaticity</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">NewRecoveryIA</td>
+      <td style = "text-align: right;">fNewRecoveryIA</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Stock</th>
+      <th style = "text-align: right;">sname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">E</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">IA</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Link</th>
+      <th style = "text-align: right;">s</th>
+      <th style = "text-align: right;">t</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Graph(ia)</p><pre><code class="language-julia hljs">covid = @relation (S, E, I, R) begin
+    modelA(S,E,I,R)
+    modelB(S,E,I)
+    modelC(E,R)
+end;
+display_uwd(covid)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="273pt" height="295pt"
+ viewBox="0.00 0.00 273.34 295.12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 291.12)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-291.12 269.34,-291.12 269.34,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="115.02" cy="-131.85" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="115.02" y="-128.15" font-family="Serif" font-size="14.00">modelA</text>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="153.94" cy="-220.17" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="146.44" y="-226.47" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n1&%2345;&%2345;n8 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M122.9,-149.73C132.67,-171.9 148.57,-207.99 152.85,-217.7"/>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n9</title>
+<ellipse fill="black" stroke="black" cx="187.11" cy="-92.43" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="179.11" y="-98.73" font-family="Serif" font-size="14.00">E</text>
+</g>
+<!-- n1&%2345;&%2345;n9 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M139.83,-118.29C156.77,-109.02 177.4,-97.74 184.54,-93.84"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n10</title>
+<ellipse fill="black" stroke="black" cx="68.22" cy="-184.28" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="62.72" y="-190.58" font-family="Serif" font-size="14.00">I</text>
+</g>
+<!-- n1&%2345;&%2345;n10 -->
+<g id="edge8" class="edge">
+<title>n1&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M100.21,-148.44C89.07,-160.92 74.92,-176.78 70,-182.29"/>
+</g>
+<!-- n11 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n11</title>
+<ellipse fill="black" stroke="black" cx="79.68" cy="-54.84" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="71.68" y="-61.14" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n1&%2345;&%2345;n11 -->
+<g id="edge11" class="edge">
+<title>n1&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M106.82,-113.99C98.02,-94.79 84.75,-65.88 80.82,-57.31"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="161.02" cy="-166.82" rx="37.17" ry="18"/>
+<text text-anchor="middle" x="161.02" y="-163.12" font-family="Serif" font-size="14.00">modelB</text>
+</g>
+<!-- n2&%2345;&%2345;n8 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M158.63,-184.88C157.02,-196.98 155.06,-211.71 154.28,-217.58"/>
+</g>
+<!-- n2&%2345;&%2345;n9 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M167.34,-148.81C173.73,-130.58 183.1,-103.88 186.13,-95.24"/>
+</g>
+<!-- n2&%2345;&%2345;n10 -->
+<g id="edge9" class="edge">
+<title>n2&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M126.2,-173.37C104.4,-177.48 78.94,-182.27 70.84,-183.79"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="151.36" cy="-18" rx="37.17" ry="18"/>
+<text text-anchor="middle" x="151.36" y="-14.3" font-family="Serif" font-size="14.00">modelC</text>
+</g>
+<!-- n3&%2345;&%2345;n9 -->
+<g id="edge6" class="edge">
+<title>n3&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M159.84,-35.64C168.76,-54.21 182.04,-81.87 185.98,-90.06"/>
+</g>
+<!-- n3&%2345;&%2345;n11 -->
+<g id="edge12" class="edge">
+<title>n3&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M125.89,-31.09C109.15,-39.69 89.11,-49.99 82.18,-53.55"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n8 -->
+<g id="edge3" class="edge">
+<title>n4&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M193.01,-285.87C189.18,-279.43 161.66,-233.16 155.27,-222.4"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n9 -->
+<g id="edge7" class="edge">
+<title>n5&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M263.97,-73.69C256.43,-75.53 202.3,-88.72 189.72,-91.79"/>
+</g>
+<!-- n6 -->
+<!-- n6&%2345;&%2345;n10 -->
+<g id="edge10" class="edge">
+<title>n6&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M1.26,-224.03C7.83,-220.13 54.99,-192.14 65.95,-185.63"/>
+</g>
+<!-- n7 -->
+<!-- n7&%2345;&%2345;n11 -->
+<g id="edge13" class="edge">
+<title>n7&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M19.31,-6.07C25.18,-10.81 67,-44.59 77.36,-52.96"/>
+</g>
+</g>
+</svg>
+'/><p>Open three Stock and Flow Diagrams</p><pre><code class="language-julia hljs">openseirh = Open(seirh, [:S], [:E], [:I], [:R])
+openv = Open(v, [:S], [:E], [:I])
+openia = Open(ia, [:E], [:R])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Catlab.CategoricalAlgebra.StructuredCospans.StructuredCospan{Catlab.CategoricalAlgebra.StructuredCospans.DiscreteACSet{ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}, StockAndFlowp}, Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowp, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}, StaticArraysCore.SVector{2, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}}}, StaticArraysCore.SVector{2, ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}}}(Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowp, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}, StaticArraysCore.SVector{2, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}}}(StockAndFlowp:
+  Flow = 1:2
+  Stock = 1:3
+  Link = 1:2
+  Name = 1:0
+  FuncFlow = 1:0
+  u : Flow → Stock = [1, 2]
+  d : Flow → Stock = [2, 3]
+  s : Link → Stock = [1, 2]
+  t : Link → Flow = [1, 2]
+  sname : Stock → Name = [:E, :IA, :R]
+  fname : Flow → Name = [:NewPersistentAsymptomaticity, :NewRecoveryIA]
+  ϕf : Flow → FuncFlow = Function[Main.fNewPersistentAsymptomaticity, Main.fNewRecoveryIA], Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, UnitRange{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}[ACSetTransformation((Flow = FinFunction(1:0, 0, 2), Stock = FinFunction([1], 1, 3), Link = FinFunction(1:0, 0, 2), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), FuncFlow = Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Function}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Function})), FinSet(0))), StockAndFlowp {Flow:0, Stock:1, Link:0, Name:0, FuncFlow:0}, StockAndFlowp {Flow:2, Stock:3, Link:2, Name:0, FuncFlow:0}), ACSetTransformation((Flow = FinFunction(1:0, 0, 2), Stock = FinFunction([3], 1, 3), Link = FinFunction(1:0, 0, 2), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), FuncFlow = Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Function}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Function})), FinSet(0))), StockAndFlowp {Flow:0, Stock:1, Link:0, Name:0, FuncFlow:0}, StockAndFlowp {Flow:2, Stock:3, Link:2, Name:0, FuncFlow:0})]), ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}[ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}:
+  Stock = 1:1
+  Name = 1:0
+  FuncFlow = 1:0
+  sname : Stock → Name = [:E], ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}:
+  Stock = 1:1
+  Name = 1:0
+  FuncFlow = 1:0
+  sname : Stock → Name = [:R]])</code></pre><p>Compose those three models according the UWD-algebra</p><pre><code class="language-julia hljs">openCOVID19 = oapply(covid, [openseirh, openv, openia])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Catlab.CategoricalAlgebra.StructuredCospans.StructuredMulticospan{Catlab.CategoricalAlgebra.StructuredCospans.DiscreteACSet{ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}, StockAndFlowp}, Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowp, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}, Vector{Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}}}, Vector{Union{Nothing, ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}}}}(Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowp, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}, Vector{Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}}}(StockAndFlowp:
+  Flow = 1:16
+  Stock = 1:9
+  Link = 1:19
+  Name = 1:0
+  FuncFlow = 1:0
+  u : Flow → Stock = [1, 2, 3, 4, 3, 3, 5, 6, 1, 7, 7, 8, 7, 8, 2, 9]
+  d : Flow → Stock = [2, 3, 4, 1, 5, 6, 6, 4, 7, 8, 1, 7, 2, 2, 9, 4]
+  s : Link → Stock = [1, 3, 2, 3, 4, 3, 3, 5, 6, 1, 7, 7, 8, 7, 3, 8, 3, 2, 9]
+  t : Link → Flow = [1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 13, 14, 14, 15, 16]
+  sname : Stock → Name = [:S, :E, :I, :R, :HICU, :HNICU, :VP, :VF, :IA]
+  fname : Flow → Name = [:NewIncidence, :NewInfectious, :NewRecovery, :WaningImmunityR, :HICUAdmission, :HNICUAdmission, :OutICU, :RecoveryH, :FirstdoseVaccine, :SeconddoseVaccine, :WaningImmunityVP, :WaningImmunityVF, :NewIncidenceVP, :NewIncidenceVF, :NewPersistentAsymptomaticity, :NewRecoveryIA]
+  ϕf : Flow → FuncFlow = Function[Main.fNewIncidence, Main.fNewInfectious, Main.fNewRecovery, Main.fWaningImmunityR, Main.fHICUAdmission, Main.fHNICUAdmission, Main.fOutICU, Main.fRecoveryH, Main.fFirstdoseVaccine, Main.fSeconddoseVaccine, Main.fWaningImmunityVP, Main.fWaningImmunityVF, Main.fNewIncidenceVP, Main.fNewIncidenceVF, Main.fNewPersistentAsymptomaticity, Main.fNewRecoveryIA], Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Flow, :Stock, :Link}, Tuple{(:u, :Flow, :Stock), (:d, :Flow, :Stock), (:s, :Link, :Stock), (:t, :Link, :Flow)}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name), (:fname, :Flow, :Name), (:ϕf, :Flow, :FuncFlow)}}, NamedTuple{(:Flow, :Stock, :Link, :Name, :FuncFlow), Tuple{Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}}}, StockAndFlowp, StockAndFlowp}[ACSetTransformation((Flow = FinFunction(Int64[], 0, 16), Stock = FinFunction([1], 1, 9), Link = FinFunction(Int64[], 0, 19), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), FuncFlow = Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Function}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Function})), FinSet(0))), StockAndFlowp {Flow:0, Stock:1, Link:0, Name:0, FuncFlow:0}, StockAndFlowp {Flow:16, Stock:9, Link:19, Name:0, FuncFlow:0}), ACSetTransformation((Flow = FinFunction(Int64[], 0, 16), Stock = FinFunction([2], 1, 9), Link = FinFunction(Int64[], 0, 19), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), FuncFlow = Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Function}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Function})), FinSet(0))), StockAndFlowp {Flow:0, Stock:1, Link:0, Name:0, FuncFlow:0}, StockAndFlowp {Flow:16, Stock:9, Link:19, Name:0, FuncFlow:0}), ACSetTransformation((Flow = FinFunction(Int64[], 0, 16), Stock = FinFunction([3], 1, 9), Link = FinFunction(Int64[], 0, 19), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), FuncFlow = Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Function}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Function})), FinSet(0))), StockAndFlowp {Flow:0, Stock:1, Link:0, Name:0, FuncFlow:0}, StockAndFlowp {Flow:16, Stock:9, Link:19, Name:0, FuncFlow:0}), ACSetTransformation((Flow = FinFunction(Int64[], 0, 16), Stock = FinFunction([4], 1, 9), Link = FinFunction(Int64[], 0, 19), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), FuncFlow = Catlab.CategoricalAlgebra.FinSets.VarFunction{Function}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Function}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Function})), FinSet(0))), StockAndFlowp {Flow:0, Stock:1, Link:0, Name:0, FuncFlow:0}, StockAndFlowp {Flow:16, Stock:9, Link:19, Name:0, FuncFlow:0})]), Union{Nothing, ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}}[ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}:
+  Stock = 1:1
+  Name = 1:0
+  FuncFlow = 1:0
+  sname : Stock → Name = [:S], ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}:
+  Stock = 1:1
+  Name = 1:0
+  FuncFlow = 1:0
+  sname : Stock → Name = [:E], ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}:
+  Stock = 1:1
+  Name = 1:0
+  FuncFlow = 1:0
+  sname : Stock → Name = [:I], ACSets.DenseACSets.AnonACSet{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:Stock}, Tuple{}, Tuple{:Name, :FuncFlow}, Tuple{(:sname, :Stock, :Name)}}, Tuple{Symbol, Function}, NamedTuple{(:Stock, :Name, :FuncFlow), Tuple{ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts, ACSets.DenseACSets.IntParts}}, NamedTuple{(:sname,), Tuple{ACSets.ColumnImplementations.DenseColumn{Union{ACSets.ColumnImplementations.AttrVar, Symbol}, Vector{Union{ACSets.ColumnImplementations.AttrVar, Symbol}}}}}, ACSets.DenseACSets.IntParts}:
+  Stock = 1:1
+  Name = 1:0
+  FuncFlow = 1:0
+  sname : Stock → Name = [:R]])</code></pre><p>Generate the composed model (Stock and Flow Diagram)</p><pre><code class="language-julia hljs">COVID19 = apex(openCOVID19)</code></pre><div class="c-set">
+<span class="c-set-summary">StockAndFlowp {Flow:16, Stock:9, Link:19, Name:0, FuncFlow:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Flow</th>
+      <th style = "text-align: right;">u</th>
+      <th style = "text-align: right;">d</th>
+      <th style = "text-align: right;">fname</th>
+      <th style = "text-align: right;">ϕf</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidence</td>
+      <td style = "text-align: right;">fNewIncidence</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">NewInfectious</td>
+      <td style = "text-align: right;">fNewInfectious</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">NewRecovery</td>
+      <td style = "text-align: right;">fNewRecovery</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">WaningImmunityR</td>
+      <td style = "text-align: right;">fWaningImmunityR</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">HICUAdmission</td>
+      <td style = "text-align: right;">fHICUAdmission</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">HNICUAdmission</td>
+      <td style = "text-align: right;">fHNICUAdmission</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">OutICU</td>
+      <td style = "text-align: right;">fOutICU</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">RecoveryH</td>
+      <td style = "text-align: right;">fRecoveryH</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">FirstdoseVaccine</td>
+      <td style = "text-align: right;">fFirstdoseVaccine</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">SeconddoseVaccine</td>
+      <td style = "text-align: right;">fSeconddoseVaccine</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">WaningImmunityVP</td>
+      <td style = "text-align: right;">fWaningImmunityVP</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">WaningImmunityVF</td>
+      <td style = "text-align: right;">fWaningImmunityVF</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidenceVP</td>
+      <td style = "text-align: right;">fNewIncidenceVP</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidenceVF</td>
+      <td style = "text-align: right;">fNewIncidenceVF</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">NewPersistentAsymptomaticity</td>
+      <td style = "text-align: right;">fNewPersistentAsymptomaticity</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">NewRecoveryIA</td>
+      <td style = "text-align: right;">fNewRecoveryIA</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Stock</th>
+      <th style = "text-align: right;">sname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">E</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">I</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">HICU</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">HNICU</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">VP</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">VF</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">IA</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Link</th>
+      <th style = "text-align: right;">s</th>
+      <th style = "text-align: right;">t</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">7</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">8</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">9</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">10</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">11</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">12</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">14</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">13</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">15</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">13</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">16</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">14</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">17</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">14</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">18</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">15</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">19</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">16</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Graph(COVID19)</p><p>Define constant parameters</p><pre><code class="language-julia hljs">p_COVID19 = LVector(
+    β=0.8, N=38010001.0, tr=12.22, tw=2*365.0,
+    fH=0.002, fICU=0.23, tICU=6.0, tH = 12.0,
+    rv=0.01, eP=0.6, eF=0.85, ri=0.207, ria=0.138
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">13-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:β, :N, :tr, :tw, :fH, :fICU, :tICU, :tH, :rv, :eP, :eF, :ri, :ria)}:
+    :β =&gt; 0.8
+    :N =&gt; 3.8010001e7
+   :tr =&gt; 12.22
+   :tw =&gt; 730.0
+   :fH =&gt; 0.002
+ :fICU =&gt; 0.23
+       ⋮
+   :rv =&gt; 0.01
+   :eP =&gt; 0.6
+   :eF =&gt; 0.85
+   :ri =&gt; 0.207
+  :ria =&gt; 0.138</code></pre><p>Define initial values for stocks</p><pre><code class="language-julia hljs">u0_COVID19 = LVector(
+    S=38010000.0, E=0.0, I=1.0, IA=0.0, R=0.0, HICU=0.0, HNICU=0.0, VP=0.0, VF=0.0
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">9-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :IA, :R, :HICU, :HNICU, :VP, :VF)}:
+     :S =&gt; 3.801e7
+     :E =&gt; 0.0
+     :I =&gt; 1.0
+    :IA =&gt; 0.0
+     :R =&gt; 0.0
+  :HICU =&gt; 0.0
+ :HNICU =&gt; 0.0
+    :VP =&gt; 0.0
+    :VF =&gt; 0.0</code></pre><p>Check the dependencies of links of all flows&#39; functions checkfls(COVID19, u0<em>COVID19, p</em>COVID19)</p><p>Solve the ODEs</p><pre><code class="language-julia hljs">prob_COVID19 = ODEProblem(vectorfield(COVID19),u0_COVID19,(0.0,300.0),p_COVID19);
+sol_COVID19 = solve(prob_COVID19,Tsit5(),abstol=1e-8);
+plot(sol_COVID19)</code></pre><img src="1429d10a.svg" alt="Example block output"/><p>Flow of <code>FirstdoseVaccine</code></p><pre><code class="language-julia hljs">ϕFirstdoseVaccine = map(x-&gt;fFirstdoseVaccine(sol_COVID19.u[x],p_COVID19,sol_COVID19.t[x]),collect(1:length(sol_COVID19.t)))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">73-element Vector{Float64}:
+ 380100.0
+ 380099.9999998586
+ 380099.9999984444
+ 380099.9999843023
+ 380099.99984288134
+ 380099.9984286719
+ 380099.98428657756
+ 380099.84286566736
+ 380098.4286598555
+ 380084.28693077463
+      ⋮
+  24993.703401041785
+  25975.60729815375
+  26896.20401314409
+  27755.495774897558
+  28553.881697610963
+  29292.12814658216
+  29971.342663084168
+  30592.946906482044
+  30842.07913220906</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../json/">« Serialization</a><a class="docs-footer-nextpage" href="../full_fledged_schema_examples_new/CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Thursday 26 October 2023 16:38">Thursday 26 October 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

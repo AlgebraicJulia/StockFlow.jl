@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Diabetes Model · StockFlow.jl</title><meta name="title" content="Diabetes Model · StockFlow.jl"/><meta property="og:title" content="Diabetes Model · StockFlow.jl"/><meta property="twitter:title" content="Diabetes Model · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li class="is-active"><a class="tocitem" href>Diabetes Model</a></li><li><a class="tocitem" href="../SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../../stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>Diabetes Model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Diabetes Model</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/composition/diabetes_model.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Diabetes-Model"><a class="docs-heading-anchor" href="#Diabetes-Model">Diabetes Model</a><a id="Diabetes-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Diabetes-Model" title="Permalink"></a></h1><pre><code class="language-julia hljs">using GraphViz
+
+using StockFlow
+using StockFlow.Syntax
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.Theories
+using Catlab.WiringDiagrams
+
+display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=&gt;&quot;1&quot;));
+
+Model_Normoglycemic = @stock_and_flow begin
+
+    :stocks
+    NormalWeight
+    OverWeight
+    Obese
+
+    :parameters
+    rBirth
+    rMortalityWeight
+    rObese
+    rOverWeight
+    rMortalityobese
+
+    :flows
+    NormalWeight =&gt; f_DeathNormalWeight(NormalWeight * rMortalityWeight) =&gt; CLOUD
+    NormalWeight =&gt; f_BecomingOverWeight(NormalWeight * rOverWeight) =&gt; OverWeight
+    OverWeight =&gt; f_DeathOverWeight(OverWeight * rMortalityWeight) =&gt; CLOUD
+    OverWeight =&gt; f_BecomingObese(OverWeight * rObese) =&gt; Obese
+    Obese =&gt; f_DeathObese(Obese * rMortalityobese) =&gt; CLOUD
+    CLOUD =&gt; f_NewBorn(N * rBirth) =&gt; NormalWeight
+
+
+    :sums
+    N = [NormalWeight, OverWeight, Obese]
+
+end
+
+GraphF(Model_Normoglycemic, rd=&quot;TB&quot;)
+
+++(s1, s2) = Symbol(string(s1) * string(s2)) # infix, and works with both strings and symbols
+
+function fOpenSubHyperglycemic(pop)
+
+    # The following are all symbols
+
+    Prediabetic = &quot;Prediabetic&quot; ++ pop
+    DevelopingDiabetic = &quot;DevelopingDiabetic&quot; ++ pop
+    DeathPrediabetic = &quot;DeathPrediabetic&quot; ++ pop
+    DiabeticWtComp = &quot;DiabeticWtComp&quot; ++ pop
+    DiabeticEarly = &quot;DiabeticEarly&quot; ++ pop
+    DevelopingEarly = &quot;DevelopingEarly&quot; ++ pop
+    DeathDiabeticWtComp = &quot;DeathDiabeticWtComp&quot; ++ pop
+    DevelopingLate = &quot;DevelopingLate&quot; ++ pop
+    DeathDiabeticEarly = &quot;DeathDiabeticEarly&quot; ++ pop
+    DiabeticLate = &quot;DiabeticLate&quot; ++ pop
+    DeathDiabeticLate = &quot;DeathDiabeticLate&quot; ++ pop
+
+    rDevelopingDiabetic = &quot;rDevelopingDiabetic&quot; ++ pop
+    rDevelopingEarly = &quot;rDevelopingEarly&quot; ++ pop
+    rMortalityDiabeticEarly = &quot;rMortalityDiabeticEarly&quot; ++ pop
+    rMortalityDiabeticWtComp = &quot;rMortalityDiabeticWtComp&quot; ++ pop
+
+    v_DevelopingDiabetic = &quot;v_DevelopingDiabetic&quot; ++ pop
+    v_DeathPrediabetic = &quot;v_DeathPrediabetic&quot; ++ pop
+    v_DevelopingEarly = &quot;v_DevelopingEarly&quot; ++ pop
+    v_DeathDiabeticWtComp = &quot;v_DeathDiabeticWtComp&quot; ++ pop
+    v_DevelopingLate = &quot;v_DevelopingLate&quot; ++ pop
+    v_DeathDiabeticEarly = &quot;v_DeathDiabeticEarly&quot; ++ pop
+    v_DeathDiabeticLate = &quot;v_DeathDiabeticLate&quot; ++ pop
+
+
+    rMortalityPrediabetic = :rMortalityPrediabetic
+    rMortalityDiabeticLate = :rMortalityDiabeticLate
+    rDevelopingLate = :rDevelopingLate
+
+        Open(
+        StockAndFlowF(
+
+            # stocks
+            # in, out, sums
+            (
+                Prediabetic =&gt; (:F_NONE, (DevelopingDiabetic, DeathPrediabetic), :N),
+                DiabeticWtComp =&gt; (DevelopingDiabetic, (DevelopingEarly, DeathDiabeticWtComp), :N),
+                DiabeticEarly =&gt; (DevelopingEarly, (DevelopingLate, DeathDiabeticEarly), :N),
+                DiabeticLate =&gt; (DevelopingLate, DeathDiabeticLate, :N)
+            ),
+
+            # parameters
+            (
+                rDevelopingDiabetic,
+                rMortalityPrediabetic,
+                rDevelopingEarly,
+                rMortalityDiabeticEarly,
+                rMortalityDiabeticLate,
+                rMortalityDiabeticWtComp,
+                rDevelopingLate
+            ),
+
+            # dynamic variables
+            (
+                v_DevelopingDiabetic =&gt; ((Prediabetic, rDevelopingDiabetic) =&gt; :*),
+                v_DeathPrediabetic =&gt; ((Prediabetic, rMortalityPrediabetic) =&gt; :*),
+                v_DevelopingEarly =&gt; ((DiabeticWtComp, rDevelopingEarly) =&gt; :*),
+                v_DeathDiabeticWtComp =&gt; ((DiabeticWtComp, rMortalityDiabeticWtComp) =&gt; :*),
+                v_DevelopingLate =&gt; ((DiabeticEarly, rDevelopingLate) =&gt; :*),
+                v_DeathDiabeticEarly =&gt; ((DiabeticEarly, rMortalityDiabeticEarly) =&gt; :*),
+                v_DeathDiabeticLate =&gt; ((DiabeticLate, rMortalityDiabeticLate) =&gt; :*),
+            ),
+
+            # flows
+            (
+                DevelopingDiabetic =&gt; v_DevelopingDiabetic,
+                DeathPrediabetic =&gt; v_DeathPrediabetic,
+                DevelopingEarly =&gt; v_DevelopingEarly,
+                DeathDiabeticWtComp =&gt; v_DeathDiabeticWtComp,
+                DevelopingLate =&gt; v_DevelopingLate,
+                DeathDiabeticEarly =&gt; v_DeathDiabeticEarly,
+                DeathDiabeticLate =&gt; v_DeathDiabeticLate
+            ),
+
+            # sums
+            (
+                :N
+            )
+
+        ),
+
+        # feet
+        foot(Prediabetic, :N, Prediabetic=&gt;:N),
+        foot(DiabeticWtComp, :N, DiabeticWtComp=&gt;:N),
+        foot(DiabeticEarly, :N, DiabeticEarly=&gt;:N),
+        foot(DiabeticLate, :N, DiabeticLate=&gt;:N)
+
+    )
+end
+
+function fOpensubDiagnosis(s)
+
+    # The following are all symbols
+
+    s_U = s ++ &quot;_U&quot;
+    s_D = s ++ &quot;_D&quot;
+
+    Diagnosis = &quot;Diagnosis&quot; ++ s
+    v_Diagnosis = &quot;v_Diagnosis&quot; ++ s
+
+    rs = &quot;r&quot; ++ s
+
+    Open(
+        StockAndFlowF(
+
+            # stocks
+            (
+                s_U =&gt; (:F_NONE, Diagnosis, :N),
+                s_D =&gt; (Diagnosis, :F_NONE, :N)
+            ),
+
+            # parameters
+            (
+                rs
+            ),
+
+            # dynamic variables
+            (
+                v_Diagnosis =&gt; ((s_U, rs) =&gt; :*)
+            ),
+
+            # flows
+            (
+                Diagnosis =&gt; v_Diagnosis
+            ),
+
+            # sums
+            (
+                :N
+            )
+
+        ),
+
+        # feet
+        foot(s_U, :N, s_U =&gt; :N),
+        foot(s_D, :N, s_D =&gt; :N)
+
+    )
+
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">fOpensubDiagnosis (generic function with 1 method)</code></pre><p>define the UWD-algebra of Hyperglycemic Model</p><pre><code class="language-julia hljs">hyperglycemic_uwd = @relation (Prediabetic_U,Prediabetic_D,DiabeticWtComp_U,DiabeticWtComp_D,DiabeticEarly_U,DiabeticEarly_D,DiabeticLate_U,DiabeticLate_D) begin
+    Undx(Prediabetic_U,DiabeticWtComp_U,DiabeticEarly_U,DiabeticLate_U)
+    Dx(Prediabetic_D,DiabeticWtComp_D,DiabeticEarly_D,DiabeticLate_D)
+    Prediabetic(Prediabetic_U,Prediabetic_D)
+    DiabeticWtComp(DiabeticWtComp_U,DiabeticWtComp_D)
+    DiabeticEarly(DiabeticEarly_U,DiabeticEarly_D)
+    DiabeticLate(DiabeticLate_U,DiabeticLate_D)
+end;
+display_uwd(hyperglycemic_uwd)</code></pre><img src="d8fb969b.svg" alt="Example block output"/><p>generate the Hyperglycemic population model by composition</p><pre><code class="language-julia hljs">Model_Hyperglycemic=oapply(hyperglycemic_uwd,
+    [fOpenSubHyperglycemic(&quot;_U&quot;),fOpenSubHyperglycemic(&quot;_D&quot;),fOpensubDiagnosis(&quot;Prediabetic&quot;),fOpensubDiagnosis(&quot;DiabeticWtComp&quot;),fOpensubDiagnosis(&quot;DiabeticEarly&quot;),fOpensubDiagnosis(&quot;DiabeticLate&quot;)]) |&gt; apex
+GraphF(Model_Hyperglycemic)
+
+Model_Norm_Hyper = @stock_and_flow begin
+
+    :stocks
+    NormalWeight
+    OverWeight
+    Obese
+    Prediabetic_U
+    Prediabetic_D
+
+    :parameters
+    rRecovery
+    rIncidenceNW
+    rIncidenceOW
+    rIncidenceOB
+
+    :flows
+    Prediabetic_D =&gt; fRecoveryToOWFromDx(Prediabetic_D * rRecovery) =&gt; OverWeight
+    Prediabetic_D =&gt; fRecoveryToNWFromDx(Prediabetic_D * rRecovery) =&gt; NormalWeight
+    Prediabetic_D =&gt; fRecoveryToOBFromDx(Prediabetic_D * rRecovery) =&gt; Obese
+
+    NormalWeight =&gt; fDevelopingPrediabeticNW(NormalWeight * rIncidenceNW) =&gt; Prediabetic_U
+
+    Prediabetic_U =&gt; fRecoveryToOWFromUx(Prediabetic_U * rRecovery) =&gt; OverWeight
+    Prediabetic_U =&gt; fRecoveryToOBFromUx(Prediabetic_U * rRecovery) =&gt; Obese
+    Prediabetic_U =&gt; fRecoveryToNWFromUx(Prediabetic_U * rRecovery) =&gt; NormalWeight
+
+    OverWeight =&gt; fDevelopingPrediabeticOW(OverWeight * rIncidenceOW) =&gt; Prediabetic_U
+
+    Obese =&gt; fDevelopingPrediabeticOB(Obese * rIncidenceOB) =&gt; Prediabetic_U
+
+    :sums
+    N = [NormalWeight, OverWeight, Obese, Prediabetic_U, Prediabetic_D]
+
+
+end</code></pre><div class="c-set">
+<span class="c-set-summary">StockAndFlowF {S:5, SV:1, LS:5, F:9, I:9, O:9, V:9, LV:9, LSV:0, P:4, LVV:0, LPV:9, Name:0, Op:0, Position:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">S</th>
+      <th style = "text-align: right;">sname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">NormalWeight</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">OverWeight</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Obese</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">Prediabetic_U</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">Prediabetic_D</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">SV</th>
+      <th style = "text-align: right;">svname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">N</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">LS</th>
+      <th style = "text-align: right;">lss</th>
+      <th style = "text-align: right;">lssv</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">F</th>
+      <th style = "text-align: right;">fv</th>
+      <th style = "text-align: right;">fname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">fRecoveryToOWFromDx</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">fRecoveryToNWFromDx</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">fRecoveryToOBFromDx</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">fDevelopingPrediabeticNW</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">fRecoveryToOWFromUx</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">fRecoveryToOBFromUx</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">fRecoveryToNWFromUx</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">fDevelopingPrediabeticOW</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">fDevelopingPrediabeticOB</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">I</th>
+      <th style = "text-align: right;">ifn</th>
+      <th style = "text-align: right;">is</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">O</th>
+      <th style = "text-align: right;">ofn</th>
+      <th style = "text-align: right;">os</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vname</th>
+      <th style = "text-align: right;">vop</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">##v_fRecoveryToOWFromDx#662</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">##v_fRecoveryToNWFromDx#663</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">##v_fRecoveryToOBFromDx#664</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">##v_fDevelopingPrediabeticNW#665</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">##v_fRecoveryToOWFromUx#666</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">##v_fRecoveryToOBFromUx#667</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">##v_fRecoveryToNWFromUx#668</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">##v_fDevelopingPrediabeticOW#669</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">##v_fDevelopingPrediabeticOB#670</td>
+      <td style = "text-align: right;">*</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">LV</th>
+      <th style = "text-align: right;">lvs</th>
+      <th style = "text-align: right;">lvv</th>
+      <th style = "text-align: right;">lvsposition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">P</th>
+      <th style = "text-align: right;">pname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">rRecovery</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">rIncidenceNW</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">rIncidenceOW</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">rIncidenceOB</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">LPV</th>
+      <th style = "text-align: right;">lpvp</th>
+      <th style = "text-align: right;">lpvv</th>
+      <th style = "text-align: right;">lpvpposition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">9</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>define the UWD-algebra of Hyperglycemic Model</p><pre><code class="language-julia hljs">diabetes_uwd = @relation (NormalWeight,OverWeight,Obese,Prediabetic_U,Prediabetic_D) begin
+    Normoglycemic(NormalWeight,OverWeight,Obese)
+    Hyperglycemic(Prediabetic_U,Prediabetic_D)
+    Norm_Hyper(NormalWeight,OverWeight,Obese,Prediabetic_U,Prediabetic_D)
+end;
+display_uwd(diabetes_uwd)
+
+Diabetes_Model = oapply(diabetes_uwd,Dict(
+    :Normoglycemic=&gt;Open(Model_Normoglycemic,foot(:NormalWeight,:N,:NormalWeight=&gt;:N),foot(:OverWeight,:N,:OverWeight=&gt;:N),foot(:Obese,:N,:Obese=&gt;:N)),
+    :Hyperglycemic=&gt;Open(Model_Hyperglycemic,foot(:Prediabetic_U,:N,:Prediabetic_U=&gt;:N),foot(:Prediabetic_D,:N,:Prediabetic_D=&gt;:N)),
+    :Norm_Hyper=&gt;Open(Model_Norm_Hyper,foot(:NormalWeight,:N,:NormalWeight=&gt;:N),foot(:OverWeight,:N,:OverWeight=&gt;:N),foot(:Obese,:N,:Obese=&gt;:N),foot(:Prediabetic_U,:N,:Prediabetic_U=&gt;:N),foot(:Prediabetic_D,:N,:Prediabetic_D=&gt;:N))
+    )) |&gt; apex
+
+GraphF(Diabetes_Model)
+
+p = LVector(
+    rBirth=12.5/1000, rMortalityWeight=4.0/1000, rOverWeight=0.03, rObese=0.06, rMortalityobese=13.0/1000,
+    rDevelopingDiabetic_U=1.0/10.0, rDevelopingDiabetic_D=1.0/15.0, rMortalityPrediabetic=13.0/1000,
+    rDevelopingEarly_U=1.0/10.0, rDevelopingEarly_D=1.0/15.0, rMortalityDiabeticWtComp_U=0.03, rMortalityDiabeticWtComp_D=0.027,
+    rDevelopingLate=0.9, rMortalityDiabeticEarly_U=0.04+0.02, rMortalityDiabeticEarly_D=0.036+0.02,rMortalityDiabeticLate=0.04,
+    rPrediabetic=0.1, rDiabeticWtComp=0.24, rDiabeticEarly=0.4, rDiabeticLate=0.6, rRecovery=0.03,
+    rIncidenceNW=0.01, rIncidenceOW=0.017, rIncidenceOB=0.026
+)
+u0 = LVector(
+    NormalWeight=95811.0, OverWeight=27709.0, Obese=30770.0, Prediabetic_U=13615.0, Prediabetic_D=2000.0,
+    DiabeticWtComp_U=6396.0, DiabeticWtComp_D=3000.0, DiabeticEarly_U=0.0, DiabeticEarly_D=1200.0,
+    DiabeticLate_U=0.0, DiabeticLate_D=800.0
+)
+
+# results have been tested correct (same as the Anylogic model)
+prob_diabetes = ODEProblem(vectorfield(Diabetes_Model),u0,(0.0,100.0),p);
+sol_diabetes = solve(prob_diabetes,Tsit5(),abstol=1e-8);
+plot(sol_diabetes)
+
+# to have the figures plotted fix to the wider of the cells
+HTML(&quot;&quot;&quot;
+&lt;style&gt;
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+&lt;/style&gt;
+&quot;&quot;&quot;)</code></pre><style>
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../curable_sexually_transmitted_diseases_model/">« Curable Sexually-Transmitted Diseases Model</a><a class="docs-footer-nextpage" href="../SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Thursday 26 October 2023 16:38">Thursday 26 October 2023</span>. Using Julia version 1.9.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
