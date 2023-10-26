@@ -1,3 +1,5 @@
+# # SIR Standard Stratification
+
 using GraphViz
 
 using StockFlow

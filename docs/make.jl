@@ -50,7 +50,15 @@ makedocs(
     "StockFlow.jl" => "index.md",
     "Serialization" => "json.md",
     "Example" => Any[
-      "generated/Covid19_composition_model_in_paper.md"
+      "generated/Covid19_composition_model_in_paper.md",
+      "generated/full_fledged_schema_examples_new/CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram.md",
+      "generated/full_fledged_schema_examples_new/composition/composed_open_population_SIRV_model.md",
+      "generated/full_fledged_schema_examples_new/composition/COVID_full_model.md",
+      "generated/full_fledged_schema_examples_new/composition/curable_sexually_transmitted_diseases_model.md",
+      "generated/full_fledged_schema_examples_new/composition/diabetes_model.md",
+      "generated/full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox.md",
+      "generated/full_fledged_schema_examples_new/stratification/diabetes_diagnose.md",
+      "generated/full_fledged_schema_examples_new/stratification/sir_standard_stratification.md"
     ],
     "Exercises" => Any[
       "practices/SEIRVD/SEIRVD_model_hard.md",

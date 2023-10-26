@@ -1,3 +1,5 @@
+# # Curable Sexually-Transmitted Diseases Model
+
 using GraphViz
 
 using StockFlow
@@ -14,7 +16,6 @@ using Catlab.Programs
 using Catlab.Theories
 using Catlab.WiringDiagrams
 
-# feet
 openX = Open( 
     (@stock_and_flow begin
 

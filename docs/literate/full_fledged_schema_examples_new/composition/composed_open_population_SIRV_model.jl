@@ -1,3 +1,5 @@
+# # Composed Open Population SIRV Model
+
 using GraphViz
 
 using StockFlow
@@ -78,29 +80,31 @@ end
 
 GraphF(svi)
 
-# define the UWD-algebra
+# Define the UWD-algebra
 sirv_uwd = @relation (S,I) begin
     seir(S,I)
     svi(S,I)
 end;
 display_uwd(sirv_uwd)
 
-# define a foot of the structured multicospan
+# Define a foot of the structured multicospan
 footS=foot(:S, :N, :S=>:N)
 GraphF(footS;schema="C0")
      
 
-# define a foot of the structured multicospan
+# Define a foot of the structured multicospan
 footI=foot(:I, :N, :I=>:N)
 GraphF(footI;schema="C0")
      
 
-# open sir and svi stock and flow diagram with the feet defined before
+# Open sir and svi stock and flow diagram with the feet defined before
 open_sir=Open(sir, footS, footI)
 open_svi=Open(svi, footS, footI)
+
 # Compose those two models according the UWD-algebra
 open_sirv = oapply(sirv_uwd, [open_sir, open_svi])
-# the composed stock and flow diagram is the apex of the composed open stock and flow diagram
+
+# The composed stock and flow diagram is the apex of the composed open stock and flow diagram
 sirv = apex(open_sirv)
 
 GraphF(sirv)
