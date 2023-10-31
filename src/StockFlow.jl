@@ -285,6 +285,9 @@ get_lvsrc(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvsrc].m))
 get_lvtgt(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
 
 
+
+
+
 #EXAMPLE:
 #sir_StockAndFlow=StockAndFlow(((:S, 990)=>(:birth,(:inf,:deathS),(:v_inf,:v_deathS),:N), (:I, 10)=>(:inf,(:rec,:deathI),(:v_rec,:v_deathI,:v_fractionNonS),:N),(:R, 0)=>(:rec,:deathR,(:v_deathR,:v_fractionNonS),:N)),
 #  (:birth=>:v_birth,:inf=>:v_inf,:rec=>:v_rec,:deathS=>:v_deathS,:deathI=>:v_deathI,:deathR=>:v_deathR),
@@ -628,6 +631,20 @@ set_svname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :svname,
 set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :vname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
 set_pname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :pname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(pnames(p))])
 
+set_vops!(p::AbstractStockAndFlowF, index, names) = set_subparts!(p, :vop, names)
+set_lvvpositions!(p::AbstractStockAndFlowF, index, names) = set_subparts!(p, :lvvposition, names)
+set_lvtgtpositions!(p::AbstractStockAndFlowF, index, names) = set_subparts!(p, :lvtgtposition, names)
+set_lsvvpositions!(p::AbstractStockAndFlowF, index, names) = set_subparts!(p, :lsvvposition, names)
+set_lpvvpositions!(p::AbstractStockAndFlowF, index, names) = set_subparts!(p, :lpvvposition, names)
+
+
+set_vop!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :vop, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vop(p))])
+set_lvvposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lvvposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lvvposition(p))])
+set_lvtgtposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lvtgtposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lvtgtposition(p))])
+set_lsvvposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lsvvposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lsvvposition(p))])
+set_lpvvposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lpvvposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lpvvposition(p))])
+
+
 
 
 
@@ -691,6 +708,9 @@ lvtgtposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lvtgt),:lvsr
 lsvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lsvv),:lsvsvposition)
 """ return argument position of source constant parameter of an auxiliary variable """
 lpvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lpvv),:lpvpposition)
+
+
+
 
 # create a dictionary
 make_dict(ks, vs) = begin
