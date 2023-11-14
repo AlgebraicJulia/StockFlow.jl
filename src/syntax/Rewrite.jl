@@ -459,11 +459,9 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                             push!(R_dict, object_definition[1] => object_definition)
                             push!(R_block.dyvars, object_definition)
                         end
-                        Expr(:(=), Expr(:call, :-, tgt), Expr(:block, def)) => begin
-                            object_definition = parse_dyvar(Expr(:(=), tgt, def))
-
-                            push!(removed_set, object_definition[1])
-                            remove_from_dyvars!(object_definition[1], sf_block, L_block, L_set, name_dict)
+                        Expr(:call, :-, val) => begin
+                            push!(removed_set, val)
+                            remove_from_dyvars!(val, sf_block, L_block, L_set, name_dict)
                         end
                     end
                 end
@@ -479,10 +477,9 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                             push!(R_dict, object_name => object_definition)
                             push!(R_block.flows, object_definition)
                         end
-                       Expr(:call, :(=>), Expr(:call, :-, S1), rest) => begin # flows
-                            object_definition = parse_flow(Expr(:call, :(=>), S1, rest))
-                            object_name = object_definition[2].args[1]
-                            push!(removed_set, object_name)
+                        Expr(:call, :-, val) => begin
+                            push!(removed_set, val)
+                            remove_from_dyvars!(val, sf_block, L_block, L_set, name_dict)
                         end
                     end
                 end
@@ -497,11 +494,9 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                             push!(R_dict, object_definition[1] => object_definition)
                             push!(R_block.sums, object_definition)
                         end
-                        Expr(:(=), Expr(:call, :-, tgt), Expr(:block, def)) => begin
-                            object_definition = parse_sum(Expr(:(=), tgt, def))
-
-                            push!(removed_set, object_definition[1])
-                            remove_from_dyvars!(object_definition[1], sf_block, L_block, L_set, name_dict)
+                        Expr(:call, :-, val) => begin
+                            push!(removed_set, val)
+                            remove_from_dyvars!(val, sf_block, L_block, L_set, name_dict)
                         end
                     end
                 end
