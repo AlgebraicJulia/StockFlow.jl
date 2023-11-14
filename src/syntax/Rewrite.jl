@@ -534,15 +534,15 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     
     I_block = deepcopy(L_block)
 
-    delete_indices = Vector{Int}()
-    for (i, dyvar) ∈ enumerate(I_block.dyvars)
-        if dyvar[1] ∈ removed_set
-            push!(delete_indices, i)
-        end
-    end
-    deleteat!(I_block.dyvars, delete_indices)
 
-    delete_indices = Vector{Int}()
+    filter!(∉(removed_set), I_block.stocks)
+    filter!(∉(removed_set), I_block.params)
+    filter!(x -> x[1] ∉ removed_set, I_block.sums)
+    filter!(x -> x[1] ∉ removed_set, I_block.dyvars)
+    filter!(x -> x[2].args[1] ∉ removed_set, I_block.flows)
+
+
+
 
 
     for dyvar ∈ I_block.dyvars
@@ -550,29 +550,10 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
 
     
-    for (i, sum) ∈ I_block.sums
-        if sum[1] ∈ removed_set
-            push!(delete_indices, i)
-        end
-    end
-
-    deleteat!(I_block.sums, delete_indices)
-    delete_indices = Vector{Int}()
-
     
     for sum ∈ I_block.sums
         filter!(∉(removed_set), sum[2])
     end
-
-    for (i, flow) ∈ I_block.flows
-        if flow[2].args[1] ∈ removed_set
-            push!(delete_indices, i)
-        end
-    end
-
-    deleteat!(I_block.flows, delete_indices)
-    delete_indices = Vector{Int}()
-
     
     for flow ∈ I_block.flows
         if flow.args[1] ∈ removed_set
@@ -586,24 +567,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         end
     end
 
-
-
-    for (i, stock) ∈ enumerate(I_block.stocks)
-        if stock ∈ removed_set
-            push!(delete_indices, i)
-        end
-    end
-
-    deleteat!(I_block.stocks, delete_indices)
-    delete_indices = Vector{Int}()
-
-
-    for (i, param) ∈ enumerate(I_block.params)
-        if param ∈ removed_set
-            push!(delete_indices, i)
-        end
-    end
-    deleteat!(I_block.params, delete_indices)
 
 
 
