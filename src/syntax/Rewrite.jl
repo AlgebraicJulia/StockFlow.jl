@@ -627,7 +627,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         end
     end
     for p in I_block.params
-        if s ∉ keys(R_dict)
+        if p ∉ keys(R_dict)
             push!(R_dict, p => (p, ))
             push!(R_block.params, p)
         end
@@ -689,11 +689,11 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     # # Now we line the positions up with the original stockflow
 
 
-    println(L)
-    println(I)
-    println(R)
+    # println(L)
+    # println(I)
+    # println(R)
 
-    println(removed_set)
+    # println(removed_set)
 
 
     reset_positions!(sf, L)
