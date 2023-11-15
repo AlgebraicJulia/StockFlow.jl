@@ -387,7 +387,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
     removed_set = Set{Any}()
-    
+    modified_dict = Dict{Any, Any}()
 
 
     # Ensures we don't add the same object multiple times
@@ -402,6 +402,72 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     current_phase = (_, _) -> ()
     for statement in block.args
         @match statement begin
+            QuoteNode(:redefs) => begin
+                current_phase = redef -> begin
+                    @match redef begin
+                        Expr(:(:=), src, tgt) => begin
+                            
+
+                            src_type = name_dict[src][1]
+                            src_index = name_dict[src][2]
+                            if src_type == :V
+                                object_definition = parse_dyvar(Expr(:(=), src, tgt))
+                                original_definition = deepcopy(sf_block.dyvars[src_index])
+
+
+                                push!(modified_dict, src => parse_dyvar(Expr(:(=), src, Expr(:call, original_definition[2].args[1], (object_definition[2].args[2:end] ∩ original_definition[2].args[2:end])...)))) # wow.
+                                
+
+                                if src ∉ keys(R_dict)
+                                    push!(R_dict, src => object_definition)
+                                    push!(R_block.dyvars, object_definition)
+                                end
+                                if src ∉ L_set
+                                    push!(L_set, src)
+                                    push!(L_block.dyvars, original_definition)
+
+                                end
+                            
+                            elseif src_type == :SV
+                                object_definition = parse_sum(Expr(:(=), src, tgt))
+                                original_definition = deepcopy(sf_block.sums[src_index])
+
+                                push!(modified_dict, src => parse_sum(Expr(:(=), val, Expr(:vect, object_definition ∩ original_definition)))) # wow.
+                                if src ∉ keys(R_dict)
+                                    push!(R_dict, src => object_definition)
+                                    push!(R_block.sums, object_definition)
+                                end
+                                if src ∉ L_set
+                                    push!(L_set, src)
+                                    push!(L_block.sums, original_definition)
+                                end
+
+                            elseif src_type == :F
+                                object_definition = parse_flow(tgt)
+                                original_definition = deepcopy(sf_block.flows[src_index])
+
+
+
+                                # push!(modified_dict, src => object_definition)
+                                if src ∉ keys(R_dict)
+                                    push!(R_dict, src => object_definition)
+                                    push!(R_block.flows, object_definition)
+                                end
+                                if src ∉ L_set
+                                    push!(L_set, src)
+                                    push!(L_block.flows, original_definition)
+                                end
+                            # end
+                        end
+                    end
+                end
+            end
+                        
+
+        end
+
+
+
             QuoteNode(:swaps) => begin 
                 current_phase = swap -> begin
                     @match swap begin
@@ -594,25 +660,38 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-    for dyvar ∈ I_block.dyvars
-        filter!(∉(removed_set), dyvar[2].args)
+    for (i, dyvar) ∈ enumerate(I_block.dyvars)
+        if dyvar[1] in keys(modified_dict)
+            I_block.dyvars[i] = modified_dict[dyvar[1]]
+        else
+            filter!(∉(removed_set), dyvar[2].args)
+        end
+
     end
 
     
     
-    for sum ∈ I_block.sums
-        filter!(∉(removed_set), sum[2])
+    for (i, sum) ∈ enumerate(I_block.sums)
+        if sum[1] in keys(modified_dict)
+            I_block.sums[i] = modified_dict[sum[1]]
+        else
+            filter!(∉(removed_set), sum[2])
+        end
     end
     
-    for flow ∈ I_block.flows
-        if flow.args[1] ∈ removed_set
-            flow.args[1] = :CLOUD
-        end
-        if flow.args[2].args[2] ∈ removed_set
-            deleteat!(flow.args[2].args[2], 2) # Now has no flow variable, good job :P
-        end
-        if flow.args[3] ∈ removed_set
-            flow.args[3] = :CLOUD
+    for (i, flow) ∈ enumerate(I_block.flows)
+        if flow[2].args[1] in keys(modified_dict)
+            I_block.flows[i] = modified_dict[flow[2].args[1]]
+        else
+            if flow.args[1] ∈ removed_set
+                flow.args[1] = :CLOUD
+            end
+            if flow.args[2].args[2] ∈ removed_set
+                deleteat!(flow.args[2].args[2], 2) # Now has no flow variable, good job :P
+            end
+            if flow.args[3] ∈ removed_set
+                flow.args[3] = :CLOUD
+            end
         end
     end
 
@@ -700,7 +779,9 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     reset_positions!(sf, I)
     reset_positions!(sf, R)
 
-
+    println(sf_to_block(L))
+    println(sf_to_block(I))
+    println(sf_to_block(R))
 
 
     
@@ -709,7 +790,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
     sf_rewritten = rewrite(rule, sf)
 
-    return sf_rewritten
+    return sf_rewritten, L, I, R
         
 end
 
