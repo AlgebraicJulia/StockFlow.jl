@@ -633,23 +633,23 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         end
     end
     for sv in I_block.sums
-        if sv ∉ keys(R_dict)
+        if sv[1] ∉ keys(R_dict)
             sum_copy = deepcopy(sv)
             push!(R_dict, sum_copy[1] => sum_copy)
             push!(R_block.sums, sum_copy)
         end
     end
     for v in I_block.dyvars
-        if v ∉ keys(R_dict)
+        if v[1] ∉ keys(R_dict)
             dyvar_copy = deepcopy(v)
             push!(R_dict, dyvar_copy[1] => dyvar_copy)
             push!(R_block.dyvars, dyvar_copy)
         end
     end
     for f in I_block.flows
-        if f ∉ keys(R_dict)
+        if f[2].args[1] ∉ keys(R_dict)
             flow_copy = deepcopy(f)
-            push!(R_dict, flow_copy[1] => flow_copy)
+            push!(R_dict, flow_copy[2].args[1] => flow_copy)
             push!(R_block.flows, flow_copy)
         end
     end
