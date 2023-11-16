@@ -12,6 +12,10 @@ end
     include("syntax/Composition.jl")
 end
 
+@testset "Rewrite DSL" begin
+    include("syntax/Rewrite.jl")
+end
+
 @testset "is_binop_or_unary recognises binops" begin
     @test is_binop_or_unary(:(a + b))
     @test is_binop_or_unary(:(f(a, b)))
