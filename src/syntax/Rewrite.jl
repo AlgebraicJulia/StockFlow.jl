@@ -35,6 +35,11 @@ Takes two sfs, the latter a subset of the former, and makes the positions of the
 Assumes that the pair of morphisms which identify each stock, param, etc as linking to a dyvar are unique.
 """
 function reset_positions!(sfold, sfnew)
+  # This only resets the first match.
+  # Unless we're dealing with equations with more than two variables, this should be
+  # all that's necessary.
+
+
   # 1: select all links to dv which have a position:
   oldlv = Dict((i, j) => k for (i, j, k) ∈ zip(get_lvs(sfold), get_lvv(sfold), get_lvsposition(sfold)))
   oldlsv = Dict((i, j) => k for (i, j, k) ∈ zip(get_lsvsv(sfold), get_lsvv(sfold), get_lsvsvposition(sfold)))
@@ -59,6 +64,11 @@ newsvnames = svnames(sfnew)
 oldpnames = pnames(sfold)
 oldvnames = vnames(sfold)
 oldsvnames = svnames(sfold)
+
+used_lvs = Set{Tuple{Int, Int}}()
+used_lsvsv = Set{Tuple{Int, Int}}()
+used_lvsrc = Set{Tuple{Int, Int}}()
+used_lpvp = Set{Tuple{Int, Int}}()
   
   
   #2: iterate over all new values, find what they link to in new, use that to find the corresponding symbol in old
@@ -80,9 +90,10 @@ oldsvnames = svnames(sfold)
       continue
     end
     old = (findfirst(==(n1), oldsnames), findfirst(==(n2), oldvnames))
-    if old ∉ keys(oldlv)
+    if old ∉ keys(oldlv) || old ∈ used_lvs
       continue
     end
+    push!(used_lvs, old) # only first match will be set
     old_pos = oldlv[old]
     restored_lvsposition[lv] = old_pos
   end
@@ -96,9 +107,10 @@ oldsvnames = svnames(sfold)
       continue
     end
     old = (findfirst(==(n1), oldsvnames), findfirst(==(n2), oldvnames))
-        if old ∉ keys(oldlsv)
+    if old ∉ keys(oldlsv) || old ∈ used_lsvsv
       continue
     end
+    push!(used_lsvsv, old)
     old_pos = oldlsv[old]
     restored_lsvsvposition[lsv] = old_pos
   end
@@ -114,9 +126,10 @@ oldsvnames = svnames(sfold)
 
     old = (findfirst(==(n1), oldvnames), findfirst(==(n2), oldvnames))
 
-    if old ∉ keys(oldlvv)
+    if old ∉ keys(oldlvv) || old ∈ used_lvsrc
       continue
     end
+    push!(used_lvsrc, old)
     old_pos = oldlvv[old]
     restored_lvsrcposition[lvv] = old_pos
   end
@@ -129,9 +142,10 @@ oldsvnames = svnames(sfold)
       continue
     end
     old = (findfirst(==(n1), oldpnames), findfirst(==(n2), oldvnames))
-        if old ∉ keys(oldlpv)
+    if old ∉ keys(oldlpv) || old ∈ used_lpvp
       continue
     end
+    push!(used_lpvp, old)
     old_pos = oldlpv[old]
     restored_lpvpposition[lpv] = old_pos
   end
@@ -414,7 +428,9 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                 intersection_equation_symbols = (object_definition[2].args[2:end] ∩ original_definition[2].args[2:end])
                 equation_operator = original_definition[2].args[1]
 
-                @assert equation_operator == object_definition[2].args[1] "Different operator in new equation!"
+
+                @assert equation_operator == object_definition[2].args[1] "Different operator in new equation!\
+                 new: $object_definition old: $original_definition"
 
 
                 push!(modified_dict, src => parse_dyvar(Expr(:(=), src, Expr(:call, equation_operator, intersection_equation_symbols...)))) # wow.
@@ -488,7 +504,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             Expr(:call, :-, val) => begin
               object_definition = parse_stock(val)
               push!(removed_set, object_definition)
-              if val ∉ L_set
+              if val ∉ L_set && val ∈ keys(name_dict)
                 push!(L_set, val)
                 push!(L_block.stocks, val)
               end
@@ -512,7 +528,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             end
             Expr(:call, :-, val) => begin
               object_definition = parse_param(val)
-              if val ∉ L_set
+              if val ∉ L_set && val ∈ keys(name_dict)
                 push!(L_set, val)
                 push!(L_block.params, val)
               end
@@ -535,7 +551,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             end
             Expr(:call, :-, val) => begin
               push!(removed_set, val)
-              if val ∉ L_set
+              if val ∉ L_set && val ∈ keys(name_dict)
                 dyvar_index = name_dict[val][2]
                 dyvar_defintion = deepcopy(sf_block.dyvars[dyvar_index])
 
@@ -567,19 +583,19 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                 push!(L_block.flows, definition)
                 push!(L_set, val)
                 stock1 = definition[1]
-                if stock1 != :CLOUD && stock1 ∉ L_set
+                if stock1 != :CLOUD && stock1 ∉ L_set && stock1 ∈ keys(name_dict)
                   push!(L_block.stocks, stock1)
                   push!(L_set, stock1)
                 end
                 stock2 = definition[3]
-                if stock2 != :CLOUD && stock2 ∉ L_set
+                if stock2 != :CLOUD && stock2 ∉ L_set && stock2 ∈ keys(name_dict)
                   push!(L_block.stocks, stock2)
                   push!(L_set, stock2)
                 end
                 flow_var = definition[2].args[2]
                 flow_var_index = name_dict[flow_var][2]
                 flow_var_definition = deepcopy(sf_block.dyvars[flow_var_index])
-                if flow_var ∉ L_set
+                if flow_var ∉ L_set && flow_var ∈ keys(name_dict)
                   push!(L_block.dyvars, flow_var_definition)
                   push!(L_set, flow_var)
                 end
@@ -602,7 +618,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
               push!(removed_set, val)
               sum_index = name_dict[val][2]
               sum_defintion = deepcopy(sf_block.dyvars[dyvar_index])
-              if val ∉ L_set
+              if val ∉ L_set && val ∈ keys(name_dict)
                 push!(L_set, val)
                 push!(L_block.sums, sum_defintion)
               end
@@ -759,16 +775,32 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-  reset_positions!(sf, L)
+  # reset_positions!(sf, L)
   reset_positions!(sf, I)
-  reset_positions!(sf, R)
+  # reset_positions!(sf, R)
 
 
   
   hom = homomorphism
-  rule = Rule(hom(I,L), hom(I,R))
+  hom1 = hom(I,L)
+  hom2 = hom(I,R)
+
+  # println(L)
+  # println(I)
+  # println(R)
+
+  rule = Rule(hom1, hom2)
+
 
   sf_rewritten = rewrite(rule, sf)
+
+  if isnothing(sf_rewritten)
+    println(L)
+    println(I)
+    println(R)
+    return error("Failed to apply rule!")
+
+  end
 
   return sf_rewritten
     
