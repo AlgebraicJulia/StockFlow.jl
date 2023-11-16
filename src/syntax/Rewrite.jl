@@ -553,7 +553,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
               push!(removed_set, val)
               if val ∉ L_set && val ∈ keys(name_dict)
                 dyvar_index = name_dict[val][2]
-                dyvar_defintion = deepcopy(sf_block.dyvars[dyvar_index])
+                dyvar_definition = deepcopy(sf_block.dyvars[dyvar_index])
 
                 push!(L_set, val)
                 push!(L_block.dyvars, dyvar_definition)
@@ -617,10 +617,10 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             Expr(:call, :-, val) => begin
               push!(removed_set, val)
               sum_index = name_dict[val][2]
-              sum_defintion = deepcopy(sf_block.dyvars[dyvar_index])
+              sum_definition = deepcopy(sf_block.dyvars[dyvar_index])
               if val ∉ L_set && val ∈ keys(name_dict)
                 push!(L_set, val)
-                push!(L_block.sums, sum_defintion)
+                push!(L_block.sums, sum_definition)
               end
               remove_from_dyvars!(val, sf_block, L_block, L_set, name_dict)
             end

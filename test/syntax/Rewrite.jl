@@ -152,8 +152,9 @@ end
 
 
   @test (@rewrite Av begin
-    :redefs
-    v := B + B
+    :dynamic_variables
+    -v
+    +v = B + B
     :stocks
     +B
     -A
