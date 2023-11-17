@@ -242,6 +242,84 @@ end
 end
 
 
+@testset "Sums" begin
+  sv1 = @stock_and_flow begin
+    :stocks
+    S
+    I
+
+    :sums
+    N = [S, I]
+  end
+
+  sv2 = @stock_and_flow begin
+    :stocks
+    S
+
+    :sums
+    N = [S]
+  end
+
+
+  sv3 = @stock_and_flow begin
+    :stocks
+    S
+    I
+    R
+
+    :dynamic_variables
+    v1 = S * I
+    v2 = R * I
+    v3 = R + R
+
+    :sums
+    N = [S, I, R]
+    NI = [I]
+  end
+
+  sv4 = @stock_and_flow begin
+    :stocks
+    S
+    R
+
+    :dynamic_variables
+    v1 = *(S)
+    v2 = *(R)
+    v3 = R + R
+
+    :sums
+    N = [S, R]
+    NI = []
+  end
+
+
+  @test (@rewrite sv1 begin
+    :stocks
+    -I
+  end) == sv2
+
+  @test (@rewrite sv3 begin
+    :stocks
+    -I
+  end) == sv4
+
+  sv4_rewrite1 = (@rewrite sv4 begin
+    :stocks
+    +I
+
+    :redefs
+    v1 := S * I
+    v2 := R * I
+    N := [S, I, R]
+    NI := [I]
+  end)
+
+  @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
+
+
+end
+
+
 @testset "Substantial examples" begin
   
   age2 = @stock_and_flow begin
@@ -284,72 +362,72 @@ end
     :sums
     NC = [Child]
     NA = [Adult]
-end
+  end
 
-sir = @stock_and_flow begin
-  :stocks
-  S
-  I
-  R
-  
-  :parameters
-  c
-  β
-  rRec
-  rAge
-  
-  :dynamic_variables
-  v_prevalence = I / N
-  v_meanInfectiousContactsPerS = c * v_prevalence
-  v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
-  v_newInfections = S * v_perSIncidenceRate
-  v_newRecovery = I * rRec
-  v_idS = S * rAge
-  v_idI = I * rAge
-  v_idR = R * rAge
-  
-  :flows
-  S => f_idS(v_idS) => S
-  S => f_inf(v_newInfections) => I
-  I => f_idI(v_idI) => I
-  I => f_rec(v_newRecovery) => R
-  R => f_idR(v_idR) => R
-  
-  :sums
-  N = [S, I, R]
-  
-  
-end
+  sir = @stock_and_flow begin
+    :stocks
+    S
+    I
+    R
+    
+    :parameters
+    c
+    β
+    rRec
+    rAge
+    
+    :dynamic_variables
+    v_prevalence = I / N
+    v_meanInfectiousContactsPerS = c * v_prevalence
+    v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
+    v_newInfections = S * v_perSIncidenceRate
+    v_newRecovery = I * rRec
+    v_idS = S * rAge
+    v_idI = I * rAge
+    v_idR = R * rAge
+    
+    :flows
+    S => f_idS(v_idS) => S
+    S => f_inf(v_newInfections) => I
+    I => f_idI(v_idI) => I
+    I => f_rec(v_newRecovery) => R
+    R => f_idR(v_idR) => R
+    
+    :sums
+    N = [S, I, R]
+    
+    
+  end
 
-s_type = @stock_and_flow begin
-  :stocks
-  pop
-  
-  :parameters
-  c
-  β
-  rFstOrder
-  rAge
-  
-  :dynamic_variables
-  v_prevalence = pop / N
-  v_meanInfectiousContactsPerS = c * v_prevalence
-  v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
-  v_inf = pop * v_perSIncidenceRate
-  v_fstOrder = pop * rFstOrder
-  v_aging = pop * rAge
-  
-  :flows
-  pop => f_inf(v_inf) => pop
-  pop => f_fstOrder(v_fstOrder) => pop
-  pop => f_aging(v_aging) => pop
+  s_type = @stock_and_flow begin
+    :stocks
+    pop
+    
+    :parameters
+    c
+    β
+    rFstOrder
+    rAge
+    
+    :dynamic_variables
+    v_prevalence = pop / N
+    v_meanInfectiousContactsPerS = c * v_prevalence
+    v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
+    v_inf = pop * v_perSIncidenceRate
+    v_fstOrder = pop * rFstOrder
+    v_aging = pop * rAge
+    
+    :flows
+    pop => f_inf(v_inf) => pop
+    pop => f_fstOrder(v_fstOrder) => pop
+    pop => f_aging(v_aging) => pop
 
-  
-  :sums
-  N = [pop]
-  
-  
-end
+    
+    :sums
+    N = [pop]
+    
+    
+  end
 
 
 
@@ -365,7 +443,7 @@ end
 
     :dynamic_variables
     v_prevalence => v_prevalence <= ~v_IN
-   v_meanInfectiousContactsPerS => v_meanInfectiousContactsPerS <= ~v_cIN 
+    v_meanInfectiousContactsPerS => v_meanInfectiousContactsPerS <= ~v_cIN 
     v_perSIncidenceRate => v_perSIncidenceRate <= ~v_cβIN
     v_newInfections => v_inf <= ~v_inf
     v_newRecovery => v_fstOrder <= ~v_fst
@@ -376,7 +454,7 @@ end
     f_rec => f_fstOrder <= ~f_frs
     ~id => f_aging <= f_aging
 
-end
+  end
 
 
   aged_sir_rewritten = @rewrite aged_sir begin
@@ -429,77 +507,77 @@ end
     NNA = [SAdult, IAdult]
     
     
-end
+  end
 
 
 
-IS = @stock_and_flow begin
-    :stocks
-    SChild
-    IChild
-    SAdult
-    IAdult
-    
-    :parameters
-    cc_C
-    cc_A
-    
-    :dynamic_variables
-    v_prevalencev_INC = IChild / NNC
-    v_prevalencev_INA = IAdult / NNA
-    v_meanInfectiousContactsPerSv_cINC = *(cc_C)
-    v_meanInfectiousContactsPerSv_cINA = *(cc_A)
-    
-    :sums
-    NNC = [SChild, IChild]
-    NNA = [SAdult, IAdult]
-    
-    
-end
+  IS = @stock_and_flow begin
+      :stocks
+      SChild
+      IChild
+      SAdult
+      IAdult
+      
+      :parameters
+      cc_C
+      cc_A
+      
+      :dynamic_variables
+      v_prevalencev_INC = IChild / NNC
+      v_prevalencev_INA = IAdult / NNA
+      v_meanInfectiousContactsPerSv_cINC = *(cc_C)
+      v_meanInfectiousContactsPerSv_cINA = *(cc_A)
+      
+      :sums
+      NNC = [SChild, IChild]
+      NNA = [SAdult, IAdult]
+      
+      
+  end
 
 
-RS = @stock_and_flow begin
-    :stocks
-    SChild
-    IChild
-    SAdult
-    IAdult
-    
-    :parameters
-    fcc
-    fca
-    fac
-    faa
-    cc_C
-    cc_A
-    
-    :dynamic_variables
-    v_prevalencev_INC = IChild / NNC
-    v_prevalencev_INA = IAdult / NNA
-    v_CCContacts = fcc * v_prevalencev_INC
-    v_CAContacts = fca * v_prevalencev_INA
-    
-    v_ACContacts = fac * v_prevalencev_INC
-    v_AAContacts = faa * v_prevalencev_INA
-    
-    v_prevalencev_INC_post = v_CCContacts + v_CAContacts
-    v_prevalencev_INA_post = v_ACContacts + v_AAContacts
-    v_meanInfectiousContactsPerSv_cINC = cc_C * v_prevalencev_INC_post
-    v_meanInfectiousContactsPerSv_cINA = cc_A * v_prevalencev_INA_post
-    
-    :sums
-    NNC = [SChild, IChild]
-    NNA = [SAdult, IAdult]
-    
-    
-end
+  RS = @stock_and_flow begin
+      :stocks
+      SChild
+      IChild
+      SAdult
+      IAdult
+      
+      :parameters
+      fcc
+      fca
+      fac
+      faa
+      cc_C
+      cc_A
+      
+      :dynamic_variables
+      v_prevalencev_INC = IChild / NNC
+      v_prevalencev_INA = IAdult / NNA
+      v_CCContacts = fcc * v_prevalencev_INC
+      v_CAContacts = fca * v_prevalencev_INA
+      
+      v_ACContacts = fac * v_prevalencev_INC
+      v_AAContacts = faa * v_prevalencev_INA
+      
+      v_prevalencev_INC_post = v_CCContacts + v_CAContacts
+      v_prevalencev_INA_post = v_ACContacts + v_AAContacts
+      v_meanInfectiousContactsPerSv_cINC = cc_C * v_prevalencev_INC_post
+      v_meanInfectiousContactsPerSv_cINA = cc_A * v_prevalencev_INA_post
+      
+      :sums
+      NNC = [SChild, IChild]
+      NNA = [SAdult, IAdult]
+      
+      
+  end
 
 
-aged_sir_rewritten2 = rewrite(Rule(homomorphism(IS, LS), homomorphism(IS, RS)), aged_sir)
+  aged_sir_rewritten2 = rewrite(Rule(homomorphism(IS, LS), homomorphism(IS, RS)), aged_sir)
 
-@test is_natural(homomorphism(aged_sir_rewritten, aged_sir_rewritten2)) && is_natural(homomorphism(aged_sir_rewritten2, aged_sir_rewritten))
+  @test is_natural(homomorphism(aged_sir_rewritten, aged_sir_rewritten2)) && is_natural(homomorphism(aged_sir_rewritten2, aged_sir_rewritten))
 
-# @test aged_sir_rewritten == aged_sir_rewritten2
+  # @test aged_sir_rewritten == aged_sir_rewritten2
 
 
 end

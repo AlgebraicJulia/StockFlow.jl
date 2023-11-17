@@ -232,53 +232,63 @@ end
         
         
 
+"""
+For every dyvar in the original stockflow which contains a link to object_name:
+- If it hasn't been already, add the original dyvar definition to L's dyvars
+- Add all objects which are a part of the dyvar to L. 
+  (Deal with recursively adding dyvars at end)
+
+"""
+
 function remove_from_dyvars!(object_name, sf_block, L_block, L_set, name_dict)
   for dyvar ∈ sf_block.dyvars
     dyvar_name = dyvar[1]
     dyvar_expression = dyvar[2]
-    if object_name ∈ dyvar_expression.args
-      
-      if dyvar_name ∉ L_set
-        push!(L_block.dyvars, dyvar)
-        push!(L_set, dyvar_name)
-        for particular_object ∈ dyvar_expression.args[2:end]
-          if particular_object ∉ L_set
-            
+    if object_name ∉ dyvar_expression.args || dyvar_name ∈ L_set
+      continue
+    end
+  
+    push!(L_block.dyvars, dyvar)
+    push!(L_set, dyvar_name)
+    for particular_object ∈ dyvar_expression.args[2:end]
+      if particular_object ∉ L_set
+        
 
-            object_type = name_dict[particular_object][1]
-            object_index = name_dict[particular_object][2]
-            object_definition = get_from_correct_vector(sf_block, object_index, object_type)
+        object_type = name_dict[particular_object][1]
+        object_index = name_dict[particular_object][2]
+        object_definition = get_from_correct_vector(sf_block, object_index, object_type)
 
-              push!(L_set, particular_object)
-              add_to_correct_vector!(L_block, object_definition, object_type)
-            
-            if object_type == :SV
-              for stock ∈ object_definition[2]
-                if stock ∉ L_set
-                  push!(L_set, stock)
-                  push!(L_block.stocks, stock)
-                end
-              end
-            end
-          end
-        end
+          push!(L_set, particular_object)
+          add_to_correct_vector!(L_block, object_definition, object_type)
+        
+        # if object_type == :SV
+        #   for stock ∈ object_definition[2]
+        #     if stock ∉ L_set
+        #       push!(L_set, stock)
+        #       push!(L_block.stocks, stock)
+        #     end
+        #   end
+        # end
       end
     end
   end
 end
 
+"""
+For every dyvar in the original stockflow which contains a link to src:
+- If it hasn't been already, add the original dyvar definition to L's dyvars
+- Add all objects which are a part of the dyvar to L. 
+  (Deal with recursively adding dyvars at end)
+- Create a new dyvar with src replaced with tgt and add to R
 
+"""
 function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, name_dict)
   # check every dyvar to see if it contains src 
   for dyvar ∈ sf_block.dyvars
     dyvar_name = dyvar[1]
     dyvar_expression = dyvar[2]
     if src ∈ dyvar_expression.args
-
-      
       if dyvar_name ∉ L_set
-
-        
         push!(L_block.dyvars, dyvar)
         push!(L_set, dyvar_name)
         for particular_object ∈ dyvar_expression.args[2:end]
@@ -292,14 +302,22 @@ function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, 
             push!(L_set, particular_object)
             add_to_correct_vector!(L_block, object_definition, object_type)
             
-            if object_type == :SV
-              for stock ∈ object_definition[2]
-                if stock ∉ L_set
-                  push!(L_set, stock)
-                  push!(L_block.stocks, stock)
-                end
-              end
-            end
+      
+            # Unnecessary?
+            # Why would we need to add the links to the sum to L?
+            # That'd only matter if we were deleting a stock from it, but we're
+            # not, here.
+
+
+
+            # if object_type == :SV
+            #   for stock ∈ object_definition[2]
+            #     if stock ∉ L_set
+            #       push!(L_set, stock)
+            #       push!(L_block.stocks, stock)
+            #     end
+            #   end
+            # end
           end
         end
       end
