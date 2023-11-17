@@ -1252,12 +1252,12 @@ Could be different from the initial definition, since this creates flows of form
 Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
 """
 function sf_to_block(sf::AbstractStockAndFlowF)
-    stocks = Vector{Symbol}(snames(sf))
-    params = Vector{Symbol}(pnames(sf))
+    stocks = snames(sf)
+    params = pnames(sf)
     sums = Vector{Tuple{Symbol, Vector{Symbol}}}([(svname, collect(map(x -> sname(sf, x), stockssv(sf, i)))) for (i, svname) ∈ enumerate(svnames(sf))])
     dyvars = Vector{Tuple{Symbol, Expr}}([(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))])
-    flows = Vector{Tuple{Symbol, Expr, Symbol}}([(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))])
-    newsums = [(s1, isempty(vec) ? [:SV_NONE] : vec) for (s1, vec) ∈ sums]
+    flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]
+    newsums = [(s1, isempty(vec) ? [] : vec) for (s1, vec) ∈ sums]
     newflows = [((isempty(inflow) ? [:F_NONE] : inflow[1]), flow, (isempty(out) ? [:F_NONE] : out[1])) for (inflow, flow, out) ∈ flows]
     s = StockAndFlowBlock(stocks, params, dyvars, newflows, newsums)
     return s;

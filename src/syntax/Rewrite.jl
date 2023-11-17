@@ -463,8 +463,10 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
               elseif src_type == :SV
                 object_definition = parse_sum(Expr(:(=), src, tgt))
                 original_definition = deepcopy(sf_block.sums[src_index])
+                I_definition = parse_sum(Expr(:(=), src, Expr(:vect, (object_definition[2] ∩ original_definition[2])...)))
 
-                push!(modified_dict, src => parse_sum(Expr(:(=), val, Expr(:vect, object_definition ∩ original_definition)))) # wow.
+
+                push!(modified_dict, src => I_definition) # wow.
                 if src ∉ keys(R_dict)
                   push!(R_dict, src => object_definition)
                   push!(R_block.sums, object_definition)
@@ -828,9 +830,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   I = StockAndFlowF(I_args.stocks, I_args.params, map(kv -> kv.first => StockFlow.Syntax.get(kv.second), I_args.dyvars), I_args.flows, I_args.sums)
 
   R_args = stock_and_flow_syntax_to_arguments(R_block)
- 
-
-
 
 
   R = StockAndFlowF(R_args.stocks, R_args.params,  map(kv -> kv.first => StockFlow.Syntax.get(kv.second), R_args.dyvars), R_args.flows, R_args.sums)
@@ -842,7 +841,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-  # reset_positions!(sf, L)
+  reset_positions!(sf, L)
   reset_positions!(sf, I)
   reset_positions!(sf, R)
 
