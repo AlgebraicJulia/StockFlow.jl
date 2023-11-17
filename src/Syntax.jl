@@ -1287,11 +1287,9 @@ NothingFunction(x...)::Nothing = nothing;
 include("syntax/Composition.jl")
 include("syntax/Stratification.jl")
 include("syntax/Rewrite.jl")
-include("syntax/Homomorphism.jl")
-
 
 end
-
+ 
 
 
 
