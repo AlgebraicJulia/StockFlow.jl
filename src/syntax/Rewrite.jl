@@ -54,20 +54,20 @@ function reset_positions!(sfold, sfnew)
   newlpv = zip(get_lpvp(sfnew), get_lpvv(sfnew))
 
 
-newsnames = snames(sfnew)
-newpnames = pnames(sfnew)
-newvnames = vnames(sfnew)
-newsvnames = svnames(sfnew)
+  newsnames = snames(sfnew)
+  newpnames = pnames(sfnew)
+  newvnames = vnames(sfnew)
+  newsvnames = svnames(sfnew)
 
   oldsnames = snames(sfold)
-oldpnames = pnames(sfold)
-oldvnames = vnames(sfold)
-oldsvnames = svnames(sfold)
+  oldpnames = pnames(sfold)
+  oldvnames = vnames(sfold)
+  oldsvnames = svnames(sfold)
 
-used_lvs = Set{Tuple{Int, Int}}()
-used_lsvsv = Set{Tuple{Int, Int}}()
-used_lvsrc = Set{Tuple{Int, Int}}()
-used_lpvp = Set{Tuple{Int, Int}}()
+  used_lvs = Set{Tuple{Int, Int}}()
+  used_lsvsv = Set{Tuple{Int, Int}}()
+  used_lvsrc = Set{Tuple{Int, Int}}()
+  used_lpvp = Set{Tuple{Int, Int}}()
   
   
   #2: iterate over all new values, find what they link to in new, use that to find the corresponding symbol in old
@@ -195,12 +195,11 @@ function remove_from_sums!(stock_name, sf_block, L_block, L_set, name_dict)
     sum_name = sum[1]
     sum_stocks = sum[2]
     
-    if stock_name ∈ sum_stocks
-      if sum_name ∉ L_set
+    if stock_name ∈ sum_stocks && sum_name ∉ L_set
         push!(L_block.sums, sum)
-        
-      end
+        push!(L_set, sum_name)
     end
+
   end
 end
 
@@ -210,12 +209,11 @@ function recursively_add_dyvars_L!(current_dyvar, sf_block, new_block, new_set, 
   dyvar_definition = dyvar_copy[2]
     
   if dyvar_name ∉ new_set
-     
     push!(new_block.dyvars, dyvar_copy)
     push!(new_set, dyvar_name => dyvar_copy)
   end
     
-  # For everything not yet in the dict, add t dict
+  # For everything not yet in the dict, add to dict
   for object ∈ filter(∉(new_set), dyvar_definition.args[2:end])
     object_type = name_dict[object][1]
     object_index = name_dict[object][2]
@@ -239,7 +237,6 @@ function remove_from_dyvars!(object_name, sf_block, L_block, L_set, name_dict)
     dyvar_name = dyvar[1]
     dyvar_expression = dyvar[2]
     if object_name ∈ dyvar_expression.args
-
       
       if dyvar_name ∉ L_set
         push!(L_block.dyvars, dyvar)
