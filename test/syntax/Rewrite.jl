@@ -163,3 +163,75 @@ end
 
 end
 
+
+
+@testset "Modifying flows" begin
+
+  ABvf = @stock_and_flow begin
+    :stocks
+    A
+    B
+
+    :dynamic_variables
+    v = A + B
+
+    :flows
+    A => f(v) => B
+  end
+
+  ACvf = @stock_and_flow begin
+    :stocks
+    A
+    C
+
+    :dynamic_variables
+    v = A + C
+
+    :flows
+    A => f(v) => CLOUD
+  end
+
+  @test (@rewrite ABvf begin
+    :swaps
+    B => C
+    :stocks
+    +C
+    -B
+  end) == ACvf
+
+
+
+  # ABvf = @stock_and_flow begin
+  #   :stocks
+  #   A
+  #   B
+  
+  #   :dynamic_variables
+  #   v = A + B
+  
+  #   :flows
+  #   A => f(v) => B
+  # end
+  
+  # ABvf_cloud = @stock_and_flow begin
+  #   :stocks
+  #   B
+
+  #   :dynamic_variables
+  #   v = +(B)
+    
+  #   :flows
+  #   CLOUD => f(v) => B
+  # end
+
+  # @test (@rewrite ABvf begin
+  #   :stocks
+  #   -A
+  # end) == ABvf_cloud
+
+
+  # @test (@rewrite )
+
+
+
+end

@@ -20,7 +20,6 @@ using AlgebraicRewriting: rewrite
 using MLStyle
 
 
-
 function block_to_sf(block)
   args = stock_and_flow_syntax_to_arguments(block)
   sf = StockAndFlowF(args.stocks, args.params,  
@@ -207,8 +206,8 @@ end
 
 function recursively_add_dyvars_L!(current_dyvar, sf_block, new_block, new_set, name_dict)
   dyvar_name = current_dyvar[1]
-   dyvar_copy = deepcopy(current_dyvar)
-    dyvar_definition = dyvar_copy[2]
+  dyvar_copy = deepcopy(current_dyvar)
+  dyvar_definition = dyvar_copy[2]
     
   if dyvar_name ∉ new_set
      
@@ -239,7 +238,6 @@ function remove_from_dyvars!(object_name, sf_block, L_block, L_set, name_dict)
   for dyvar ∈ sf_block.dyvars
     dyvar_name = dyvar[1]
     dyvar_expression = dyvar[2]
-    
     if object_name ∈ dyvar_expression.args
 
       
@@ -278,11 +276,12 @@ function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, 
   for dyvar ∈ sf_block.dyvars
     dyvar_name = dyvar[1]
     dyvar_expression = dyvar[2]
-    
     if src ∈ dyvar_expression.args
 
       
       if dyvar_name ∉ L_set
+
+        
         push!(L_block.dyvars, dyvar)
         push!(L_set, dyvar_name)
         for particular_object ∈ dyvar_expression.args[2:end]
@@ -583,12 +582,12 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                 push!(L_block.flows, definition)
                 push!(L_set, val)
                 stock1 = definition[1]
-                if stock1 != :CLOUD && stock1 ∉ L_set && stock1 ∈ keys(name_dict)
+                if stock1 != :F_NONE && stock1 ∉ L_set && stock1 ∈ keys(name_dict)
                   push!(L_block.stocks, stock1)
                   push!(L_set, stock1)
                 end
                 stock2 = definition[3]
-                if stock2 != :CLOUD && stock2 ∉ L_set && stock2 ∈ keys(name_dict)
+                if stock2 != :F_NONE && stock2 ∉ L_set && stock2 ∈ keys(name_dict)
                   push!(L_block.stocks, stock2)
                   push!(L_set, stock2)
                 end
@@ -651,6 +650,33 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
   end
 
+  for flow ∈ sf_block.flows
+    if flow[2].args[1] ∈ L_set
+      continue
+    end
+    stock1 = flow[1]
+    stock2 = flow[3]
+    if stock1 ∈ removed_set || stock2 ∈ removed_set
+      push!(L_block.flows, deepcopy(flow))
+      push!(L_set, flow[2].args[1])
+      if stock1 ∉ L_set
+        push!(L_set, stock1)
+        push!(L_block.stocks, stock1)
+      end
+      if stock2 ∉ L_set
+        push!(L_set, stock2)
+        push!(L_block.stocks, stock2)
+      end
+      if flow[2].args[2] ∉ L_set
+        push!(L_set, flow[2].args[2])
+        flow_dyvar_index = name_dict[flow[2].args[2]][2]
+        flow_dyvar_definition = deepcopy(sf_block.dyvars[flow_dyvar_index])
+        push!(L_block.dyvars, flow_dyvar_definition)
+      end
+    end
+  end
+        
+
 
   
   I_block = deepcopy(L_block)
@@ -684,22 +710,25 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       filter!(∉(removed_set), sum[2])
     end
   end
-  
+
+
   for (i, flow) ∈ enumerate(I_block.flows)
     if flow[2].args[1] in keys(modified_dict)
       I_block.flows[i] = modified_dict[flow[2].args[1]]
     else
-      if flow.args[1] ∈ removed_set
-        flow.args[1] = :CLOUD
+      if flow[1] ∈ removed_set
+        I_block.flows[i] = tuple(replace(collect(flow), flow[1] => :F_NONE)...)
       end
-      if flow.args[2].args[2] ∈ removed_set
-        deleteat!(flow.args[2].args[2], 2) # Now has no flow variable, good job :P
+      if flow[2].args[2] ∈ removed_set
+        deleteat!(flow[2].args[2], 2) # Now has no flow variable, good job :P
       end
-      if flow.args[3] ∈ removed_set
-        flow.args[3] = :CLOUD
+      if flow[3] ∈ removed_set
+        I_block.flows[i] = tuple(replace(collect(flow), flow[3] => :F_NONE)...)
       end
     end
   end
+
+
 
   # I'm not 100% sure that this is actually correct; here's hoping
 
@@ -757,6 +786,20 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
   end
 
+  # maintain order
+  # order by indices in original, or don't care if not in original
+  # terrible way to do this though.
+
+  max_val = max(length(R_block.stocks), length(R_block.params), length(R_block.dyvars), length(R_block.sums), length(R_block.flows)) + 1
+  mv_array = [max_val,max_val]
+
+
+  sort!(R_block.stocks, by = x-> get(name_dict, x, mv_array)[2])
+  sort!(R_block.params, by = x-> get(name_dict, x, mv_array)[2])
+  sort!(R_block.dyvars, by = x-> get(name_dict, x[1], mv_array)[2])
+  sort!(R_block.sums, by = x-> get(name_dict, x[1], mv_array)[2])
+  sort!(R_block.flows, by = x-> get(name_dict, x[2].args[1], mv_array)[2])
+
 
   
   L_args = stock_and_flow_syntax_to_arguments(L_block)
@@ -765,19 +808,28 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   L = StockAndFlowF(L_args.stocks, L_args.params, map(kv -> kv.first => StockFlow.Syntax.get(kv.second), L_args.dyvars), L_args.flows, L_args.sums)
 
   I_args = stock_and_flow_syntax_to_arguments(I_block)
+  
+
   I = StockAndFlowF(I_args.stocks, I_args.params, map(kv -> kv.first => StockFlow.Syntax.get(kv.second), I_args.dyvars), I_args.flows, I_args.sums)
 
   R_args = stock_and_flow_syntax_to_arguments(R_block)
+ 
+
+
+
+
   R = StockAndFlowF(R_args.stocks, R_args.params,  map(kv -> kv.first => StockFlow.Syntax.get(kv.second), R_args.dyvars), R_args.flows, R_args.sums)
 
   
+
+
   # Now we line the positions up with the original stockflow
 
 
 
   # reset_positions!(sf, L)
   reset_positions!(sf, I)
-  # reset_positions!(sf, R)
+  reset_positions!(sf, R)
 
 
   
@@ -785,9 +837,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   hom1 = hom(I,L)
   hom2 = hom(I,R)
 
-  # println(L)
-  # println(I)
-  # println(R)
 
   rule = Rule(hom1, hom2)
 
