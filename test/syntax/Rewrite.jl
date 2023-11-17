@@ -206,39 +206,6 @@ end
 
 
 
-  # ABvf = @stock_and_flow begin
-  #   :stocks
-  #   A
-  #   B
-  
-  #   :dynamic_variables
-  #   v = A + B
-  
-  #   :flows
-  #   A => f(v) => B
-  # end
-  
-  # ABvf_cloud = @stock_and_flow begin
-  #   :stocks
-  #   B
-
-  #   :dynamic_variables
-  #   v = +(B)
-    
-  #   :flows
-  #   CLOUD => f(v) => B
-  # end
-
-  # @test (@rewrite ABvf begin
-  #   :stocks
-  #   -A
-  # end) == ABvf_cloud
-
-
-  # @test (@rewrite )
-
-
-
 end
 
 
@@ -315,6 +282,7 @@ end
   end)
 
   @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
+
 
 
 end
@@ -577,9 +545,6 @@ end
 
   @test is_natural(homomorphism(aged_sir_rewritten, aged_sir_rewritten2)) && is_natural(homomorphism(aged_sir_rewritten2, aged_sir_rewritten))
 
-  # @test aged_sir_rewritten == aged_sir_rewritten2
-
 
 end
 
-# end

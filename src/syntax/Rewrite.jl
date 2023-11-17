@@ -19,7 +19,9 @@ using AlgebraicRewriting: rewrite
 
 using MLStyle
 
-
+"""
+Convert a stockflow block to a stockflow
+"""
 function block_to_sf(block)
   args = stock_and_flow_syntax_to_arguments(block)
   sf = StockAndFlowF(args.stocks, args.params,  
@@ -32,6 +34,7 @@ end
 """
 Takes two sfs, the latter a subset of the former, and makes the positions of the latter match those of the former.
 Assumes that the pair of morphisms which identify each stock, param, etc as linking to a dyvar are unique.
+If they aren't, then only the first is reset.
 """
 function reset_positions!(sfold, sfnew)
   # This only resets the first match.
@@ -157,7 +160,10 @@ function reset_positions!(sfold, sfnew)
   return sfnew
 end
 
-
+"""
+Given a stockflow block, an index, and the type of object one is retrieving,
+return the corresponding object of that type at the index.
+"""
 function get_from_correct_vector(block, index, object_type)
   if object_type == :S
     return block.stocks[index]
@@ -172,6 +178,11 @@ function get_from_correct_vector(block, index, object_type)
   end
 end
 
+
+"""
+Given a stockflow block, an object definition and the type of object,
+add that object definition to the vector corresponding to that object type
+"""
 function add_to_correct_vector!(block, object_definition, object_type)
   if object_type == :S
     push!(block.stocks, object_definition)
@@ -203,6 +214,9 @@ function remove_from_sums!(stock_name, sf_block, L_block, L_set, name_dict)
   end
 end
 
+"""
+Given a dyvar, recursively add all dyvars contained in it to L.
+"""
 function recursively_add_dyvars_L!(current_dyvar, sf_block, new_block, new_set, name_dict)
   dyvar_name = current_dyvar[1]
   dyvar_copy = deepcopy(current_dyvar)
@@ -237,9 +251,7 @@ For every dyvar in the original stockflow which contains a link to object_name:
 - If it hasn't been already, add the original dyvar definition to L's dyvars
 - Add all objects which are a part of the dyvar to L. 
   (Deal with recursively adding dyvars at end)
-
 """
-
 function remove_from_dyvars!(object_name, sf_block, L_block, L_set, name_dict)
   for dyvar ∈ sf_block.dyvars
     dyvar_name = dyvar[1]
@@ -260,15 +272,6 @@ function remove_from_dyvars!(object_name, sf_block, L_block, L_set, name_dict)
 
           push!(L_set, particular_object)
           add_to_correct_vector!(L_block, object_definition, object_type)
-        
-        # if object_type == :SV
-        #   for stock ∈ object_definition[2]
-        #     if stock ∉ L_set
-        #       push!(L_set, stock)
-        #       push!(L_block.stocks, stock)
-        #     end
-        #   end
-        # end
       end
     end
   end
@@ -280,7 +283,6 @@ For every dyvar in the original stockflow which contains a link to src:
 - Add all objects which are a part of the dyvar to L. 
   (Deal with recursively adding dyvars at end)
 - Create a new dyvar with src replaced with tgt and add to R
-
 """
 function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, name_dict)
   # check every dyvar to see if it contains src 
@@ -301,23 +303,6 @@ function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, 
 
             push!(L_set, particular_object)
             add_to_correct_vector!(L_block, object_definition, object_type)
-            
-      
-            # Unnecessary?
-            # Why would we need to add the links to the sum to L?
-            # That'd only matter if we were deleting a stock from it, but we're
-            # not, here.
-
-
-
-            # if object_type == :SV
-            #   for stock ∈ object_definition[2]
-            #     if stock ∉ L_set
-            #       push!(L_set, stock)
-            #       push!(L_block.stocks, stock)
-            #     end
-            #   end
-            # end
           end
         end
       end
@@ -343,7 +328,9 @@ function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, 
   end
 end
 
-
+"""
+Given a dyvar, recursively add all dyvars contained in it to R.
+"""
 function recursively_add_dyvars_R!(current_dyvar, sf_block, new_block, new_dict, name_dict)
   dyvar_name = current_dyvar[1]
   dyvar_copy = deepcopy(current_dyvar)
@@ -376,8 +363,10 @@ function recursively_add_dyvars_R!(current_dyvar, sf_block, new_block, new_dict,
 end
         
         
-
-    
+"""
+Function call to create a new stockflow,
+using an existing stockflow and a block describing the modifications.
+"""
 function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   Base.remove_linenums!(block)
   name_vector = [snames(sf) ; svnames(sf) ; vnames(sf) ; fnames(sf) ; pnames(sf)]
@@ -466,7 +455,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
                 I_definition = parse_sum(Expr(:(=), src, Expr(:vect, (object_definition[2] ∩ original_definition[2])...)))
 
 
-                push!(modified_dict, src => I_definition) # wow.
+                push!(modified_dict, src => I_definition)
                 if src ∉ keys(R_dict)
                   push!(R_dict, src => object_definition)
                   push!(R_block.sums, object_definition)
@@ -479,8 +468,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
               elseif src_type == :F
                 object_definition = parse_flow(tgt)
                 original_definition = deepcopy(sf_block.flows[src_index])
-
-
 
                 # push!(modified_dict, src => object_definition)
                 if src ∉ keys(R_dict)
@@ -746,11 +733,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   end
 
 
-
-  # I'm not 100% sure that this is actually correct; here's hoping
-
-
-
   for s in I_block.stocks
     if s ∉ keys(R_dict)
       push!(R_dict, s => (s, ))
@@ -870,13 +852,58 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 end
 
 
+"""
+Given a stockflow and a syntax block, create a new stockflow by using a rewrite
+rule to apply modified homomorphisms to it.
+
+Define three new blocks L, I and R, such that sf ⊇ L ⊇ I and R ⊇ I.  Define
+homomorphisms I -> L and I -> R.  Apply this change to the original stockflow.
+
+Use :stocks, :flows, :sums, :dynamic_variables and :parameters to add and 
+remove those particular objects.  Prefix new definitions with + when adding,
+and only give the name and prefix with - when deleting
+
+Use :swaps to replace all instances of an object in a dynamic variable with
+another object.  Does not delete the original object.
+
+Use :redefs to provide a new definition for an existing sum or dyvar, replacing
+the normal = with a :=
+
+```julia
+@rewrite aged_sir begin
+
+  :redefs
+  v_meanInfectiousContactsPerSv_cINC := cc_C * v_prevalencev_INC_post
+  v_meanInfectiousContactsPerSv_cINA := cc_A * v_prevalencev_INA_post
+
+
+  :parameters
+  + fcc
+  + fca
+  + fac
+  + faa
+
+  :dynamic_variables
+
+  + v_CCContacts = fcc * v_prevalencev_INC
+  + v_CAContacts = fca * v_prevalencev_INA
+  
+  + v_ACContacts = fac * v_prevalencev_INC
+  + v_AAContacts = faa * v_prevalencev_INA
+  
+  + v_prevalencev_INC_post = v_CCContacts + v_CAContacts
+  + v_prevalencev_INA_post = v_ACContacts + v_AAContacts
+
+end
+```
+"""
 macro rewrite(sf, block)
   escaped_block = Expr(:quote, block)
   sf = esc(sf)
   quote
     sfrewrite($sf, $escaped_block)
   end
-  end
+end
   
 
 
