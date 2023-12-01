@@ -640,7 +640,7 @@ function match_binop_or_unary_dyvar(dyvar_name::Symbol, dyvar_definition::Expr)
 
             Expr(:call, op, a::Expr, b::Symbol) => begin
                 a_name = gensym(generate_dyvar_name(dyvar_name))
-                return [(syms, dyvar_name => Binop((a_name, b) => op)),
+                return [(dyvar_name => Binop((a_name, b) => op)),
                     match_binop_or_unary_dyvar(a_name, a)...]
             end
 
@@ -659,7 +659,6 @@ function match_binop_or_unary_dyvar(dyvar_name::Symbol, dyvar_definition::Expr)
             infix_expression_to_binops(dyvar_definition, finalsym=dyvar_name, gensymbase=generate_dyvar_name(dyvar_name))
         binops_syms = dyvar_exprs_to_symbolic_repr(binops)
         return binops_syms;
-        # syms = vcat(syms, binops_syms)
     end
 end
 
