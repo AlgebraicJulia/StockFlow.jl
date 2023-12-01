@@ -72,7 +72,7 @@ minus_two(x) = x - 2
 
 
 Operators = Dict(2 => [:+, :-, :*, :/, :÷, :^, :%, :log, Symbol("")],
-                 1 => [:log, :exp, :sqrt, Symbol(""), 
+                 1 => [:log, :exp, :sqrt, :+, :-, Symbol(""), 
                   :plus_one, :minus_one, :reciprocal, :one_minus, :plus_two,
                   :minus_two])
  #:NN is for NONE, which is used in create the special diagram using graph rewriting
