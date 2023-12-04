@@ -24,7 +24,7 @@ using AlgebraicRewriting
 
   @test (@rewrite empty begin
     :stocks
-    +A    
+    A    
     end) == A
 
   @test (@rewrite A begin
@@ -54,12 +54,12 @@ using AlgebraicRewriting
 
   @test (@rewrite p begin
     :stocks
-    +A
+    A
   end) == Ap
 
   @test (@rewrite A begin
     :parameters
-    +p
+    p
   end) == Ap
 
     # @test (@rewrite A begin
@@ -161,9 +161,9 @@ end
 
   @test (@rewrite Av begin
     :dynamic_variables
-    +v = B + B
+    v = B + B
     :stocks
-    +B
+    B
     :removes
     v
     A
@@ -204,7 +204,7 @@ end
     :swaps
     B => C
     :stocks
-    +C
+    C
     :removes
     B
   end) == ACvf
@@ -277,7 +277,7 @@ end
 
   sv4_rewrite1 = (@rewrite sv4 begin
     :stocks
-    +I
+    I
 
     :redefs
     v1 := S * I
@@ -438,21 +438,21 @@ end
 
 
     :parameters
-    + fcc
-    + fca
-    + fac
-    + faa
+    fcc
+    fca
+    fac
+    faa
 
     :dynamic_variables
 
-    + v_CCContacts = fcc * v_prevalencev_INC
-    + v_CAContacts = fca * v_prevalencev_INA
+    v_CCContacts = fcc * v_prevalencev_INC
+    v_CAContacts = fca * v_prevalencev_INA
     
-    + v_ACContacts = fac * v_prevalencev_INC
-    + v_AAContacts = faa * v_prevalencev_INA
+    v_ACContacts = fac * v_prevalencev_INC
+    v_AAContacts = faa * v_prevalencev_INA
     
-    + v_prevalencev_INC_post = v_CCContacts + v_CAContacts
-    + v_prevalencev_INA_post = v_ACContacts + v_AAContacts
+    v_prevalencev_INC_post = v_CCContacts + v_CAContacts
+    v_prevalencev_INA_post = v_ACContacts + v_AAContacts
 
   end
 

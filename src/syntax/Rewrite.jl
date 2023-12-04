@@ -533,24 +533,12 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:stocks) => begin 
         current_phase = s -> begin 
           @match s begin
-            Expr(:call, :+, val) => begin # stocks, params
+            val::Symbol => begin # stocks, params
               object_definition = parse_stock(val)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
               push!(R_dict, object_definition => (object_definition,))
               push!(R_block.stocks, object_definition)
             end
-            # Expr(:call, :-, val) => begin
-            #   object_definition = parse_stock(val)
-            #   push!(removed_set, object_definition)
-            #   if val ∉ L_set && val ∈ keys(name_dict)
-            #     push!(L_set, val)
-            #     push!(L_block.stocks, val)
-            #   end
-
-
-            #   remove_from_sums!(object_definition, sf_block, L_block, L_set, name_dict)
-            #   remove_from_dyvars!(object_definition, sf_block, L_block, L_set, name_dict)
-            # end
           end
         end
       end
@@ -558,22 +546,12 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:parameters) => begin 
         current_phase = p -> begin 
           @match p begin
-            Expr(:call, :+, val) => begin # stocks, params
+            val::Symbol => begin # stocks, params
               object_definition = parse_param(val)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
               push!(R_dict, object_definition => (object_definition,))
               push!(R_block.params, object_definition)
             end
-            # Expr(:call, :-, val) => begin
-            #   object_definition = parse_param(val)
-            #   if val ∉ L_set && val ∈ keys(name_dict)
-            #     push!(L_set, val)
-            #     push!(L_block.params, val)
-            #   end
-
-            #   push!(removed_set, object_definition)
-            #   remove_from_dyvars!(object_definition, sf_block, L_block, L_set, name_dict)
-            # end
           end
         end
       end
@@ -581,24 +559,12 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:dynamic_variables) => begin
         current_phase = v -> begin 
           @match v begin
-            Expr(:(=), Expr(:call, :+, tgt), Expr(:block, def)) => begin
-              object_definition = parse_dyvar(Expr(:(=), tgt, def))
+            :($tgt = $def) => begin
+              object_definition = parse_dyvar(v)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
               push!(R_dict, object_definition[1] => object_definition)
               push!(R_block.dyvars, object_definition)
             end
-            # Expr(:call, :-, val) => begin
-            #   push!(removed_set, val)
-            #   if val ∉ L_set && val ∈ keys(name_dict)
-            #     dyvar_index = name_dict[val][2]
-            #     dyvar_definition = deepcopy(sf_block.dyvars[dyvar_index])
-
-            #     push!(L_set, val)
-            #     push!(L_block.dyvars, dyvar_definition)
-            #   end
-
-            #   remove_from_dyvars!(val, sf_block, L_block, L_set, name_dict)
-            # end
           end
         end
       end
@@ -606,39 +572,13 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:flows) => begin
         current_phase = f -> begin 
           @match f begin
-             Expr(:call, :(=>), Expr(:call, :+, S1), rest) => begin # flows
+             Expr(:call, :(=>), S1::Symbol, rest) => begin # flows
               object_definition = parse_flow(Expr(:call, :(=>), S1, rest))
               object_name = object_definition[2].args[1]
               # You're adding it, so it's gonna be added.  No checking if it's already there.
               push!(R_dict, object_name => object_definition)
               push!(R_block.flows, object_definition)
             end
-            # Expr(:call, :-, val) => begin
-            #   push!(removed_set, val)
-            #   if val in keys(name_dict)
-            #     index = name_dict[val][2]
-            #     definition = deepcopy(sf_block.flows[index])
-            #     push!(L_block.flows, definition)
-            #     push!(L_set, val)
-            #     stock1 = definition[1]
-            #     if stock1 != :F_NONE && stock1 ∉ L_set && stock1 ∈ keys(name_dict)
-            #       push!(L_block.stocks, stock1)
-            #       push!(L_set, stock1)
-            #     end
-            #     stock2 = definition[3]
-            #     if stock2 != :F_NONE && stock2 ∉ L_set && stock2 ∈ keys(name_dict)
-            #       push!(L_block.stocks, stock2)
-            #       push!(L_set, stock2)
-            #     end
-            #     flow_var = definition[2].args[2]
-            #     flow_var_index = name_dict[flow_var][2]
-            #     flow_var_definition = deepcopy(sf_block.dyvars[flow_var_index])
-            #     if flow_var ∉ L_set && flow_var ∈ keys(name_dict)
-            #       push!(L_block.dyvars, flow_var_definition)
-            #       push!(L_set, flow_var)
-            #     end
-            #   end
-            # end
           end
         end
       end
@@ -646,22 +586,12 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:sums) => begin
         current_phase = sv -> begin 
           @match sv begin
-            Expr(:(=), Expr(:call, :+, tgt), Expr(:block, def)) => begin
+            Expr(:(=), tgt::Symbol, Expr(:block, def)) => begin
               object_definition = parse_sum(Expr(:(=), tgt, def))
               # You're adding it, so it's gonna be added.  No checking if it's already there.
               push!(R_dict, object_definition[1] => object_definition)
               push!(R_block.sums, object_definition)
             end
-            # Expr(:call, :-, val) => begin
-            #   push!(removed_set, val)
-            #   sum_index = name_dict[val][2]
-            #   sum_definition = deepcopy(sf_block.dyvars[dyvar_index])
-            #   if val ∉ L_set && val ∈ keys(name_dict)
-            #     push!(L_set, val)
-            #     push!(L_block.sums, sum_definition)
-            #   end
-            #   remove_from_dyvars!(val, sf_block, L_block, L_set, name_dict)
-            # end
           end
         end
       end
