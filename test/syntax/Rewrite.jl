@@ -1,3 +1,6 @@
+using Pkg
+Pkg.activate(".")
+
 using Test
 
 using StockFlow
@@ -25,28 +28,28 @@ using AlgebraicRewriting
     end) == A
 
   @test (@rewrite A begin
-    :stocks
-    -A
+    :removes
+    A
     end) == empty
 
   @test (@rewrite A begin
-    :stocks
-    -B
+    :removes
+    B
     end) == A
 
   @test (@rewrite p begin
-    :parameters
-    -p
+    :removes
+    p
   end) == empty
 
   @test (@rewrite Ap begin
-    :parameters
-    -p
+    :removes
+    p
   end) == A
 
   @test (@rewrite Ap begin
-    :stocks
-    -A
+    :removes
+    A
   end) == p
 
   @test (@rewrite p begin
@@ -61,7 +64,7 @@ using AlgebraicRewriting
 
     # @test (@rewrite A begin
     #   :stocks
-    #   -B
+    #   B
     #   end) == A
 
     # delete A, but shouldn't
@@ -70,7 +73,7 @@ using AlgebraicRewriting
 
     # @test (@rewrite A begin 
     #   :parameters
-    #   -A
+    #   A
     #   end) == A
     
 
@@ -117,52 +120,53 @@ end
   @test (@rewrite ABv begin
     :swaps
     B => A
-    :stocks
-    -B
+    :removes
+    B
   end) == AAv
 
   @test (@rewrite ABv begin
-    :stocks
-    -B
     :swaps
     B => A
+    :removes
+    B
   end) == AAv
 
   @test (@rewrite ABv begin
     :redefs
     v := A + A
-    :stocks
-    -B
+    :removes
+    B
   end) == AAv
 
   @test (@rewrite ABv begin
     :redefs
     v := +(A)
-    :stocks
-    -B
+    :removes
+    B
   end) == Av
 
   @test (@rewrite ABv begin
-    :stocks
-    -B
+    :removes
+    B
     :redefs
     v := +(A)
   end) == Av
 
   @test (@rewrite ABv begin
-    :stocks
-    -B
+    :removes
+    B
 
   end) == Av
 
 
   @test (@rewrite Av begin
     :dynamic_variables
-    -v
     +v = B + B
     :stocks
     +B
-    -A
+    :removes
+    v
+    A
   end) == BBv
 
 
@@ -201,7 +205,8 @@ end
     B => C
     :stocks
     +C
-    -B
+    :removes
+    B
   end) == ACvf
 
 
@@ -261,13 +266,13 @@ end
 
 
   @test (@rewrite sv1 begin
-    :stocks
-    -I
+    :removes
+    I
   end) == sv2
 
   @test (@rewrite sv3 begin
-    :stocks
-    -I
+    :removes
+    I
   end) == sv4
 
   sv4_rewrite1 = (@rewrite sv4 begin
