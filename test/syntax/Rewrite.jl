@@ -1,6 +1,3 @@
-using Pkg
-Pkg.activate(".")
-
 using Test
 
 using StockFlow
@@ -118,14 +115,14 @@ end
 
 
   @test (@rewrite ABv begin
-    :swaps
+    :dyvar_swaps
     B => A
     :removes
     B
   end) == AAv
 
   @test (@rewrite ABv begin
-    :swaps
+    :dyvar_swaps
     B => A
     :removes
     B
@@ -133,14 +130,14 @@ end
 
   @test (@rewrite ABv begin
     :redefs
-    v := A + A
+    v = A + A
     :removes
     B
   end) == AAv
 
   @test (@rewrite ABv begin
     :redefs
-    v := +(A)
+    v = +(A)
     :removes
     B
   end) == Av
@@ -149,7 +146,7 @@ end
     :removes
     B
     :redefs
-    v := +(A)
+    v = +(A)
   end) == Av
 
   @test (@rewrite ABv begin
@@ -201,7 +198,7 @@ end
   end
 
   @test (@rewrite ABvf begin
-    :swaps
+    :dyvar_swaps
     B => C
     :stocks
     C
@@ -280,10 +277,10 @@ end
     I
 
     :redefs
-    v1 := S * I
-    v2 := R * I
-    N := [S, I, R]
-    NI := [I]
+    v1 = S * I
+    v2 = R * I
+    N = [S, I, R]
+    NI = [I]
   end)
 
   @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
@@ -433,8 +430,8 @@ end
   aged_sir_rewritten = @rewrite aged_sir begin
 
     :redefs
-    v_meanInfectiousContactsPerSv_cINC := cc_C * v_prevalencev_INC_post
-    v_meanInfectiousContactsPerSv_cINA := cc_A * v_prevalencev_INA_post
+    v_meanInfectiousContactsPerSv_cINC = cc_C * v_prevalencev_INC_post
+    v_meanInfectiousContactsPerSv_cINA = cc_A * v_prevalencev_INA_post
 
 
     :parameters

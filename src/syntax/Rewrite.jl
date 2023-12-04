@@ -454,7 +454,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:redefs) => begin
         current_phase = redef -> begin
           @match redef begin
-            Expr(:(:=), src, tgt) => begin
+            Expr(:(=), src, tgt) => begin
               
 
               src_type = name_dict[src][1]
@@ -521,7 +521,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-      QuoteNode(:swaps) => begin 
+      QuoteNode(:dyvar_swaps) => begin 
         current_phase = swap -> begin
           @match swap begin
             Expr(:call, :(=>), src, tgt) => begin
