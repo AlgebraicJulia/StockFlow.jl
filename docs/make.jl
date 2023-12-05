@@ -59,7 +59,7 @@ makedocs(
       "generated/full_fledged_schema_examples_new/composition/diabetes_model.md",
       "generated/full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox.md",
       "generated/full_fledged_schema_examples_new/stratification/diabetes_diagnose.md",
-      "generated/full_fledged_schema_examples_new/stratification/sir_linear_stratification.md"
+      "generated/full_fledged_schema_examples_new/stratification/sir_linear_stratification.md",
       "generated/full_fledged_schema_examples_new/stratification/sir_standard_stratification.md"
     ],
     "Exercises" => Any[
