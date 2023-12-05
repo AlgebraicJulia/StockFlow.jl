@@ -205,7 +205,6 @@ function remove_from_sums!(stock_name, sf_block, L_block, L_set, name_dict)
   for sum ∈ sf_block.sums
     sum_name = sum[1]
     sum_stocks = sum[2]
-    
     if stock_name ∈ sum_stocks && sum_name ∉ L_set
         push!(L_block.sums, sum)
         push!(L_set, sum_name)
@@ -428,8 +427,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             if name_dict[removed][1] == :F
               index = name_dict[removed][2] 
               definition = deepcopy(sf_block.flows[index])
-              # push!(L_block.flows, definition)
-              # push!(L_set, val)
               stock1 = definition[1]
               if stock1 != :F_NONE && stock1 ∉ L_set && stock1 ∈ keys(name_dict)
                 push!(L_block.stocks, stock1)

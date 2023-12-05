@@ -1,3 +1,6 @@
+using Pkg;
+Pkg.activate(".")
+
 using Test
 
 using StockFlow
@@ -58,20 +61,6 @@ using AlgebraicRewriting
     :parameters
     p
   end) == Ap
-
-    # @test (@rewrite A begin
-    #   :stocks
-    #   B
-    #   end) == A
-
-    # delete A, but shouldn't
-    # We might want to just add a :removes section and if you put it under
-    # a :parameters or :stocks header it's just added.
-
-    # @test (@rewrite A begin 
-    #   :parameters
-    #   A
-    #   end) == A
     
 
 end
@@ -79,7 +68,6 @@ end
 
 @testset "Basic dynamic variable manipulation" begin
   # You should never swap both variables in a dynamic variable in one rewrite.
-
 
   ABv = @stock_and_flow begin
     :stocks
@@ -285,6 +273,20 @@ end
 
   @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
 
+
+
+  @test (@rewrite (@stock_and_flow begin
+    :stocks
+    A
+    :sums
+    N = [A]
+  end) begin
+    :removes
+    A
+  end) == (@stock_and_flow begin 
+    :sums
+    N = []
+  end)
 
 
 end
