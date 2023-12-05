@@ -819,40 +819,40 @@ rule to apply modified homomorphisms to it.
 Define three new blocks L, I and R, such that sf ⊇ L ⊇ I and R ⊇ I.  Define
 homomorphisms I -> L and I -> R.  Apply this change to the original stockflow.
 
-Use :stocks, :flows, :sums, :dynamic_variables and :parameters to add and 
-remove those particular objects.  Prefix new definitions with + when adding,
-and only give the name and prefix with - when deleting
+Use :stocks, :flows, :sums, :dynamic_variables and :parameters to add those
+particular objects.  Same format as @stock_and_flow.
 
-Use :swaps to replace all instances of an object in a dynamic variable with
-another object.  Does not delete the original object.
+Use :dyvar_swaps to replace all instances of an object in a dynamic variable
+with another object.  Does not delete the original object.
 
-Use :redefs to provide a new definition for an existing sum or dyvar, replacing
-the normal = with a :=
+Use :redefs to provide a new definition for an existing sum or dyvar.
+
+Use :removes to delete objects.
 
 ```julia
 @rewrite aged_sir begin
 
   :redefs
-  v_meanInfectiousContactsPerSv_cINC := cc_C * v_prevalencev_INC_post
-  v_meanInfectiousContactsPerSv_cINA := cc_A * v_prevalencev_INA_post
+  v_meanInfectiousContactsPerSv_cINC = cc_C * v_prevalencev_INC_post
+  v_meanInfectiousContactsPerSv_cINA = cc_A * v_prevalencev_INA_post
 
 
   :parameters
-  + fcc
-  + fca
-  + fac
-  + faa
+  fcc
+  fca
+  fac
+  faa
 
   :dynamic_variables
 
-  + v_CCContacts = fcc * v_prevalencev_INC
-  + v_CAContacts = fca * v_prevalencev_INA
+  v_CCContacts = fcc * v_prevalencev_INC
+  v_CAContacts = fca * v_prevalencev_INA
   
-  + v_ACContacts = fac * v_prevalencev_INC
-  + v_AAContacts = faa * v_prevalencev_INA
+  v_ACContacts = fac * v_prevalencev_INC
+  v_AAContacts = faa * v_prevalencev_INA
   
-  + v_prevalencev_INC_post = v_CCContacts + v_CAContacts
-  + v_prevalencev_INA_post = v_ACContacts + v_AAContacts
+  v_prevalencev_INC_post = v_CCContacts + v_CAContacts
+  v_prevalencev_INA_post = v_ACContacts + v_AAContacts
 
 end
 ```
