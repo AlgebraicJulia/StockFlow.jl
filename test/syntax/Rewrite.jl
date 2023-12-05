@@ -1,3 +1,6 @@
+using Pkg;
+Pkg.activate(".")
+
 using Test
 
 using StockFlow
@@ -21,57 +24,43 @@ using AlgebraicRewriting
 
   @test (@rewrite empty begin
     :stocks
-    +A    
+    A    
     end) == A
 
   @test (@rewrite A begin
-    :stocks
-    -A
+    :removes
+    A
     end) == empty
 
   @test (@rewrite A begin
-    :stocks
-    -B
+    :removes
+    B
     end) == A
 
   @test (@rewrite p begin
-    :parameters
-    -p
+    :removes
+    p
   end) == empty
 
   @test (@rewrite Ap begin
-    :parameters
-    -p
+    :removes
+    p
   end) == A
 
   @test (@rewrite Ap begin
-    :stocks
-    -A
+    :removes
+    A
   end) == p
 
   @test (@rewrite p begin
     :stocks
-    +A
+    A
   end) == Ap
 
   @test (@rewrite A begin
     :parameters
-    +p
+    p
   end) == Ap
-
-    # @test (@rewrite A begin
-    #   :stocks
-    #   -B
-    #   end) == A
-
-    # delete A, but shouldn't
-    # We might want to just add a :removes section and if you put it under
-    # a :parameters or :stocks header it's just added.
-
-    # @test (@rewrite A begin 
-    #   :parameters
-    #   -A
-    #   end) == A
     
 
 end
@@ -79,7 +68,6 @@ end
 
 @testset "Basic dynamic variable manipulation" begin
   # You should never swap both variables in a dynamic variable in one rewrite.
-
 
   ABv = @stock_and_flow begin
     :stocks
@@ -115,54 +103,55 @@ end
 
 
   @test (@rewrite ABv begin
-    :swaps
+    :dyvar_swaps
     B => A
-    :stocks
-    -B
+    :removes
+    B
   end) == AAv
 
   @test (@rewrite ABv begin
-    :stocks
-    -B
-    :swaps
+    :dyvar_swaps
     B => A
+    :removes
+    B
   end) == AAv
 
   @test (@rewrite ABv begin
     :redefs
-    v := A + A
-    :stocks
-    -B
+    v = A + A
+    :removes
+    B
   end) == AAv
 
   @test (@rewrite ABv begin
     :redefs
-    v := +(A)
-    :stocks
-    -B
+    v = +(A)
+    :removes
+    B
   end) == Av
 
   @test (@rewrite ABv begin
-    :stocks
-    -B
+    :removes
+    B
     :redefs
-    v := +(A)
+    v = +(A)
   end) == Av
 
   @test (@rewrite ABv begin
-    :stocks
-    -B
+    :removes
+    B
 
   end) == Av
 
 
   @test (@rewrite Av begin
     :dynamic_variables
-    -v
-    +v = B + B
+    v = B + B
     :stocks
-    +B
-    -A
+    B
+    :removes
+    v
+    A
   end) == BBv
 
 
@@ -197,11 +186,12 @@ end
   end
 
   @test (@rewrite ABvf begin
-    :swaps
+    :dyvar_swaps
     B => C
     :stocks
-    +C
-    -B
+    C
+    :removes
+    B
   end) == ACvf
 
 
@@ -261,28 +251,42 @@ end
 
 
   @test (@rewrite sv1 begin
-    :stocks
-    -I
+    :removes
+    I
   end) == sv2
 
   @test (@rewrite sv3 begin
-    :stocks
-    -I
+    :removes
+    I
   end) == sv4
 
   sv4_rewrite1 = (@rewrite sv4 begin
     :stocks
-    +I
+    I
 
     :redefs
-    v1 := S * I
-    v2 := R * I
-    N := [S, I, R]
-    NI := [I]
+    v1 = S * I
+    v2 = R * I
+    N = [S, I, R]
+    NI = [I]
   end)
 
   @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
 
+
+
+  @test (@rewrite (@stock_and_flow begin
+    :stocks
+    A
+    :sums
+    N = [A]
+  end) begin
+    :removes
+    A
+  end) == (@stock_and_flow begin 
+    :sums
+    N = []
+  end)
 
 
 end
@@ -428,26 +432,26 @@ end
   aged_sir_rewritten = @rewrite aged_sir begin
 
     :redefs
-    v_meanInfectiousContactsPerSv_cINC := cc_C * v_prevalencev_INC_post
-    v_meanInfectiousContactsPerSv_cINA := cc_A * v_prevalencev_INA_post
+    v_meanInfectiousContactsPerSv_cINC = cc_C * v_prevalencev_INC_post
+    v_meanInfectiousContactsPerSv_cINA = cc_A * v_prevalencev_INA_post
 
 
     :parameters
-    + fcc
-    + fca
-    + fac
-    + faa
+    fcc
+    fca
+    fac
+    faa
 
     :dynamic_variables
 
-    + v_CCContacts = fcc * v_prevalencev_INC
-    + v_CAContacts = fca * v_prevalencev_INA
+    v_CCContacts = fcc * v_prevalencev_INC
+    v_CAContacts = fca * v_prevalencev_INA
     
-    + v_ACContacts = fac * v_prevalencev_INC
-    + v_AAContacts = faa * v_prevalencev_INA
+    v_ACContacts = fac * v_prevalencev_INC
+    v_AAContacts = faa * v_prevalencev_INA
     
-    + v_prevalencev_INC_post = v_CCContacts + v_CAContacts
-    + v_prevalencev_INA_post = v_ACContacts + v_AAContacts
+    v_prevalencev_INC_post = v_CCContacts + v_CAContacts
+    v_prevalencev_INA_post = v_ACContacts + v_AAContacts
 
   end
 

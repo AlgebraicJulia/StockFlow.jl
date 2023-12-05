@@ -1258,7 +1258,7 @@ function sf_to_block(sf::AbstractStockAndFlowF)
     dyvars = Vector{Tuple{Symbol, Expr}}([(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))])
     flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]
     newsums = [(s1, isempty(vec) ? [] : vec) for (s1, vec) ∈ sums]
-    newflows = [((isempty(inflow) ? [:F_NONE] : inflow[1]), flow, (isempty(out) ? [:F_NONE] : out[1])) for (inflow, flow, out) ∈ flows]
+    newflows = [((isempty(inflow) ? :F_NONE : inflow[1]), flow, (isempty(out) ? :F_NONE : out[1])) for (inflow, flow, out) ∈ flows]
     s = StockAndFlowBlock(stocks, params, dyvars, newflows, newsums)
     return s;
 end
