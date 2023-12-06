@@ -1,5 +1,5 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, nn, ne, nname,
-sedge, tedge, convertToCausalLoop, nnames
+sedge, tedge, convertToCausalLoop, nnames, CausalLoopF
 
 
 @present TheoryCausalLoop(FreeSchema) begin
@@ -15,9 +15,16 @@ sedge, tedge, convertToCausalLoop, nnames
   nname::Attr(N, Name)
 end
 
+@present TheoryCausalLoopF <: TheoryCausalLoop begin
+  Polarity::AttrType
+  epolarity::Attr(E, Polarity)
+end
+
 @abstract_acset_type AbstractCausalLoop
 @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
+@acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
 const CausalLoop = CausalLoopUntyped{Symbol} 
+const CausalLoopF = CausalLoopFUntyped{Symbol, Int8}
 
 add_node!(c::AbstractCausalLoop;kw...) = add_part!(c,:N;kw...) 
 add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)
@@ -42,6 +49,25 @@ CausalLoop(ns,es) = begin
     add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t))
 
     c
+end
+
+
+CausalLoopF(ns, es, pols) = begin
+  @assert length(pols) == length(es)
+
+  c = CausalLoopF()
+  ns = vectorify(ns)
+  es = vectorify(es)
+  
+  ns_idx=state_dict(ns)
+  add_nodes!(c, length(ns), nname=ns)
+
+  s=map(first,es)
+  t=map(last,es)
+
+  add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t), epolarity=pols)
+
+  c
 end
 
 # return the count of each components
