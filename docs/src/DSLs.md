@@ -6,6 +6,7 @@ using StockFlow.Syntax # stock_and_flow, foot, feet
 using StockFlow.Syntax.Stratification # stratify, n_stratify
 using StockFlow.Syntax.Composition # compose
 using StockFlow.Syntax.Rewrite # rewrite
+using StockFlow.Syntax.Homomorphism # hom
 ```
 
 # Syntax
@@ -162,31 +163,31 @@ and is strongly recommended against.
     # Don't need stocks header, because there's only one
     :stocks
     _ => pop <= _
-    
+
     :flows
     ~Death => f_death <= ~Death
     ~id => f_aging <= ~aging
     ~Becoming => f_fstOrder <= ~id
     _ => f_birth <= f_NB
 
-    
+
     :dynamic_variables
     v_NewBorn => v_birth <= v_NB
     ~Death => v_death <= ~Death
     ~id  => v_aging <= v_agingCA, v_agingAS
     # Could match the right side with ~id
     v_BecomingOverWeight, v_BecomingObese => v_fstOrder <= v_idC, v_idA, v_idS
-    
+
     :parameters
     μ => μ <= μ
     δw, δo => δ <= δC, δA, δS
     rw, ro => rFstOrder <= r
     rage => rage <= rageCA, rageAS
-    
+
     # Similar to stocks, don't need a sums header.
     :sums
     N => N <= N
-    
+
 end 
 ```
 
@@ -205,30 +206,30 @@ act on their particular stockflow.
 
 ```julia
 @n_stratify WeightModel ageWeightModel l_type begin
-    
+
     # Once again, stocks header isn't necessary
     :stocks
     [_, _] => pop
-    
+
     :flows
     [~Death, ~Death] => f_death
     [~id, ~aging] => f_aging 
     [~Becoming, ~id] => f_fstOrder
     [_, f_NB] => f_birth
 
-    
+
     :dynamic_variables
     [v_NewBorn, v_NB] => v_birth
     [~Death, ~Death] => v_death
     [~id, (v_agingCA, v_agingAS)] => v_aging
     [(v_BecomingOverWeight, v_BecomingObese), (v_idC, v_idA, v_idS)] => v_fstOrder
-    
+
     :parameters
     [μ, μ] => μ
     [(δw, δo), (δC, δA, δS)] => δ
     [(rw, ro), r] => rFstOrder
     [rage, (rageCA, rageAS)] => rage
-    
+
     # Nor is sums header necessary
     :sums
     [N,N] => N
@@ -278,7 +279,7 @@ end
 
 Diabetes_Model = @compose Model_Normoglycemic Model_Hyperglycemic Model_Norm_Hyper begin
     (Normo, Hyper, NH)
-    
+
     Normo, NH ^ NormalWeight => N
     Normo, NH ^ OverWeight => N
     Normo, NH ^ Obese => N
@@ -289,10 +290,10 @@ end
 ```
 
 ---
+
 # Rewrite
 
 ## @rewrite
-
 
 Given a stockflow sf and an expression block, create a new stockflow with
 edits made based on the block.  The expression block will be used to create
@@ -319,7 +320,6 @@ dynamic variable should now instead be B.
 For this to work, there must exist homomorphisms I => L and I => R, and every name in the original stockflow must be unique.
 
 ```julia
-
 aged_sir_rewritten = @rewrite aged_sir begin
 
     :redefs
@@ -337,10 +337,10 @@ aged_sir_rewritten = @rewrite aged_sir begin
 
     v_CCContacts = fcc * v_prevalencev_INC
     v_CAContacts = fca * v_prevalencev_INA
-    
+
     v_ACContacts = fac * v_prevalencev_INC
     v_AAContacts = faa * v_prevalencev_INA
-    
+
     v_prevalencev_INC_post = v_CCContacts + v_CAContacts
     v_prevalencev_INA_post = v_ACContacts + v_AAContacts
 
@@ -361,11 +361,48 @@ sirv_rewritten = @rewrite sirv begin
   :dyvar_swaps
   lambda => v_inf₂
   rdeath_svi => rdeath
-  
+
   :removes
   lambda
   rdeath_svi
 end
-    
+```
 
+---
+
+# Homomorphism
+
+## @hom
+
+Using two stockflows and a block with the same headers as @stratify, define an ACSetTransformation from the first stockflow to another.
+
+Half of a stratify.  Rather than creating two homomorphisms and taking the pullback, creates one homomorphism.
+
+```julia
+@hom WeightModel l_type begin
+  :stocks
+  NormalWeight => pop
+  OverWeight => pop
+  Obese => pop
+
+  :parameters
+  μ => μ
+  ~δ => δ
+  rage => rage
+  _ => rFstOrder
+
+  :dynamic_variables
+  v_NewBorn => v_birth
+  ~Becoming => v_fstOrder
+  ~Death => v_death
+  _ => v_aging
+
+  :flows
+  f_NewBorn => f_birth
+  ~Becoming => f_fstOrder
+  ~Death => f_death
+  ~id => f_aging
+  _ => f_death
+
+end
 ```
