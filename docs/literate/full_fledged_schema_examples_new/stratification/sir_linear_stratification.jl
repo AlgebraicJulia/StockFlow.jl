@@ -1,3 +1,5 @@
+# # SIR Linear Stratification
+
 using GraphViz
 
 using StockFlow

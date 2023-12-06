@@ -63,20 +63,20 @@ Block has five headers you can use in it:
     end
 ```
 
- The specific values in the above example are chosen to show the capabilities
-    of the syntax.  For more realistic examples, see src/PremadeModels.jl.
+The specific values in the above example are chosen to show the capabilities
+of the syntax.  For more realistic examples, see src/PremadeModels.jl.
 
-    At present, any julia function is allowed to act as an operator for a 
-    dynamic variable, but in the future it'll be restricted to the below list:
-    
-    Binary:  :+, :-, :*, :/, :÷, :^, :%, :log
-    
-    Unary: :log, :exp, :sqrt, :+, :-
-    :plus_one, :minus_one, :reciprocal, :one_minus, :plus_two,
-    :minus_two
-    
-    The unary functions can be expressed as plus_one(X), or how you'd expect,
-    as X + 1 or 1 + X.
+At present, any julia function is allowed to act as an operator for a 
+dynamic variable, but in the future it'll be restricted to the below list:
+
+Binary:  :+, :-, :*, :/, :÷, :^, :%, :log
+
+Unary: :log, :exp, :sqrt, :+, :-
+:plus\_one, :minus\_one, :reciprocal, :one\_minus, :plus\_two,
+:minus_two
+
+The unary functions can be expressed as plus\_one(X), or how you'd expect,
+as X + 1 or 1 + X.
 
 ---
 
@@ -138,20 +138,20 @@ Y -> Z and taking their pullback.
 The particular morphisms can be inferred based on what each object in X and
 Z maps to in Y.
 
-For :stocks, :flows, :dynamic_variables, :parameters and :sums in X and Y,
+For :stocks, :flows, :dynamic\_variables, :parameters and :sums in X and Y,
 indicate what each element of X maps to on the left and Y on the right.  So,
 if stocks x1, x2 in X and z in Z map to y in Y, you write 
 :stocks
 x1, x2 => y <= z
 
-Prefix ~ to indicate a substring match and _ to match everything else.
+Prefix ~ to indicate a substring match and \_ to match everything else.
 
 If there only exists one of a particular type of object which can be mapped
 to, the maps don't need to be made explicit.  EG, if there only exists one
 sum variable in Y, you don't need to have a :sums header.
 
 If there exist multiple matches for an object (eg, you have A twice, or you
-match A then have an _), then only the first will be used.
+match A then have an \_), then only the first will be used.
 
 Using stockflows with duplicate names could lead to unpredictable results
 and is strongly recommended against.
@@ -192,11 +192,11 @@ end
 
 ---
 
-Given n stockflows A_1, ..., A_{n-1}, Z and an expression block, create a 
-new stockflow representing the pullback of A_1 -> Z, ..., A_{n-1} -> Z.
+Given n stockflows A\_1, ..., A\_{n-1}, Z and an expression block, create a 
+new stockflow representing the pullback of A\_1 -> Z, ..., A\_{n-1} -> Z.
 
 Use an ordered list of tuples to indicate the ith stockflow.  If there is a
-single object in A_i mapping to an object in Z, the tuple isn't necessary.
+single object in A\_i mapping to an object in Z, the tuple isn't necessary.
 If 0 map to it, use an empty tuple (though, in that case, why does Z have
 it at all?)
 
@@ -241,7 +241,7 @@ end
 
 ## @compose
 
-Given n stockflows A_1, ..., A_n and an expression block, return a new
+Given n stockflows A\_1, ..., A\_n and an expression block, return a new
 stockflow such that specified shared stocks, sums and links between them
 are treated as the same.
 
@@ -289,6 +289,10 @@ end
 ```
 
 ---
+# Rewrite
+
+## @rewrite
+
 
 Given a stockflow sf and an expression block, create a new stockflow with
 edits made based on the block.  The expression block will be used to create
@@ -297,8 +301,8 @@ rewrite rule to replace L with R in sf.
 
 Every object in sf must have a unique name.
 
-Rewrite has 8 headers, :stocks, :flows, :sums, :dynamic_variables, :redefs, :removes,
-and :dyvar_swaps
+Rewrite has 8 headers, :stocks, :flows, :sums, :dynamic\_variables, :redefs, :removes,
+and :dyvar\_swaps
 
 The first five are used to indicate if an instance of that type is being
 added.  Use the same definition syntax as in @stock_and_flow.
@@ -308,7 +312,7 @@ sum.  Again, use the same syntax as in @stock_and_flow.
 
 :removes indicates that an object should be deleted.  You just need the name of it in the original.
 
-:dyvar_swaps is used to swap all instances of an object inside dynamic variables
+:dyvar\_swaps is used to swap all instances of an object inside dynamic variables
 with another object.  Use the notation A => B to indicate every A in a
 dynamic variable should now instead be B.
 
