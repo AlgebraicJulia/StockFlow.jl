@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>SIR Linear Stratification · StockFlow.jl</title><meta name="title" content="SIR Linear Stratification · StockFlow.jl"/><meta property="og:title" content="SIR Linear Stratification · StockFlow.jl"/><meta property="twitter:title" content="SIR Linear Stratification · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../DSLs/">Domain Specific Languages</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../../composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../../composition/COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../../composition/curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../../composition/diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../../composition/SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../diabetes_diagnose/">Diabetes Diagnose</a></li><li class="is-active"><a class="tocitem" href>SIR Linear Stratification</a></li><li><a class="tocitem" href="../sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>SIR Linear Stratification</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>SIR Linear Stratification</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/stratification/sir_linear_stratification.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="SIR-Linear-Stratification"><a class="docs-heading-anchor" href="#SIR-Linear-Stratification">SIR Linear Stratification</a><a id="SIR-Linear-Stratification-1"></a><a class="docs-heading-anchor-permalink" href="#SIR-Linear-Stratification" title="Permalink"></a></h1><pre><code class="language-julia hljs">using GraphViz
+
+using StockFlow
+using StockFlow.Syntax
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.Theories
+using Catlab.WiringDiagrams
+
+using Catlab.Graphics.Graphviz: Html
+using Catlab.Graphics.Graphviz</code></pre><p>Functions for graphing typed Petri nets</p><pre><code class="language-julia hljs">colors_vflow = [&quot;antiquewhite4&quot;,&quot;antiquewhite&quot;, &quot;gold&quot;, &quot;saddlebrown&quot;, &quot;slateblue&quot;, &quot;blueviolet&quot;, &quot;olive&quot;]
+colors_s = [&quot;deeppink&quot;,&quot;darkorchid&quot;,&quot;darkred&quot;,&quot;coral&quot;] # red series
+colors_sv = [&quot;cornflowerblue&quot;,&quot;cyan4&quot;,&quot;cyan&quot;,&quot;chartreuse&quot;] # green and blue series
+colors_p = [&quot;gold&quot;,&quot;gold4&quot;,&quot;darkorange1&quot;,&quot;lightgoldenrod&quot;,&quot;goldenrod&quot;] # yellow and orange
+
+flatten(fname::Symbol) = &quot;$fname&quot;
+
+function flatten(fname::Tuple)
+    names = split(replace(string(fname), &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;, &quot;:&quot;=&gt;&quot;&quot;), &quot;,&quot;)
+    for i in 1:length(names)
+        name = strip(names[i])
+        if name[1:2] == &quot;id&quot;
+            continue
+        end
+        return name
+    end
+    return &quot;id&quot;
+end
+
+def_stock(typed_StockFlow::ACSetTransformation, colors) =
+  (p,s) -&gt; (&quot;s$s&quot;, Attributes(:label=&gt;sname(p,s) isa Tuple where T ? Html(replace(string(sname(p,s)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(sname(p,s))&quot;,
+                                     :shape=&gt;&quot;square&quot;,
+                                     :color=&gt;&quot;black&quot;,
+                                     :style=&gt;&quot;filled&quot;,
+                                     :fillcolor=&gt;colors[typed_StockFlow[:S](s)]))
+
+def_parameter(typed_StockFlow::ACSetTransformation, colors) =
+(p, pp) -&gt; (&quot;p$pp&quot;, Attributes(:label=&gt;pname(p,pp) isa Tuple where T ? Html(replace(string(pname(p,pp)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(pname(p,pp))&quot;,
+                                     :shape=&gt;&quot;circle&quot;,
+                                     :color=&gt;colors[typed_StockFlow[:P](pp)],
+                                     :fontcolor=&gt;colors[typed_StockFlow[:P](pp)]))
+
+def_auxiliaryVF(typed_StockFlow::ACSetTransformation, colors)=
+  (p, v) -&gt; (&quot;v$v&quot;, Attributes(:label=&gt;make_v_expr(p,v) isa Tuple where T ? Html(replace(string(make_v_expr(p,v)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(make_v_expr(p,v))&quot;,
+                                          :shape=&gt;&quot;plaintext&quot;,
+                                          :fontcolor=&gt;colors[typed_StockFlow[:V](v)]))
+
+
+def_sumV(typed_StockFlow::ACSetTransformation, colors) =
+  (p, sv) -&gt; (&quot;sv$sv&quot;, Attributes(:label=&gt;svname(p,sv) isa Tuple where T ? Html(replace(string(svname(p,sv)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(svname(p,sv))&quot;,
+                                       :shape=&gt;&quot;circle&quot;,
+                                       :color=&gt;&quot;black&quot;,
+                                       :fillcolor=&gt;colors[typed_StockFlow[:SV](sv)],
+                                       :style=&gt;&quot;filled&quot;))
+
+
+def_flow_V(typed_StockFlow::ACSetTransformation, colors)=
+  (p, us, ds, v, f) -&gt; begin
+    labelfontsize = &quot;6&quot;
+    colorType = colors[typed_StockFlow[:F](f)]
+    color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+    arrowhead = &quot;none&quot;
+    splines = &quot;ortho&quot;
+    return ([us, &quot;v$v&quot;],Attributes(:label=&gt;&quot;&quot;, :labelfontsize=&gt;labelfontsize, :color=&gt;color, :arrowhead=&gt;arrowhead, :splines=&gt;splines)),
+           ([&quot;v$v&quot;, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;labelfontsize, :color=&gt;color, :splines=&gt;splines))
+end
+
+def_flow_noneV(typed_StockFlow::ACSetTransformation, colors)=
+  (p, us, ds, f) -&gt; begin
+     colorType = colors[typed_StockFlow[:F](f)]
+     color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+     ([us, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;&quot;6&quot;, :color=&gt;color))
+end
+
+def_flow_V(colors = colors_vflow)=
+  (p, us, ds, v, f) -&gt; begin
+    labelfontsize = &quot;6&quot;
+    colorType = colors[f]
+    color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+    arrowhead = &quot;none&quot;
+    splines = &quot;ortho&quot;
+    return ([us, &quot;v$v&quot;],Attributes(:label=&gt;&quot;&quot;, :labelfontsize=&gt;labelfontsize, :color=&gt;color, :arrowhead=&gt;arrowhead, :splines=&gt;splines)),
+           ([&quot;v$v&quot;, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;labelfontsize, :color=&gt;color, :splines=&gt;splines))
+
+end
+
+def_flow_noneV(colors = colors_vflow)=
+  (p, us, ds, f) -&gt; begin
+     colorType = colors[f]
+     color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+     ([us, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;&quot;6&quot;, :color=&gt;color))
+end
+
+GraphF_typed(typed_StockFlow::ACSetTransformation, colors_vflow = colors_vflow, colors_s = colors_s, colors_p = colors_p, colors_sv = colors_sv; schema::String=&quot;C&quot;, type::String=&quot;SFVL&quot;, rd::String=&quot;LR&quot;) = GraphF(dom(typed_StockFlow),
+    make_stock = def_stock(typed_StockFlow, colors_s), make_auxiliaryV=def_auxiliaryVF(typed_StockFlow, colors_vflow), make_sumV=def_sumV(typed_StockFlow, colors_sv),
+    make_flow_V=def_flow_V(typed_StockFlow, colors_vflow), make_flow_noneV=def_flow_noneV(typed_StockFlow, colors_vflow),make_parameter=def_parameter(typed_StockFlow, colors_p),schema=schema, type=type, rd=rd
+)
+
+l_type = @stock_and_flow begin
+    :stocks
+    pop
+
+    :parameters
+    μ
+    δ
+    rFstOrder
+    rage
+
+    :dynamic_variables
+    v_aging = pop * rage
+    v_fstOrder = pop * rFstOrder
+    v_birth = N * μ
+    v_death = pop * δ
+
+    :flows
+    pop =&gt; f_aging(v_aging) =&gt; pop
+    pop =&gt; f_fstOrder(v_fstOrder) =&gt; pop
+    CLOUD =&gt; f_birth(v_birth) =&gt; pop
+    pop =&gt; f_death(v_death) =&gt; CLOUD
+
+    :sums
+    N = [pop]
+
+end
+
+GraphF_typed(id(l_type))</code></pre><img src="c7531e25.svg" alt="Example block output"/><p>eliminate the attribute of name to enable pass the natural check only eliminate the name, the other two attributes should be okay</p><pre><code class="language-julia hljs">l_type = map(l_type, Name=name-&gt;nothing, Op=op-&gt;nothing, Position=pos-&gt;nothing);
+
+s, = parts(l_type, :S)
+N, = parts(l_type, :SV)
+lsn, = parts(l_type, :LS)
+f_aging, f_fstorder, f_birth, f_death = parts(l_type, :F)
+i_aging, i_fstorder, i_birth = parts(l_type, :I)
+o_aging, o_fstorder, o_death = parts(l_type, :O)
+v_aging, v_fstorder, v_birth, v_death = parts(l_type, :V)
+lv_aging1, lv_fstorder1, lv_death1 = parts(l_type, :LV)
+lsv_birth1, = parts(l_type, :LSV)
+p_μ, p_δ, p_rfstOrder, p_rage = parts(l_type, :P)
+lpv_aging2, lpv_fstorder2, lpv_birth2, lpv_death2 = parts(l_type, :LPV)
+
+
+WeightModel = @stock_and_flow begin
+    :stocks
+    NormalWeight
+    OverWeight
+    Obese
+
+    :parameters
+    μ
+    δw
+    rw
+    ro
+    δo
+    rage
+
+    :dynamic_variables
+    v_NewBorn = N * μ
+    v_DeathNormalWeight = NormalWeight * δw
+    v_BecomingOverWeight = NormalWeight * rw
+    v_DeathOverWeight = OverWeight * δw
+    v_BecomingObese = OverWeight * ro
+    v_DeathObese = Obese * δo
+    v_idNW = NormalWeight * rage
+    v_idOW = OverWeight * rage
+    v_idOb = Obese * rage
+
+    :flows
+    CLOUD =&gt; f_NewBorn(v_NewBorn) =&gt; NormalWeight
+    NormalWeight =&gt; f_DeathNormalWeight(v_DeathNormalWeight) =&gt; CLOUD
+    NormalWeight =&gt; f_BecomingOverWeight(v_BecomingOverWeight) =&gt; OverWeight
+    OverWeight =&gt; f_DeathOverWeight(v_DeathOverWeight) =&gt; CLOUD
+
+    OverWeight =&gt; f_BecomingObese(v_BecomingObese) =&gt; Obese
+    Obese =&gt; f_DeathObese(v_DeathObese) =&gt; CLOUD
+    NormalWeight =&gt; f_idNW(v_idNW) =&gt; NormalWeight
+    OverWeight =&gt; f_idOW(v_idOW) =&gt; OverWeight
+    Obese =&gt; f_idOb(v_idOb) =&gt; Obese
+
+    :sums
+    N = [NormalWeight, OverWeight, Obese]
+
+end
+
+GraphF(WeightModel, rd=&quot;TB&quot;)
+
+typed_WeightModel=ACSetTransformation(WeightModel, l_type,
+  S = [s,s,s],
+  SV = [N],
+  LS = [lsn,lsn,lsn],
+  F = [f_birth, f_death, f_fstorder, f_death, f_fstorder, f_death, f_aging, f_aging, f_aging],
+  I = [i_birth, i_aging, i_fstorder, i_aging, i_fstorder, i_aging],
+  O = [o_death, o_fstorder, o_aging, o_death, o_fstorder, o_aging, o_death, o_aging],
+  V = [v_birth, v_death, v_fstorder, v_death, v_fstorder, v_death, v_aging, v_aging, v_aging],
+  LV = [lv_death1, lv_fstorder1, lv_death1, lv_fstorder1, lv_death1, lv_aging1, lv_aging1, lv_aging1],
+  LSV = [lsv_birth1],
+  P = [p_μ, p_δ, p_rfstOrder, p_rfstOrder, p_δ, p_rage],
+  LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_fstorder2, lpv_death2, lpv_aging2, lpv_aging2, lpv_aging2],
+  Name = name -&gt; nothing, Op=op-&gt;nothing, Position=pos-&gt;nothing
+);
+@assert is_natural(typed_WeightModel)
+GraphF_typed(typed_WeightModel, rd=&quot;TB&quot;)
+
+ageWeightModel = @stock_and_flow begin
+    :stocks
+    Child
+    Adult
+    Senior
+
+    :parameters
+    μ
+    δC
+    δA
+    δS
+    rageCA
+    rageAS
+    r
+
+    :dynamic_variables
+    v_NB = N * μ
+    v_DeathC = Child * δC
+    v_idC = Child * r
+    v_agingCA = Child * rageCA
+    v_DeathA = Adult * δA
+    v_idA = Adult * r
+    v_agingAS = Adult * rageAS
+    v_DeathS = Senior * δS
+    v_idS = Senior * r
+
+    :flows
+    CLOUD =&gt; f_NB(v_NB) =&gt; Child
+    Child =&gt; f_idC(v_idC) =&gt; Child
+    Child =&gt; f_DeathC(v_DeathC) =&gt; CLOUD
+    Child =&gt; f_agingCA(v_agingCA) =&gt; Adult
+    Adult =&gt; f_idA(v_idA) =&gt; Adult
+    Adult =&gt; f_DeathA(v_DeathA) =&gt; CLOUD
+    Adult =&gt; f_agingAS(v_agingAS) =&gt; Senior
+    Senior =&gt; f_idS(v_idS) =&gt; Senior
+    Senior =&gt; f_DeathS(v_DeathS) =&gt; CLOUD
+
+    :sums
+    N = [Child, Adult, Senior]
+
+
+end
+
+
+GraphF(ageWeightModel)
+
+typed_ageWeightModel=ACSetTransformation(ageWeightModel, l_type,
+  S = [s,s,s],
+  SV = [N],
+  LS = [lsn,lsn,lsn],
+  F = [f_birth, f_fstorder, f_death, f_aging, f_fstorder, f_death, f_aging, f_fstorder, f_death],
+  I = [i_birth, i_fstorder, i_aging, i_fstorder, i_aging, i_fstorder],
+O = [o_fstorder, o_death, o_aging, o_fstorder, o_death, o_aging, o_fstorder, o_death],
+V = [v_birth, v_death, v_fstorder, v_aging, v_death, v_fstorder, v_aging, v_death, v_fstorder],
+  LV = [lv_death1, lv_fstorder1, lv_aging1, lv_death1, lv_fstorder1, lv_aging1, lv_death1, lv_fstorder1],
+  LSV = [lsv_birth1],
+  P = [p_μ, p_δ, p_δ, p_δ, p_rage, p_rage, p_rfstOrder],
+  LPV = [lpv_birth2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2, lpv_aging2, lpv_death2, lpv_fstorder2],
+  Name = name -&gt; nothing, Op=op-&gt;nothing, Position=pos-&gt;nothing
+);
+@assert is_natural(typed_ageWeightModel)
+GraphF_typed(typed_ageWeightModel)
+
+aged_weight = pullback(typed_WeightModel, typed_ageWeightModel) |&gt; apex |&gt; rebuildStratifiedModelByFlattenSymbols;
+GraphF(aged_weight)
+
+p_weight = LVector(
+    μμ=12.5/1000,δwδC=2.0/1000,δoδC=8.0/1000,δwδA=4.0/1000,δoδA=13.0/1000,δwδS=8.0/1000,δoδS=30.0/1000,
+    ragerageCA=1.0/(12.0*365.0),ragerageAS=1.0/(50.0*365.0),rwr=0.03,ror=0.06
+)
+
+u0_weight = LVector(
+    NormalWeightChild=95811.0*12.0/82.0, OverWeightChild=27709.0*12.0/82.0, ObeseChild=30770.0*12.0/82.0,
+    NormalWeightAdult=95811.0*50.0/82.0, OverWeightAdult=27709.0*50.0/82.0, ObeseAdult=30770.0*50.0/82.0,
+    NormalWeightSenior=95811.0*20.0/82.0, OverWeightSenior=27709.0*20.0/82.0, ObeseSenior=30770.0*20.0/82.0
+);
+
+prob_stratified_weight = ODEProblem(vectorfield(aged_weight),u0_weight,(0.0,100.0),p_weight);
+sol_stratified_weight = solve(prob_stratified_weight,Tsit5(),abstol=1e-8);
+plot(sol_stratified_weight)
+
+# to have the figures plotted fix to the wider of the cells
+# HTML(&quot;&quot;&quot;
+# &lt;style&gt;
+# .output_svg div{
+#   width: 100% !important;
+#   height: 100% !important;
+# }
+# &lt;/style&gt;
+# &quot;&quot;&quot;)</code></pre><img src="9dcf9c3a.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diabetes_diagnose/">« Diabetes Diagnose</a><a class="docs-footer-nextpage" href="../sir_standard_stratification/">SIR Standard Stratification »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 6 December 2023 20:45">Wednesday 6 December 2023</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
