@@ -968,8 +968,10 @@ Create a foot with S => N syntax, where S is stock, N is sum variable.
 ```
 """
 macro foot(block::Expr)
-  Base.remove_linenums!(block)
-  return create_foot(block)
+    escaped_block = Expr(:quote, block)
+    quote 
+        create_foot($(escaped_block))
+    end
 end
 
 
@@ -991,15 +993,24 @@ end
 ```
 """
 macro feet(block::Expr)
-  Base.remove_linenums!(block)
-  @match block begin
+    Base.remove_linenums!(block)
+    escaped_block = Expr(:quote, block)
     quote
-      $((block...))
-    end => map(create_foot, block) # also matches empty
-    Expr(e, _...) => [create_foot(block)] # this also matches the above, so it's necessary this comes second.
-  end
+        inner_block = $escaped_block
+        @match inner_block begin
+            quote
+              $((inner_block...))
+            end => map(create_foot, inner_block) # also matches empty
+            Expr(e, _...) => [create_foot(inner_block)] # this also matches the above, so it's necessary this comes second.
+        end
+    end
 end
 
+macro feet()
+    quote
+        Vector{StockAndFlow0}()
+    end
+end
 
 """
     create_foot(block :: Expr)
@@ -1022,22 +1033,24 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 
 """
 function create_foot(block::Expr)
-  @match block.head begin
+    @match block.head begin
+        :tuple => begin
+            if isempty(block.args) # case for create_foot(:())
+                error("Cannot create foot with zero arguments.")
+            end
+            foot_s = Vector{Symbol}()
+            foot_sv = Vector{Symbol}()
+            foot_ssv = Vector{Pair{Symbol, Symbol}}()
 
-    :tuple => begin
-      if isempty(block.args) # case for create_foot(:())
-        error("Cannot create foot with no arguments.")
-      end
-      foot_s = Vector{Symbol}()
-      foot_sv = Vector{Symbol}()
-      foot_ssv = Vector{Pair{Symbol, Symbol}}()
-
-      for (s, sv, ssv) ∈ map(match_foot_format, block.args)
-        if s != () push!(foot_s, s) end
-        if sv != () push!(foot_sv, sv) end
-        if ssv != () push!(foot_ssv, ssv) end
-      end
-      return foot(unique(foot_s), unique(foot_sv), foot_ssv)
+            for (s, sv, ssv) ∈ map(match_foot_format, block.args)
+                if s != () push!(foot_s, s) end
+                if sv != () push!(foot_sv, sv) end
+                if ssv != () push!(foot_ssv, ssv) end
+            end
+            return foot(unique(foot_s), unique(foot_sv), foot_ssv)
+        end
+        :call => foot(match_foot_format(block)...)
+        _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
     end
     :call => foot(match_foot_format(block)...)
     _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
@@ -1306,9 +1319,6 @@ function complete_mappings(sf1::K, sf2::K, all_index_mappings::Vector{Dict{Int, 
   return Dict(:S => stock_mappings, :SV => sum_mappings, :V => dyvar_mappings, :F => flow_mappings, :P => param_mappings)
 
 end
-
-
-
 
 
 

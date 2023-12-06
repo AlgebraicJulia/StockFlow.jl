@@ -16,7 +16,6 @@ get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_o
 using Catlab
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets
-using Catlab.GATs.Presentations
 using Catlab.Theories
 using LabelledArrays
 using LinearAlgebra: mul!

@@ -1,5 +1,4 @@
-# # Serializing Stock and Flow Models.
-
+# Serializing Stock and Flow Models
 
 ```@example JSON
 using StockFlow
