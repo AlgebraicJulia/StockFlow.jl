@@ -1033,27 +1033,24 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 
 """
 function create_foot(block::Expr)
-    @match block.head begin
-      :tuple => begin
-          if isempty(block.args) # case for create_foot(:())
-              error("Cannot create foot with zero arguments.")
-          end
-          foot_s = Vector{Symbol}()
-          foot_sv = Vector{Symbol}()
-          foot_ssv = Vector{Pair{Symbol, Symbol}}()
+  @match block.head begin
+    :tuple => begin
+        if isempty(block.args) # case for create_foot(:())
+            error("Cannot create foot with zero arguments.")
+        end
+        foot_s = Vector{Symbol}()
+        foot_sv = Vector{Symbol}()
+        foot_ssv = Vector{Pair{Symbol, Symbol}}()
 
-          for (s, sv, ssv) ∈ map(match_foot_format, block.args)
-              if s != () push!(foot_s, s) end
-              if sv != () push!(foot_sv, sv) end
-              if ssv != () push!(foot_ssv, ssv) end
-          end
-          return foot(unique(foot_s), unique(foot_sv), foot_ssv)
-      end
-      :call => foot(match_foot_format(block)...)
-      _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
-    # end
-    # :call => foot(match_foot_format(block)...)
-    # _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
+        for (s, sv, ssv) ∈ map(match_foot_format, block.args)
+            if s != () push!(foot_s, s) end
+            if sv != () push!(foot_sv, sv) end
+            if ssv != () push!(foot_ssv, ssv) end
+        end
+        return foot(unique(foot_s), unique(foot_sv), foot_ssv)
+    end
+    :call => foot(match_foot_format(block)...)
+    _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
   end
 end
 
