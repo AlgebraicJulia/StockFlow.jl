@@ -1,4 +1,3 @@
-using Test
 using StockFlow
 using StockFlow.Syntax
 using StockFlow.Syntax.Composition

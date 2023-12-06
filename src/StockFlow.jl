@@ -10,7 +10,8 @@ vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
-get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links
+get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
+make_v_expr_nonrecursive, get_lpvpposition, get_lvsrcposition, get_lsvsvposition, get_lvsposition
 
 
 using Catlab
@@ -284,6 +285,12 @@ get_lpvv(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lpvv].m))
 get_lvsrc(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvsrc].m))
 get_lvtgt(sf::AbstractStockAndFlowF) = collect(values(sf.subparts[:lvtgt].m))
 
+get_vop(sf::AbstractStockAndFlowF) = subpart(sf, :vop)
+
+get_lpvpposition(sf::AbstractStockAndFlowF) = subpart(sf, :lpvpposition)
+get_lvsrcposition(sf::AbstractStockAndFlowF) = subpart(sf, :lvsrcposition)
+get_lsvsvposition(sf::AbstractStockAndFlowF) = subpart(sf, :lsvsvposition)
+get_lvsposition(sf::AbstractStockAndFlowF) = subpart(sf, :lvsposition)
 
 #EXAMPLE:
 #sir_StockAndFlow=StockAndFlow(((:S, 990)=>(:birth,(:inf,:deathS),(:v_inf,:v_deathS),:N), (:I, 10)=>(:inf,(:rec,:deathI),(:v_rec,:v_deathI,:v_fractionNonS),:N),(:R, 0)=>(:rec,:deathR,(:v_deathR,:v_fractionNonS),:N)),
@@ -628,6 +635,20 @@ set_svname!(p::AbstractStockAndFlow0, index, newname) = set_subpart!(p, :svname,
 set_vname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :vname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vnames(p))])
 set_pname!(p::AbstractStockAndFlowStructure, index, newname) = set_subpart!(p, :pname, [i == index ? newname : prevnames for (i, prevnames) in enumerate(pnames(p))])
 
+set_vops!(p::AbstractStockAndFlowF, names) = set_subparts!(p, :vop, names)
+set_lvvpositions!(p::AbstractStockAndFlowF, names) = set_subparts!(p, :lvvposition, names)
+set_lvtgtpositions!(p::AbstractStockAndFlowF, names) = set_subparts!(p, :lvtgtposition, names)
+set_lsvvpositions!(p::AbstractStockAndFlowF, names) = set_subparts!(p, :lsvvposition, names)
+set_lpvvpositions!(p::AbstractStockAndFlowF, names) = set_subparts!(p, :lpvvposition, names)
+
+
+set_vop!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :vop, [i == index ? newname : prevnames for (i, prevnames) in enumerate(vop(p))])
+set_lvvposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lvvposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lvvposition(p))])
+set_lvtgtposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lvtgtposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lvtgtposition(p))])
+set_lsvvposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lsvvposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lsvvposition(p))])
+set_lpvvposition!(p::AbstractStockAndFlowF, index, newname) = set_subpart!(p, :lpvvposition, [i == index ? newname : prevnames for (i, prevnames) in enumerate(lpvvposition(p))])
+
+
 
 
 
@@ -692,6 +713,9 @@ lsvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lsvv),:lsvsvp
 """ return argument position of source constant parameter of an auxiliary variable """
 lpvvposition(p::AbstractStockAndFlowF,v) = subpart(p,incident(p,v,:lpvv),:lpvpposition)
 
+
+
+
 # create a dictionary
 make_dict(ks, vs) = begin
     @assert length(ks)==length(vs)
@@ -726,7 +750,39 @@ function make_v_expr(p::AbstractStockAndFlowF,v)
 
     return math_expr(op,srcs...)
 end
-# genreate an array of all arguments of an expression
+
+
+
+"""
+Generates the expression of an auxiliary variable, only going one layer deep
+If other dynamic variables make up its definition, they will not be substituted.
+"""
+function make_v_expr_nonrecursive(p::AbstractStockAndFlowF,v)
+
+  op = vop(p,v)
+  srcsv=map(i->sname(p,i),stocksv(p,v))
+  srcsvv=map(i->svname(p,i),svsv(p,v))
+  srcpv=map(i->pname(p,i),vpsrc(p,v))
+  srcvv=map(i->vname(p,i),vsrc(p,v))
+
+  lvvp=lvvposition(p,v)
+  lvtgtp=lvtgtposition(p,v)
+  lsvvp=lsvvposition(p,v)
+  lpvvp=lpvvposition(p,v)
+
+  # create dictionary of (key=position, value=symbole of source argument)
+  position_src=merge(make_dict(lvvp,srcsv),make_dict(lsvvp,srcsvv),make_dict(lpvvp,srcpv),make_dict(lvtgtp,srcvv))
+  ordered_position_src=sort(collect(position_src), by = x->x[1])
+  srcs=map(x->last(x),ordered_position_src)
+
+  return math_expr(op,srcs...)
+end
+
+
+
+
+
+# generate an array of all arguments of an expression
 generate_expr_args(expr) = begin
     args=expr.args
     argsarray=[]
