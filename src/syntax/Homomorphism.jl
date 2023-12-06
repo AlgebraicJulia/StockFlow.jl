@@ -1,8 +1,12 @@
 module Homomorphism
 
 using ...StockFlow
+import ...StockFlow: state_dict
+
 using ..Syntax
-import ..Syntax: infer_links, substitute_symbols, DSLArgument, NothingFunction, invert_vector, complete_mappings
+
+import ..Syntax: infer_links, substitute_symbols, DSLArgument, NothingFunction, 
+    complete_mappings
 using MLStyle
 using Catlab.CategoricalAlgebra
 
@@ -55,17 +59,17 @@ function hom(sf1, sf2, block)
       end
   end
 
-  # # TODO: Assert that tempstratdefault not in any names
-  # push!(stocks, DSLArgument(:_, -1, Set{Symbol}()))
-  # push!(params, DSLArgument(:_, -1, Set{Symbol}()))
-  # push!(dyvars, DSLArgument(:_, -1, Set{Symbol}()))
-  # push!(flows, DSLArgument(:_, -1, Set{Symbol}()))
-  # push!(sums, DSLArgument(:_, -1, Set{Symbol}()))
-  sf1_snames = invert_vector(snames(sf1), Symbol)
-  sf1_svnames = invert_vector(svnames(sf1), Symbol)
-  sf1_vnames = invert_vector(vnames(sf1), Symbol)
-  sf1_fnames = invert_vector(fnames(sf1), Symbol)
-  sf1_pnames = invert_vector(pnames(sf1), Symbol)
+  sf1_snames = Dict{Symbol, Int}(state_dict(snames(sf1)))
+  sf1_svnames = Dict{Symbol, Int}(state_dict(svnames(sf1)))
+  sf1_vnames = Dict{Symbol, Int}(state_dict(vnames(sf1)))
+  sf1_fnames = Dict{Symbol, Int}(state_dict(fnames(sf1)))
+  sf1_pnames = Dict{Symbol, Int}(state_dict(pnames(sf1)))
+
+  @assert (:_ ∉ keys(sf1_snames) && :_ ∉ keys(sf1_svnames) 
+    && :_ ∉ keys(sf1_vnames) && :_ ∉ keys(sf1_fnames) && 
+    :_ ∉ keys(sf1_pnames))  "A stockflow contains :_ !  \
+    Please change temp_strat_default to a different symbol or \
+    rename offending object."
 
   push!(sf1_snames, :_ => -1)
   push!(sf1_svnames, :_ => -1)
@@ -75,14 +79,13 @@ function hom(sf1, sf2, block)
 
 
 
-  master_vector = [substitute_symbols(sf1_snames, invert_vector(snames(sf2), Symbol), stocks),
-    substitute_symbols(sf1_svnames, invert_vector(svnames(sf2), Symbol), sums),
-    substitute_symbols(sf1_vnames, invert_vector(vnames(sf2), Symbol), dyvars),
-    substitute_symbols(sf1_fnames, invert_vector(fnames(sf2), Symbol), flows),
-    substitute_symbols(sf1_pnames, invert_vector(pnames(sf2), Symbol), params),
+  master_vector = [substitute_symbols(sf1_snames, Dict{Symbol, Int}(state_dict(snames(sf2))), stocks),
+    substitute_symbols(sf1_svnames, Dict{Symbol, Int}(state_dict(svnames(sf2))), sums),
+    substitute_symbols(sf1_vnames, Dict{Symbol, Int}(state_dict(vnames(sf2))), dyvars),
+    substitute_symbols(sf1_fnames, Dict{Symbol, Int}(state_dict(fnames(sf2))), flows),
+    substitute_symbols(sf1_pnames, Dict{Symbol, Int}(state_dict(pnames(sf2))), params),
   ]::Vector{Dict{Int, Int}}
 
-  # map(x -> push!(x, -1 => :_), master_vector)
 
   new_master_dict = complete_mappings(sf1, sf2, master_vector)
 
@@ -98,48 +101,16 @@ function hom(sf1, sf2, block)
   
 end
 
-function names_to_index(sf, func)
-  Dict(name => i for (i, name) in enumerate(func(sf)))
-end
-
 function all_names_to_index(sf)
-  Dict(:S => names_to_index(sf, snames),
-  :F => names_to_index(sf, fnames),
-  :V => names_to_index(sf, vnames),
-  :P => names_to_index(sf, pnames),
-  :SV => names_to_index(sf, svnames)
+  Dict(:S => state_dict(snames(sf))
+  :F => state_dict(fnames(sf))
+  :V => state_dict(vnames(sf))
+  :P => state_dict(pnames(sf))
+  :SV => state_dict(svnames(sf))
   )
 end
 
 
-# function apply_hom(hom::Dict{Symbol, Vector{Pair{Symbol,Symbol}}}, sf1, sf2)
-#   srcnames = all_names_to_index(sf1)
-#   tgtnames = all_names_to_index(sf2)
-
-#   homstocks = [srcnames[:S][name1] => tgtnames[:S][name2] for (name1, name2) in hom[:S]]
-
-#   homflows = [srcnames[:F][name1] => tgtnames[:F][name2] for (name1, name2) in hom[:F]]
-#   homparams = [srcnames[:P][name1] => tgtnames[:P][name2] for (name1, name2) in hom[:P]]
-#   homdyvars = [srcnames[:V][name1] => tgtnames[:V][name2] for (name1, name2) in hom[:V]]
-#   homsums = [srcnames[:SV][name1] => tgtnames[:SV][name2] for (name1, name2) in hom[:SV]]
-
-#   # nec_maps = Dict{Symbol, Vector{Int64}}(
-#   #   :S => map()
-#   # )
-
-#   nec_maps = Dict{Symbol, Vector{Int64}}(:S => map(last, sort!(homstocks, by=x -> x[1])), 
-#   :F => map(last, sort!(homflows, by=x -> x[1])), 
-#   :SV => map(last, sort!(homsums, by=x -> x[1])), 
-#   :P => map(last, sort!(homparams, by=x -> x[1])), 
-#   :V => map(last, sort!(homdyvars, by=x -> x[1]))
-#   )
-
-#   links = infer_links(sf1, sf2, nec_maps)
-
-
-
-
-# end
 
 
 end

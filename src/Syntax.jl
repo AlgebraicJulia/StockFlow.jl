@@ -1251,30 +1251,11 @@ function substitute_symbols(s::Dict{Symbol, Int}, t::Dict{Symbol, Int}, m::Vecto
   end
 end
 
-
-"""
-Convert a vector of unique elements to a dictionary with each element pointing
-to their original index.
-"""
-function invert_vector(v::Union{Vector{Any}, Vector{K}}, ::Type{K})::Dict{K, Int} where {K} # Elements of v must be hashable
-  new_dict = Dict(val => i for (i, val) ∈ enumerate(v))
-  @assert length(new_dict) == length(v) "Nonunique key in vector v: $v"
-  return new_dict
-end
-
-function invert_vector(v::Vector{K})::Dict{K, Int} where {K}
-  invert_vector(v, K)
-end
-
-
 """
 Takes any arguments and returns nothing. Used so we can maintain equality when
 making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
-
-
-
 
 
 
