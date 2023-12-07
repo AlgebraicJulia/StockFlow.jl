@@ -2,7 +2,11 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, infix_expression_to_binops, fnone_value_or_vector, extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, apply_flags, substitute_symbols
+using StockFlow.Syntax: is_binop_or_unary, sum_variables, 
+infix_expression_to_binops, fnone_value_or_vector, 
+extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, 
+apply_flags, substitute_symbols
+
 
 @testset "Stratification DSL" begin
     include("syntax/Stratification.jl")
@@ -10,6 +14,10 @@ end
 
 @testset "Composition DSL" begin
     include("syntax/Composition.jl")
+end
+
+@testset "Rewrite DSL" begin
+    include("syntax/Rewrite.jl")
 end
 
 @testset "is_binop_or_unary recognises binops" begin
