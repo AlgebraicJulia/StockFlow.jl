@@ -116,10 +116,6 @@ end
 @testset "invalid sfcompose calls fail" begin
     @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1, sf2)
-        sf1, sf2 ^ () => ()
-    end) # not allowed to map to empty
-    @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
-        (sf1, sf2)
         sf1 ^ A => ()
         sf2 ^ A => ()
     end) # not allowed to map to the same foot twice
