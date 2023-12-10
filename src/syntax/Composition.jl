@@ -102,21 +102,17 @@ function sfcompose(sfs::Vector{K}, block::Expr; RETURN_UWD = false) where {K <: 
     @assert allunique(sf_names) "Not all choices of names for stock flows \
     are unique!"
 
-    empty_foot =  (@foot () => ())
-
 
     # symbol representation of sf => (sf itself, sf's feet)
-    # Every sf has empty foot as first foot to get around being unable to create OpenStockAndFlowF without feet
     sf_map::Dict{Symbol, Tuple{AbstractStockAndFlowF, Vector{StockAndFlow0}}} = 
-        Dict(sf_names[i] => (sfs[i], [empty_foot]) for i ∈ eachindex(sf_names)) # map the symbols to their corresponding stockflows
+        Dict(sf_names[i] => (sfs[i], Vector{StockAndFlow0}()) for i ∈ eachindex(sf_names)) # map the symbols to their corresponding stockflows
 
     # all feet
-    feet_index_dict::Dict{StockAndFlow0, Int} = Dict(empty_foot => 1)
+    feet_index_dict::Dict{StockAndFlow0, Int} = Dict{StockAndFlow0, Int}()
     for statement in block.args[2:end]
         stockflows, foot = interpret_composition_notation(statement)
         # adding new foot to list
-        @assert (foot ∉ keys(feet_index_dict)) "Foot has already been used,\
-         or you are using an empty foot!"
+        @assert (foot ∉ keys(feet_index_dict)) "Foot has already been used!"
         push!(feet_index_dict, foot => length(feet_index_dict) + 1)
         for stockflow in stockflows
             # adding this foot to each stock flow to its left
@@ -124,7 +120,9 @@ function sfcompose(sfs::Vector{K}, block::Expr; RETURN_UWD = false) where {K <: 
         end
     end
 
-    Box::Vector{Symbol} = sf_names
+
+    sf_without_feet = Vector{Symbol}()
+
 
 
     Port = Vector{Tuple{Int, Int}}()
@@ -138,23 +136,39 @@ function sfcompose(sfs::Vector{K}, block::Expr; RETURN_UWD = false) where {K <: 
 
 
 
-    for (k, v) ∈ sf_map # TODO: Just find a better way to do this.
+    for (k, v) ∈ sf_map 
+        if length(v[2]) == 0
+            pushfirst!(sf_without_feet, k)
+        end
         for foot ∈ v[2]
             push!(Port, (findfirst(x -> x == k, sf_names), feet_index_dict[foot]))
         end
     end
 
+    Box::Vector{Symbol} = setdiff(sf_names, sf_without_feet)
+
+
     Junction::Vector{Symbol} = [gensym() for _ ∈ 1:length(feet_index_dict)]
     OuterPort::Vector{Int} = collect(1:length(feet_index_dict))
 
     uwd = create_uwd(Box=Box, Port=Port, Junction=Junction, OuterPort=OuterPort)
+    stockflows_with_feet = Dict(filter(((k,v),) -> length(v[2]) != 0, sf_map))
+    if length(stockflows_with_feet) == 0
+        composed_sf = StockAndFlowF()
+    else
+        open_stockflows::AbstractDict = Dict(sf_key => Open(sf_val[1], sf_val[2]...) for (sf_key, sf_val) ∈ stockflows_with_feet)
+    
+        composed_sf = apex(oapply(uwd, open_stockflows))
+    end
 
-    open_stockflows::AbstractDict = Dict(sf_key => Open(sf_val[1], sf_val[2]...) for (sf_key, sf_val) ∈ sf_map)
+    for sf in sf_without_feet
+        composed_sf = apex(coproduct(composed_sf, sf_map[sf][1]))
+    end
 
     if RETURN_UWD
-        return apex(oapply(uwd, open_stockflows)), uwd
+        return composed_sf, uwd
     else
-        return apex(oapply(uwd, open_stockflows))
+        return composed_sf
     end
 
 end
