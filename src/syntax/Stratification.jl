@@ -2,11 +2,12 @@ module Stratification
 export sfstratify, @stratify, @n_stratify
 
 using ...StockFlow
+import ...StockFlow: state_dict
 using ..Syntax
 using MLStyle
 import Base: get
 using Catlab.CategoricalAlgebra
-import ..Syntax: infer_links, substitute_symbols, DSLArgument, NothingFunction, invert_vector
+import ..Syntax: infer_links, substitute_symbols, DSLArgument, NothingFunction
 
 
 
@@ -44,7 +45,7 @@ struct SFNames
 
     SFNames(sfarg::AbstractStockAndFlowF) = (new(sfarg,
      snames(sfarg), svnames(sfarg), vnames(sfarg), fnames(sfarg), pnames(sfarg),
-     invert_vector(snames(sfarg)), invert_vector(svnames(sfarg)), invert_vector(vnames(sfarg)), invert_vector(fnames(sfarg)), invert_vector(pnames(sfarg)),
+     state_dict(snames(sfarg)), state_dict(svnames(sfarg)), state_dict(vnames(sfarg)), state_dict(fnames(sfarg)), state_dict(pnames(sfarg)),
      Dict{Int, Int}(), Dict{Int, Int}(), Dict{Int, Int}(), Dict{Int, Int}(), Dict{Int, Int}(),
      Vector{Int}(),Vector{Int}(), Vector{Int}(), Vector{Int}(), Vector{Int}()))
 end
@@ -61,7 +62,7 @@ function get_mappings_infer_links_format(sfn::SFNames)::Dict{Symbol, Vector{Int}
     Dict(:S => sfn.mvs, :SV => sfn.mvsv, :V => sfn.mvv, :F => sfn.mvf, :P => sfn.mvp)
 end
 
-function all_unique_names(sfn::SFNames)::Bool # Unnecessary, this is checked in invert_vector
+function all_unique_names(sfn::SFNames)::Bool
     return allunique(sfn.snames) && allunique(sfn.svnames) && allunique(vnames) && allunique(fnames) && allunique(pnames)
 end
 
