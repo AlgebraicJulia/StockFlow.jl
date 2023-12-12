@@ -63,8 +63,24 @@ can refer to:
 https://docs.julialang.org/en/v1/manual/mathematical-operations/
 =#
 
+plus_one(x) = x + 1
+minus_one(x) = x - 1
+reciprocal(x) = 1/x
+one_minus(x) = 1 - x
+
+plus_two(x) = x + 2
+minus_two(x) = x - 2
+
+
 Operators = Dict(2 => [:+, :-, :*, :/, :÷, :^, :%, :log, Symbol("")],
-                 1 => [:log, :exp, :sqrt, Symbol("")]) #:NN is for NONE, which is used in create the special diagram using graph rewriting
+                 1 => [:log, :exp, :sqrt, :+, :-, Symbol(""), 
+                  :plus_one, :minus_one, :reciprocal, :one_minus, :plus_two,
+                  :minus_two])
+ #:NN is for NONE, which is used in create the special diagram using graph rewriting
+
+
+
+
 
 
 math_expr(op, op1, op2) = Expr(:call, op, op1, op2)

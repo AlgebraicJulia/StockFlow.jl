@@ -5,7 +5,49 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
+using MLStyle
+
 export Graph, display_uwd, GraphF
+
+
+"""
+If a dyvar has a function of form plus_one, display it as x + 1
+Leave other dyvars alone.
+"""
+function replace_function_with_definition(v)
+  
+  @match v begin
+    :(plus_one($other)) => begin
+      new_other = replace_function_with_definition(other)
+      :($new_other + 1)
+    end
+    :(reciprocal($other)) => begin
+      new_other = replace_function_with_definition(other)
+      :(1/$new_other)
+    end
+    :(minus_one($other)) => begin
+      new_other = replace_function_with_definition(other)
+      :($new_other - 1)
+    end
+    :(one_minus($other)) => begin
+      new_other = replace_function_with_definition(other)
+      :(1 - $new_other)
+    end
+    :(plus_two($other)) => begin
+      new_other = replace_function_with_definition(other)
+      :($new_other + 2)
+    end
+    :(minus_two($other)) => begin
+      new_other = replace_function_with_definition(other)
+      :($new_other - 2)
+    end
+    _ => v
+
+  end
+end
+
+
+
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
 
@@ -27,7 +69,7 @@ def_auxiliaryV(p, v) = ("v$v", Attributes(:label=>"$(vname(p, v))",
 #                                          :shape=>"plaintext", 
 #                                          :fontcolor=>"black"))
 
-def_auxiliaryVF(p, v) = ("v$v", Attributes(:label=>p isa AbstractStockAndFlowF ? "$(make_v_expr(p,v))" : "$(vname(p, v))",
+def_auxiliaryVF(p, v) = ("v$v", Attributes(:label=>p isa AbstractStockAndFlowF ? "$(replace_function_with_definition(make_v_expr(p,v)))" : "$(vname(p, v))",
                                           :shape=>"plaintext", 
                                           :fontcolor=>"black"))
 

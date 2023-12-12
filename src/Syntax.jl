@@ -351,6 +351,7 @@ True if the dyvar name is used in the expression; false elsewise.
 """
 function is_recursive_dyvar(dyvar_name, dyvar_def)
     @match dyvar_def begin
+        ::Int => false
         ::Symbol => dyvar_def == dyvar_name
         :($f()) => f == dyvar_name
         Expr(:call, args...) => true in map(arg -> is_recursive_dyvar(dyvar_name, arg), args)
@@ -582,24 +583,102 @@ A vector of dynamic variable definitions suitable for input to StockAndFlowF.
 function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
     syms::Vector{Pair{Symbol,DyvarExprT}} = []
     for (dyvar_name, dyvar_definition) in dyvars
-        if is_binop_or_unary(dyvar_definition)
-            @match dyvar_definition begin
-                Expr(:call, op, a) => push!(syms, (dyvar_name => Ref(a => op)))
-                Expr(:call, op, a, b) => begin
-                    push!(syms, (dyvar_name => Binop((a, b) => op)))
-                end
-                Expr(c, _, _) || Expr(c, _, _, _) => error(
-                    "Unhandled expression in dynamic variable definition " * String(c),
-                )
-            end
-        else
-            (binops, _) =
-                infix_expression_to_binops(dyvar_definition, finalsym=dyvar_name, gensymbase=generate_dyvar_name(dyvar_name))
-            binops_syms = dyvar_exprs_to_symbolic_repr(binops)
-            syms = vcat(syms, binops_syms)
-        end
+        append!(syms, match_binop_or_unary_dyvar(dyvar_name, dyvar_definition))
     end
     return syms
+end
+
+"""
+    match_binop_or_unary_dyvar(dyvar_name::Symbol, dyvar_definition::Expr)
+
+Converts a dyvar definition into a form which can be interpreted in a 
+StockAndFlowF
+"""
+function match_binop_or_unary_dyvar(dyvar_name::Symbol, dyvar_definition::Expr)
+    if is_binop_or_unary(dyvar_definition)
+        @match dyvar_definition begin
+
+            Expr(:call, op, ::Symbol, ::Int) || Expr(:call, op, ::Int, ::Symbol) => begin
+                @match dyvar_definition begin
+                    :(1 + $other) || :($other + 1) =>
+                        return [(dyvar_name => Ref(other => :plus_one))]
+                    :(1/$other) =>
+                        return [(dyvar_name => Ref(other => :reciprocal))]
+                    :($other - 1) =>
+                        return [(dyvar_name => Ref(other => :minus_one))]
+                    :(1 - $other) =>
+                        return [(dyvar_name => Ref(other => :one_minus))]
+                    :(2 + $other) || :($other + 2) =>
+                        return [(dyvar_name => Ref(other => :plus_two))]
+                    :($other - 2) =>
+                        return [(dyvar_name => Ref(other => :minus_two))]
+                end
+            end
+
+            Expr(:call, op, a::Expr, ::Int) || Expr(:call, op, ::Int, a::Expr) => begin
+                a_name = gensym(generate_dyvar_name(dyvar_name))
+                @match dyvar_definition begin
+                    :(1 + $other) || :($other + 1) =>
+                        return [(dyvar_name => Ref(a_name => :plus_one)),
+                            match_binop_or_unary_dyvar(a_name, other)...]
+                    :(1/$other) =>
+                        return [(dyvar_name => Ref(a_name => :reciprocal)),
+                            match_binop_or_unary_dyvar(a_name, other)...]
+                    :($other - 1) =>
+                        return [(dyvar_name => Ref(a_name => :minus_one)),
+                            match_binop_or_unary_dyvar(a_name, other)...]
+                    :(1 - $other) =>
+                        return [(dyvar_name => Ref(a_name => :one_minus)),
+                            match_binop_or_unary_dyvar(a_name, other)...]
+                    :(2 + $other) || :($other + 2) =>
+                        return [(dyvar_name => Ref(a_name => :plus_two)),
+                            match_binop_or_unary_dyvar(a_name, other)...]
+                    :($other - 2) =>
+                        return [(dyvar_name => Ref(a_name => :minus_two)),
+                            match_binop_or_unary_dyvar(a_name, other)...]
+                end
+            end
+
+            Expr(:call, op, a::Symbol) => return [(dyvar_name => Ref(a => op))]
+            Expr(:call, op, a::Symbol, b::Symbol) => begin
+                return [(dyvar_name => Binop((a, b) => op))]
+            end
+            Expr(:call, op, a::Expr) => begin
+                a_name = gensym(generate_dyvar_name(dyvar_name))
+                return [(dyvar_name => Ref(a_name => op)),
+                    match_binop_or_unary_dyvar(a_name, a)...]
+            end
+
+            Expr(:call, op, a::Expr, b::Expr) => begin
+                a_name = gensym(generate_dyvar_name(dyvar_name))
+                b_name = gensym(generate_dyvar_name(dyvar_name))
+                return [(dyvar_name => Binop((a_name, b_name) => op)),
+                    match_binop_or_unary_dyvar(a_name, a)...,
+                    match_binop_or_unary_dyvar(b_name, b)]
+            end
+
+            Expr(:call, op, a::Expr, b::Symbol) => begin
+                a_name = gensym(generate_dyvar_name(dyvar_name))
+                return [(dyvar_name => Binop((a_name, b) => op)),
+                    match_binop_or_unary_dyvar(a_name, a)...]
+            end
+
+            Expr(:call, op, a::Symbol, b::Expr) => begin
+                b_name = gensym(generate_dyvar_name(dyvar_name))
+                return [(dyvar_name => Binop((a, b_name) => op)),
+                    match_binop_or_unary_dyvar(b_name, b)...]
+            end
+
+            Expr(c, _, _) || Expr(c, _, _, _) => error(
+                "Unhandled expression in dynamic variable definition " * String(c),
+            )
+        end
+    else
+        (binops, _) =
+            infix_expression_to_binops(dyvar_definition, finalsym=dyvar_name, gensymbase=generate_dyvar_name(dyvar_name))
+        binops_syms = dyvar_exprs_to_symbolic_repr(binops)
+        return binops_syms;
+    end
 end
 
 """

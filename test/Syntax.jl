@@ -567,3 +567,73 @@ end
     @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), [:nomatch]) # same reason
 
 end
+
+
+@testset "Can create stockflows with specific numeric constants" begin 
+    @test (
+        (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = S + 1; end)
+        == (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = 1+S; end)
+        == (StockAndFlowF([:S=>(:F_NONE, :F_NONE, :SV_NONE),], [], 
+            [:v=>(:S, :plus_one),], [], []))
+        )
+
+    @test (
+        (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = S - 1; end)
+        == (StockAndFlowF([:S=>(:F_NONE, :F_NONE, :SV_NONE),], [], 
+            [:v=>(:S, :minus_one),], [], []))
+        )
+
+    @test (
+        (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = 1 - S; end)
+        == (StockAndFlowF([:S=>(:F_NONE, :F_NONE, :SV_NONE),], [], 
+            [:v=>(:S, :one_minus),], [], []))
+        )
+
+    @test (
+        (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = 1/S; end)
+        == (StockAndFlowF([:S=>(:F_NONE, :F_NONE, :SV_NONE),], [], 
+            [:v=>(:S, :reciprocal),], [], []))
+        )
+
+    @test (
+        (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = S + 2; end)
+        == (StockAndFlowF([:S=>(:F_NONE, :F_NONE, :SV_NONE),], [], 
+            [:v=>(:S, :plus_two),], [], []))
+        )
+
+    @test (
+        (@stock_and_flow begin; :stocks; S; :dynamic_variables; v = S - 2; end)
+        == (StockAndFlowF([:S=>(:F_NONE, :F_NONE, :SV_NONE),], [], 
+            [:v=>(:S, :minus_two),], [], []))
+        )
+
+end
+
+
+@testset "Stockflows correctly divide up dyvars when given multiple operators" begin 
+    sfABC = @stock_and_flow begin
+        :stocks
+        A
+        B
+        C
+
+        :dynamic_variables
+        v = A + B * C
+    end
+
+    set_vnames!(sfABC, [:v1, :v2])
+
+    sfABC2 = @stock_and_flow begin
+        :stocks
+        A
+        B
+        C
+        
+        :dynamic_variables
+        v1 = A + v2
+        v2 = B * C
+    end
+
+    @test sfABC == sfABC2
+        
+end
