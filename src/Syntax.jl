@@ -1288,6 +1288,8 @@ include("syntax/Composition.jl")
 include("syntax/Stratification.jl")
 include("syntax/Rewrite.jl")
 
+include("syntax/StockFlowUnitsSyntax.jl")
+
 end
  
 
