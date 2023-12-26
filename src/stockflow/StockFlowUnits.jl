@@ -131,7 +131,7 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
     
     
 
-    cunits = collect(Set(sunits) ∪ Set(punits))
+    cunits = collect(setdiff(Set(sunits) ∪ Set(punits)))
     cunit_dict = state_dict(cunits)
 
       
@@ -140,6 +140,9 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
     unit_set = Set{Symbol}()
     
     for cu in cunits
+        if cu == :NONE
+            continue
+        end
         cunit_exp_dict[cu] = extract_exponents(cu)
         union!(unit_set, keys(cunit_exp_dict[cu]))
     end
@@ -155,6 +158,9 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
     add_cunits!(sfg, length(cunits), cuname=([Symbol(x) for x in cunits]))
     
     for cu in cunits
+        if cu == :NONE
+            continue
+        end
         for (u, exp) in pairs(cunit_exp_dict[cu])
             add_UCUlink!(sfg, unit_dict[u], cunit_dict[cu], exp=exp)
         end
@@ -164,23 +170,7 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
 
     scu = collect(map(x -> cunit_dict[x], sunits))
     pcu = collect(map(x -> cunit_dict[x], punits))
-    
-    #set_subpart!(sf, :scu, scu)
-    #set_subpart!(sf, :pcu, pcu)
-
-    #for i in 1:ns(sf)
-     #   sf.subparts.scu[i] = scu[i]
-    #end
-    #for i in 1:np(sf)
-    #    sf.subparts.pcu[i] = pcu[i]
-    #end
-    #set_scu!(sf, scu)
-    #set_pcu!(sf, pcu)
-    
-    
-    
-    
-    #add_cunit!(sfg, cuname=:NONE)
+   
     
     add_stocks!(sfg, ns(sff), sname=snames(sff), scu=scu)
     add_svariables!(sfg, nsv(sff), svname=svnames(sff))
