@@ -13,7 +13,7 @@ using MLStyle.Modules.AST
 using Catlab.CategoricalAlgebra
 
 
-export @stock_and_flow_U
+export @stock_and_flow_U, @foot_U
 
 
 function parse_stock_units!(stocks, s::Union{Expr, Symbol})
@@ -105,15 +105,78 @@ macro stock_and_flow_U(block)
           saff_args.flows,
           saff_args.sums,
       )
-      FtoU(sff, sunits, punits)
-      #add_units_sff!(sff, sunits, punits)
-      
-      
-
-      
+      FtoU(sff, sunits, punits)      
     end
 end
 
+
+function match_foot_format_U(footblock::Union{Expr, Symbol})
+    @match footblock begin
+        ::Symbol => ((), (), (), (), footblock)
+
+        :(()              => ())              => ((), (), (), (), ())
+        :($(s :: Symbol)  => ())              => (s, (), (), s => :NONE, ())
+        :(()              => $(sv :: Symbol)) => ((), sv, (), (), ())
+        :($(s :: Symbol)  => $(sv :: Symbol)) => (s, sv, s => sv, s => :NONE, ())
+
+        :(()              => () : $cu)              => ((), (), (), :NONE => cu, ())
+        :($(s :: Symbol)  => () : $cu)              => (s, (), (), s => cu, ())
+        :(()              => $(sv :: Symbol) : $cu) => ((), sv, (), :NONE => cu, ())
+        :($(s :: Symbol)  => $(sv :: Symbol): $cu) => (s, sv, s => sv, s => cu, ())
+
+        :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
+        :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
+        :($s              => $sv)             => error("Foot definition requires symbolic names. Received: $s, $sv")
+        Expr(:call, name, args...)            => error("Received: $name called with $args. Expected foot definition of form: A => B.")
+        _                                     => error("Invalid foot definition.")
+    end
+end
+
+function create_foot_U(block::Expr)
+    @match block.head begin
+
+        :tuple => begin
+            if isempty(block.args) # case for create_foot(:())
+                error("Cannot create foot with no arguments.")
+            end
+            foot_s = Vector{Symbol}()
+            foot_sv = Vector{Symbol}()
+            foot_ssv = Vector{Pair{Symbol, Symbol}}()
+            foot_cu = Vector{Pair{Symbol, Union{Symbol, Expr}}}()
+            foot_u = Vector{Symbol}()
+            for (s, sv, ssv, cu, u) ∈ map(match_foot_format_U, block.args)
+                # if s != () 
+                #     push!(foot_s, s) 
+                #     if cu != ()
+                #         push!(foot_cu, s => cu)
+                #     else
+                #         push!(foot_cu, s => :NONE)
+                #     end
+                # elseif cu != ()
+                #     push!(foot_cu, :NONE => cu)
+                # end
+                if s != () push!(foot_s, s) end
+
+                if sv != () push!(foot_sv, sv) end
+                if ssv != () push!(foot_ssv, ssv) end
+                if cu != () push!(foot_cu, cu) end
+                if u != () push!(foot_u, u) end
+                # cu != () ? push!(foot_cu, cu) : push!(foot_cu, :NONE)
+            end
+            return footU(unique(foot_s), unique(foot_sv), foot_ssv, foot_cu, unique(foot_u))
+        end
+        :call => footU(match_foot_format_U(block)...)
+        _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
+    end
+end
+
+
+
+
+macro foot_U(block::Expr)
+    Base.remove_linenums!(block)
+    return create_foot_U(block)
+end
 
 
 

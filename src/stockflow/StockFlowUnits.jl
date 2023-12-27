@@ -4,11 +4,135 @@ using ..StockFlow
 using Catlab.GATs.Presentations, Catlab.CategoricalAlgebra
 using MLStyle
 
-import ...StockFlow: StockAndFlowF, state_dict, ns, np
+import ...StockFlow: StockAndFlowF, state_dict, ns, np, vectorify
 
 export add_unit!, add_units!, add_cunit!, add_cunits!, add_UCUlink!, add_UCUlinks!,
 uname, unames, set_unames!, set_exps!, convert, StockAndFlowU, set_scu!, set_pcu!,
-FtoU
+FtoU, StockAndFlow0U, footU
+
+
+@present TheoryStockAndFlow0U <: TheoryStockAndFlow0 begin
+    Exponent::AttrType
+
+    U::Ob
+    CU::Ob
+    LU::Ob
+
+
+    uname::Attr(U, Name)
+    exp::Attr(LU, Exponent)
+    cuname::Attr(CU, Name)
+
+
+    luu::Hom(LU, U)
+    lucu::Hom(LU, CU)
+
+    scu::Hom(S, CU)
+
+end
+@acset_type StockAndFlowUntyped0U(TheoryStockAndFlow0U, index=[:lss,:lssv, :luu, :lucu, :scu]) <: AbstractStockAndFlow0
+const StockAndFlow0U = StockAndFlowUntyped0U{Symbol, Float64}
+
+
+
+nu(p::StockAndFlow0U) = nparts(p, :U)
+ncu(p::StockAndFlow0U) = nparts(p, :CU)
+nlu(p::StockAndFlow0U) = nparts(p, :LU)
+
+
+add_unit!(p::StockAndFlow0U;kw...) = add_part!(p,:U;kw...)
+add_units!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:U,n;kw...)
+
+add_cunit!(p::StockAndFlow0U;kw...) = add_part!(p,:CU;kw...)
+add_cunits!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:CU,n;kw...)
+
+add_UCUlink!(p::StockAndFlow0U,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...)
+add_UCUlinks!(p::StockAndFlow0U,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
+
+uname(p::StockAndFlow0U,u) = subpart(p,u,:uname) 
+unames(p::StockAndFlow0U,u) = subpart(p,:uname) 
+
+set_unames!(p::StockAndFlow0U, names) = set_subpart!(p, :uname, names)
+set_cunames!(p::StockAndFlow0U, names) = set_subpart!(p, :cuname, names)
+set_exps!(p::StockAndFlow0U, exps) = set_subpart!(p, :exp, exps)
+
+
+set_scu!(p::StockAndFlow0U, cu) = set_subpart!(p, :scu, cu)
+
+
+function extract_exponents(exp)
+    println(exp)
+    @match exp begin
+        ::Symbol => 
+            Dict(exp => 1)
+        :(1/$B) => Dict(k => -v for (k, v) in extract_exponents(B))
+        Expr(:call, :*, A, B...) =>
+            merge!(+, extract_exponents(A), [extract_exponents(b) for b ∈ B]...)
+        Expr(:call, :/, A, B...) =>
+            merge!(+, extract_exponents(A), [Dict(k => -v for (k, v) in extract_exponents(b)) for b ∈ B]...)
+        :($A^$n) =>
+            Dict(A => n)
+    end
+end
+
+StockAndFlow0U(s,sv,ssv,cu,u) = begin
+    p0 = StockAndFlow0U()
+    s = vectorify(s)
+    sv = vectorify(sv)
+    ssv = vectorify(ssv)
+    cu = vectorify(cu)
+    u = vectorify(u)
+  
+
+
+    cu_vec = collect(Set(map(last, cu)))
+    cu_idx = state_dict(cu_vec)
+
+    println(cu_idx)
+
+    exps = Dict(cu => extract_exponents(cu) for cu in filter(x -> x != :NONE, keys(cu_idx)))
+
+    u_vec = unique([u ; [unit for inner_dict in values(exps) for unit in keys(inner_dict)]])
+    u_idx = state_dict(u_vec)
+
+    stock_cu = Dict(cu)
+
+    add_cunits!(p0, length(cu_vec), cuname=cu_vec)
+    add_units!(p0, length(u_vec), uname=u_vec)
+      
+    for cunit in keys(exps)
+        for (unit, power) in exps[cunit]
+            
+            add_UCUlink!(p0, u_idx[unit], cu_idx[cunit], exp=power)
+        end
+    end
+  
+    if length(s)>0
+      s_idx=state_dict(s)
+      add_stocks!(p0, length(s), sname=s, scu=map(x -> cu_idx[stock_cu[x]] , s))
+    end
+  
+    if length(sv)>0
+      sv_idx=state_dict(sv)
+      add_svariables!(p0, length(sv), svname=sv)
+    end
+  
+    if length(ssv)>0
+      svl=map(last, ssv)
+      sl=map(first, ssv)
+      add_Slinks!(p0, length(ssv), map(x->s_idx[x], sl), map(x->sv_idx[x], svl))
+    end
+
+   
+
+    p0
+
+
+end
+
+footU(s,sv,ssv,cu,u) = StockAndFlow0U(s,sv,ssv,cu,u)
+
+
 
 @present TheoryStockAndFlowU <: TheoryStockAndFlowF begin
 
@@ -63,19 +187,7 @@ set_pcu!(p::StockAndFlowU, cu) = set_subpart!(p, :pcu, cu)
 
 
 
-function extract_exponents(exp)
-    @match exp begin
-        ::Symbol => 
-            Dict(exp => 1)
-        :(1/$B) => Dict(k => -v for (k, v) in extract_exponents(B))
-        Expr(:call, :*, A, B...) =>
-            merge!(+, extract_exponents(A), [extract_exponents(b) for b ∈ B]...)
-        Expr(:call, :/, A, B...) =>
-            merge!(+, extract_exponents(A), [Dict(k => -v for (k, v) in extract_exponents(b)) for b ∈ B]...)
-        :($A^$n) =>
-            Dict(A => n)
-    end
-end
+
 
 
 
