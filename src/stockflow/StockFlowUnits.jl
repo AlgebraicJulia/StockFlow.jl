@@ -4,11 +4,11 @@ using ..StockFlow
 using Catlab.GATs.Presentations, Catlab.CategoricalAlgebra
 using MLStyle
 
-import ...StockFlow: StockAndFlowF, state_dict, ns, np, vectorify
+import ...StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent
 
 export add_unit!, add_units!, add_cunit!, add_cunits!, add_UCUlink!, add_UCUlinks!,
 uname, unames, set_unames!, set_exps!, convert, StockAndFlowU, set_scu!, set_pcu!,
-FtoU, StockAndFlow0U, footU
+FtoU, StockAndFlow0U, footU, Open
 
 
 @present TheoryStockAndFlow0U <: TheoryStockAndFlow0 begin
@@ -37,7 +37,7 @@ const StockAndFlow0U = StockAndFlowUntyped0U{Symbol, Float64}
 
 nu(p::StockAndFlow0U) = nparts(p, :U)
 ncu(p::StockAndFlow0U) = nparts(p, :CU)
-nlu(p::StockAndFlow0U) = nparts(p, :LU)
+nlu(p::Union{StockAndFlowU, StockAndFlow0U}) = nparts(p, :LU)
 
 
 add_unit!(p::StockAndFlow0U;kw...) = add_part!(p,:U;kw...)
@@ -50,7 +50,7 @@ add_UCUlink!(p::StockAndFlow0U,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...
 add_UCUlinks!(p::StockAndFlow0U,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
 
 uname(p::StockAndFlow0U,u) = subpart(p,u,:uname) 
-unames(p::StockAndFlow0U,u) = subpart(p,:uname) 
+unames(p::StockAndFlow0U) = subpart(p,:uname) 
 
 set_unames!(p::StockAndFlow0U, names) = set_subpart!(p, :uname, names)
 set_cunames!(p::StockAndFlow0U, names) = set_subpart!(p, :cuname, names)
@@ -61,7 +61,6 @@ set_scu!(p::StockAndFlow0U, cu) = set_subpart!(p, :scu, cu)
 
 
 function extract_exponents(exp)
-    println(exp)
     @match exp begin
         ::Symbol => 
             Dict(exp => 1)
@@ -88,7 +87,6 @@ StockAndFlow0U(s,sv,ssv,cu,u) = begin
     cu_vec = collect(Set(map(last, cu)))
     cu_idx = state_dict(cu_vec)
 
-    println(cu_idx)
 
     exps = Dict(cu => extract_exponents(cu) for cu in filter(x -> x != :NONE, keys(cu_idx)))
 
@@ -170,7 +168,11 @@ add_UCUlink!(p::StockAndFlowU,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...)
 add_UCUlinks!(p::StockAndFlowU,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
 
 uname(p::StockAndFlowU,u) = subpart(p,u,:uname) 
-unames(p::StockAndFlowU,u) = subpart(p,:uname) 
+unames(p::StockAndFlowU) = subpart(p,:uname) 
+
+cuname(p::Union{StockAndFlowU, StockAndFlow0U}, u) = subpart(p,u, :cuname) 
+cunames(p::Union{StockAndFlowU, StockAndFlow0U}) = subpart(p,:cuname) 
+
 
 set_unames!(p::StockAndFlowU, names) = set_subpart!(p, :uname, names)
 set_cunames!(p::StockAndFlowU, names) = set_subpart!(p, :cuname, names)
@@ -183,9 +185,13 @@ set_pcu!(p::StockAndFlowU, cu) = set_subpart!(p, :pcu, cu)
 
 
 
-
-
-
+lunames(p::Union{StockAndFlowU, StockAndFlow0U}) = begin
+    luu = map(x->subpart(p,x,:luu),collect(1:nlu(p)))
+    lucu = map(x->subpart(p,x,:lucu),collect(1:nlu(p)))
+    unit_names = map(x->uname(p,x),luu)
+    cunit_names = map(x->cuname(p,x),lucu)
+    plu = collect(zip(unit_names, cunit_names))
+end
 
 
 
@@ -320,6 +326,67 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
     
     return sfg
 end
+
+
+
+
+
+
+# const OpenStockAndFlowStructureUOb, OpenStockAndFlowStructureU = OpenACSetTypes(StockAndFlowUUntyped,StockAndFlowUntyped0U)
+const OpenStockAndFlowUOb, OpenStockAndFlowU = OpenACSetTypes(StockAndFlowUUntyped,StockAndFlowUntyped0U)
+
+
+
+leg(a::StockAndFlow0U, x::StockAndFlowU) = begin
+    if ns(a)>0 # if have stocks
+      ϕs = ntcomponent(snames(a), snames(x))
+    else
+      ϕs = Int[]
+    end
+
+    if nsv(a) > 0  # if have sum-auxiliary-variable
+      ϕsv = ntcomponent(svnames(a), svnames(x))
+    else
+      ϕsv = Int[]
+    end
+
+    if nls(a)>0 # if have links between stocks and sum-auxiliary-variables
+      ϕls = ntcomponent(lsnames(a), lsnames(x))
+    else
+      ϕls = Int[]
+    end
+
+    if nu(a)>0 # if have links between stocks and sum-auxiliary-variables
+        ϕu = ntcomponent(unames(a), unames(x))
+      else
+        ϕu = Int[]
+      end
+
+      if ncu(a)>0 # if have links between stocks and sum-auxiliary-variables
+        ϕcu = ntcomponent(cunames(a), cunames(x))
+      else
+        ϕcu = Int[]
+      end
+
+      if nlu(a)>0 # if have links between stocks and sum-auxiliary-variables        
+        ϕlu = ntcomponent(lunames(a), lunames(x))
+      else
+        ϕlu = Int[]
+      end
+
+
+    result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv, U=ϕu, CU=ϕcu, LU=ϕlu)
+
+    result
+end
+
+
+Open(p::StockAndFlowU, feet...) = begin
+    legs = map(x->leg(x, p), feet)
+    OpenStockAndFlowU{Symbol,Symbol,Int8,Float64}(p, legs...)
+  end
+
+
 
 
 
