@@ -1,10 +1,10 @@
 module StockFlowUnits
 
 using ..StockFlow
-using Catlab.GATs.Presentations, Catlab.CategoricalAlgebra
+using Catlab.GATs, Catlab.CategoricalAlgebra
 using MLStyle
 
-import ...StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent
+import ..StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent
 
 export add_unit!, add_units!, add_cunit!, add_cunits!, add_UCUlink!, add_UCUlinks!,
 uname, unames, set_unames!, set_exps!, convert, StockAndFlowU, set_scu!, set_pcu!,
@@ -35,44 +35,21 @@ const StockAndFlow0U = StockAndFlowUntyped0U{Symbol, Float64}
 
 
 
-nu(p::StockAndFlow0U) = nparts(p, :U)
-ncu(p::StockAndFlow0U) = nparts(p, :CU)
-nlu(p::Union{StockAndFlowU, StockAndFlow0U}) = nparts(p, :LU)
-
-
-add_unit!(p::StockAndFlow0U;kw...) = add_part!(p,:U;kw...)
-add_units!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:U,n;kw...)
-
-add_cunit!(p::StockAndFlow0U;kw...) = add_part!(p,:CU;kw...)
-add_cunits!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:CU,n;kw...)
-
-add_UCUlink!(p::StockAndFlow0U,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...)
-add_UCUlinks!(p::StockAndFlow0U,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
-
-uname(p::StockAndFlow0U,u) = subpart(p,u,:uname) 
-unames(p::StockAndFlow0U) = subpart(p,:uname) 
-
-set_unames!(p::StockAndFlow0U, names) = set_subpart!(p, :uname, names)
-set_cunames!(p::StockAndFlow0U, names) = set_subpart!(p, :cuname, names)
-set_exps!(p::StockAndFlow0U, exps) = set_subpart!(p, :exp, exps)
-
-
-set_scu!(p::StockAndFlow0U, cu) = set_subpart!(p, :scu, cu)
-
-
 function extract_exponents(exp)
-    @match exp begin
-        ::Symbol => 
-            Dict(exp => 1)
-        :(1/$B) => Dict(k => -v for (k, v) in extract_exponents(B))
-        Expr(:call, :*, A, B...) =>
-            merge!(+, extract_exponents(A), [extract_exponents(b) for b ∈ B]...)
-        Expr(:call, :/, A, B...) =>
-            merge!(+, extract_exponents(A), [Dict(k => -v for (k, v) in extract_exponents(b)) for b ∈ B]...)
-        :($A^$n) =>
-            Dict(A => n)
-    end
+  @match exp begin
+      ::Symbol => 
+          Dict(exp => 1)
+      :(1/$B) => Dict(k => -v for (k, v) in extract_exponents(B))
+      Expr(:call, :*, A, B...) =>
+          merge!(+, extract_exponents(A), [extract_exponents(b) for b ∈ B]...)
+      Expr(:call, :/, A, B...) =>
+          merge!(+, extract_exponents(A), [Dict(k => -v for (k, v) in extract_exponents(b)) for b ∈ B]...)
+      :($A^$n) =>
+          Dict(A => n)
+  end
 end
+
+
 
 StockAndFlow0U(s,sv,ssv,cu,u) = begin
     p0 = StockAndFlow0U()
@@ -157,6 +134,35 @@ end
 
 @acset_type StockAndFlowUUntyped(TheoryStockAndFlowU, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp, :lpvv, :luu, :lucu, :scu, :pcu]) <: AbstractStockAndFlowF
 const StockAndFlowU = StockAndFlowUUntyped{Symbol,Symbol,Int8,Float64}
+
+
+
+
+nu(p::StockAndFlow0U) = nparts(p, :U)
+ncu(p::StockAndFlow0U) = nparts(p, :CU)
+nlu(p::Union{StockAndFlowU, StockAndFlow0U}) = nparts(p, :LU)
+
+
+add_unit!(p::StockAndFlow0U;kw...) = add_part!(p,:U;kw...)
+add_units!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:U,n;kw...)
+
+add_cunit!(p::StockAndFlow0U;kw...) = add_part!(p,:CU;kw...)
+add_cunits!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:CU,n;kw...)
+
+add_UCUlink!(p::StockAndFlow0U,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...)
+add_UCUlinks!(p::StockAndFlow0U,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
+
+uname(p::StockAndFlow0U,u) = subpart(p,u,:uname) 
+unames(p::StockAndFlow0U) = subpart(p,:uname) 
+
+set_unames!(p::StockAndFlow0U, names) = set_subpart!(p, :uname, names)
+set_cunames!(p::StockAndFlow0U, names) = set_subpart!(p, :cuname, names)
+set_exps!(p::StockAndFlow0U, exps) = set_subpart!(p, :exp, exps)
+
+
+set_scu!(p::StockAndFlow0U, cu) = set_subpart!(p, :scu, cu)
+
+
 
 add_unit!(p::StockAndFlowU;kw...) = add_part!(p,:U;kw...)
 add_units!(p::StockAndFlowU,n;kw...) = add_parts!(p,:U,n;kw...)

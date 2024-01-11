@@ -1,17 +1,7 @@
-module StockFlowUnitsSyntax
 
-using ...StockFlow.StockFlowUnits
+using ..StockFlow.StockFlowUnits
 
-import ...StockFlow: StockAndFlowF, state_dict, ns, np
-
-using ..Syntax
-import ..Syntax: StockAndFlowBlock, parse_dyvar!, parse_flow!, parse_sum!, stock_and_flow_syntax_to_arguments, get
-
-using MLStyle
 using MLStyle.Modules.AST
-
-using Catlab.CategoricalAlgebra
-
 
 export @stock_and_flow_U, @foot_U
 
@@ -26,8 +16,6 @@ function parse_stock_units!(stocks, s::Union{Expr, Symbol})
         end
         _ => return error("Unknown argument $s in stock syntax.")
     end
-    # s_dict = @capture ($Stock:$units) s
-    # push!(stocks, (s_dict[:Stock], s_dict[:units]))
 end
 
 function parse_param_units!(params, p::Union{Expr, Symbol})
@@ -40,19 +28,7 @@ function parse_param_units!(params, p::Union{Expr, Symbol})
         end
         _ => return error("Unknown argument $p in param syntax.")
     end
-    # p_dict = @capture ($Param:$units) p
-    # push!(params, (p_dict[:Param], p_dict[:units]))
 end
-
-
-
-
-
-
-
-
-
-
 
 
 function parse_stock_and_flow_units_syntax(statements::Vector{Any})
@@ -145,23 +121,11 @@ function create_foot_U(block::Expr)
             foot_cu = Vector{Pair{Symbol, Union{Symbol, Expr}}}()
             foot_u = Vector{Symbol}()
             for (s, sv, ssv, cu, u) ∈ map(match_foot_format_U, block.args)
-                # if s != () 
-                #     push!(foot_s, s) 
-                #     if cu != ()
-                #         push!(foot_cu, s => cu)
-                #     else
-                #         push!(foot_cu, s => :NONE)
-                #     end
-                # elseif cu != ()
-                #     push!(foot_cu, :NONE => cu)
-                # end
                 if s != () push!(foot_s, s) end
-
                 if sv != () push!(foot_sv, sv) end
                 if ssv != () push!(foot_ssv, ssv) end
                 if cu != () push!(foot_cu, cu) end
                 if u != () push!(foot_u, u) end
-                # cu != () ? push!(foot_cu, cu) : push!(foot_cu, :NONE)
             end
             return footU(unique(foot_s), unique(foot_sv), foot_ssv, foot_cu, unique(foot_u))
         end
@@ -180,4 +144,3 @@ end
 
 
 
-end

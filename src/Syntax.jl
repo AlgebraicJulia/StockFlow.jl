@@ -1288,6 +1288,7 @@ include("syntax/Composition.jl")
 include("syntax/Stratification.jl")
 include("syntax/Rewrite.jl")
 
+# not a submodule
 include("syntax/StockFlowUnitsSyntax.jl")
 
 end
