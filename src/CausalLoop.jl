@@ -1,6 +1,6 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
 nn, ne, nname,
-sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, graph_RB
+sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol
 
 using MLStyle
 
