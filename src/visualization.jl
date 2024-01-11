@@ -5,6 +5,8 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
+import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
+
 export Graph, display_uwd, GraphF
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
@@ -239,6 +241,36 @@ function Graph(c::CausalLoop)
 
 end
 
+function Graph(c::CausalLoopF; schema="BASE")
+
+  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+
+  if occursin("BASE", schema)
+    Edges=map(1:ne(c)) do k
+      pol_int = epol(c,k)
+      if pol_int > 0
+        pol = :+
+      elseif pol_int < 0
+        pol = :-
+      else
+        pol = 0
+      end
+      [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
+    end |> flatten |> collect
+  elseif schema == "C0"
+    Edges=map(1:ne(c)) do k
+      [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
+    end |> flatten |> collect
+  end
+
+  stmts=vcat(NNodes,Edges)
+
+  g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
+  return g
+
+end
+
+
 
 
 function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_auxiliaryV::Function=def_auxiliaryVF,
@@ -416,3 +448,95 @@ function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_a
   return g
 
 end
+
+
+
+
+
+
+
+
+
+
+
+
+function extract_loops(cl::K) where {K <: CausalLoopF}
+    edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+    pair_to_edge = state_dict(edges)
+    
+    g = SimpleDiGraph(Graphs.SimpleEdge.(edges))
+
+
+    cycle_pol = Dict{Vector{Int}, Bool}()
+
+    for cycle ∈ Graphs.simplecycles(g)
+        neg_count = 0
+        for node_index ∈ 1:(length(cycle) - 1)
+            node_pair = (cycle[node_index], cycle[node_index+1])
+            edge = pair_to_edge[node_pair]
+            if epol(cl, edge) < 0
+                neg_count += 1
+            end
+        
+        end
+        # could be the same node if has a loop to itself
+        node_pair = (cycle[end], cycle[1])
+        edge = pair_to_edge[node_pair]
+        if epol(cl, edge) < 0
+            neg_count += 1
+        end
+        push!(cycle_pol, cycle => (neg_count % 2) == 0 ? 0 : 1)
+    end
+    
+    cycle_pol
+            
+end
+
+    
+function graph_RB(c)
+    NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+
+    Edges=map(1:StockFlow.ne(c)) do k
+      pol_int = epol(c,k)
+      if pol_int > 0
+        pol = :+
+      elseif pol_int < 0
+        pol = :-
+      else
+        pol = 0
+      end
+      [Graphviz.Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
+    end |> flatten |> collect
+
+    for (nodes, polarity) ∈ extract_loops(c)
+        
+        if polarity == 0 
+            label = "R" # reinforcing
+        else
+            label = "B" # balancing
+        end
+        new_node_index = length(NNodes) + 1
+        push!(NNodes, Node("n$new_node_index", Attributes(:label => label, :shape => "plaintext")))
+        for node ∈ nodes
+            push!(Edges, Graphviz.Edge(["n$node", "n$new_node_index"], Attributes(:color=>"yellow")))
+        end
+            
+    end
+    
+    
+    stmts=vcat(NNodes,Edges)
+
+    g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
+    return g
+end
+
+
+
+
+
+
+
+
+
+
+

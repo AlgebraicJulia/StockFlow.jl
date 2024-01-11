@@ -1,5 +1,8 @@
-export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, nn, ne, nname,
-sedge, tedge, convertToCausalLoop, nnames, CausalLoopF
+export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
+nn, ne, nname,
+sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, graph_RB
+
+using MLStyle
 
 
 @present TheoryCausalLoop(FreeSchema) begin
@@ -85,6 +88,8 @@ tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
 
 """ return node names of CLD """
 nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
+
+epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
 
 
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
