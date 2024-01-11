@@ -7,7 +7,7 @@ using Catlab.Graphics
 
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 
-export Graph, display_uwd, GraphF
+export Graph, display_uwd, GraphF, Graph_RB
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
 
@@ -464,12 +464,12 @@ function extract_loops(cl::K) where {K <: CausalLoopF}
     edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
     pair_to_edge = state_dict(edges)
     
-    g = SimpleDiGraph(Graphs.SimpleEdge.(edges))
+    g = SimpleDiGraph(SimpleEdge.(edges))
 
 
     cycle_pol = Dict{Vector{Int}, Bool}()
 
-    for cycle ∈ Graphs.simplecycles(g)
+    for cycle ∈ simplecycles(g)
         neg_count = 0
         for node_index ∈ 1:(length(cycle) - 1)
             node_pair = (cycle[node_index], cycle[node_index+1])
@@ -493,7 +493,7 @@ function extract_loops(cl::K) where {K <: CausalLoopF}
 end
 
     
-function graph_RB(c)
+function Graph_RB(c)
     NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
 
     Edges=map(1:StockFlow.ne(c)) do k
