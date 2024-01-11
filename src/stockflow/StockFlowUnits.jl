@@ -6,31 +6,31 @@ using MLStyle
 
 import ..StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent
 
-export add_unit!, add_units!, add_cunit!, add_cunits!, add_UCUlink!, add_UCUlinks!,
-uname, unames, set_unames!, set_exps!, convert, StockAndFlowU, set_scu!, set_pcu!,
-FtoU, StockAndFlow0U, footU, Open
+export add_unit!, add_units!, add_dunit!, add_dunits!, add_UDUlink!, add_UDUlinks!,
+uname, unames, duname, dunames, set_unames!, set_exps!, convert, StockAndFlowU, set_sdu!, set_pdu!,
+FtoU, StockAndFlow0U, footU, Open, get_sdu, get_pdu
 
 
 @present TheoryStockAndFlow0U <: TheoryStockAndFlow0 begin
     Exponent::AttrType
 
     U::Ob
-    CU::Ob
+    DU::Ob
     LU::Ob
 
 
     uname::Attr(U, Name)
     exp::Attr(LU, Exponent)
-    cuname::Attr(CU, Name)
+    duname::Attr(DU, Name)
 
 
     luu::Hom(LU, U)
-    lucu::Hom(LU, CU)
+    ludu::Hom(LU, DU)
 
-    scu::Hom(S, CU)
+    sdu::Hom(S, DU)
 
 end
-@acset_type StockAndFlowUntyped0U(TheoryStockAndFlow0U, index=[:lss,:lssv, :luu, :lucu, :scu]) <: AbstractStockAndFlow0
+@acset_type StockAndFlowUntyped0U(TheoryStockAndFlow0U, index=[:lss,:lssv, :luu, :ludu, :sdu]) <: AbstractStockAndFlow0
 const StockAndFlow0U = StockAndFlowUntyped0U{Symbol, Float64}
 
 
@@ -51,40 +51,40 @@ end
 
 
 
-StockAndFlow0U(s,sv,ssv,cu,u) = begin
+StockAndFlow0U(s,sv,ssv,du,u) = begin
     p0 = StockAndFlow0U()
     s = vectorify(s)
     sv = vectorify(sv)
     ssv = vectorify(ssv)
-    cu = vectorify(cu)
+    du = vectorify(du)
     u = vectorify(u)
   
 
 
-    cu_vec = collect(Set(map(last, cu)))
-    cu_idx = state_dict(cu_vec)
+    du_vec = collect(Set(map(last, du)))
+    du_idx = state_dict(du_vec)
 
 
-    exps = Dict(cu => extract_exponents(cu) for cu in filter(x -> x != :NONE, keys(cu_idx)))
+    exps = Dict(du => extract_exponents(du) for du in filter(x -> x != :NONE, keys(du_idx)))
 
     u_vec = unique([u ; [unit for inner_dict in values(exps) for unit in keys(inner_dict)]])
     u_idx = state_dict(u_vec)
 
-    stock_cu = Dict(cu)
+    stock_du = Dict(du)
 
-    add_cunits!(p0, length(cu_vec), cuname=cu_vec)
+    add_dunits!(p0, length(du_vec), duname=du_vec)
     add_units!(p0, length(u_vec), uname=u_vec)
       
-    for cunit in keys(exps)
-        for (unit, power) in exps[cunit]
+    for dunit in keys(exps)
+        for (unit, power) in exps[dunit]
             
-            add_UCUlink!(p0, u_idx[unit], cu_idx[cunit], exp=power)
+            add_UDUlink!(p0, u_idx[unit], du_idx[dunit], exp=power)
         end
     end
   
     if length(s)>0
       s_idx=state_dict(s)
-      add_stocks!(p0, length(s), sname=s, scu=map(x -> cu_idx[stock_cu[x]] , s))
+      add_stocks!(p0, length(s), sname=s, sdu=map(x -> du_idx[stock_du[x]] , s))
     end
   
     if length(sv)>0
@@ -105,7 +105,7 @@ StockAndFlow0U(s,sv,ssv,cu,u) = begin
 
 end
 
-footU(s,sv,ssv,cu,u) = StockAndFlow0U(s,sv,ssv,cu,u)
+footU(s,sv,ssv,du,u) = StockAndFlow0U(s,sv,ssv,du,u)
 
 
 
@@ -114,89 +114,92 @@ footU(s,sv,ssv,cu,u) = StockAndFlow0U(s,sv,ssv,cu,u)
   Exponent::AttrType
 
   U::Ob
-  CU::Ob
+  DU::Ob
   LU::Ob
 
 
   uname::Attr(U, Name)
   exp::Attr(LU, Exponent)
-  cuname::Attr(CU, Name)
+  duname::Attr(DU, Name)
   
 
   luu::Hom(LU, U)
-  lucu::Hom(LU, CU)
+  ludu::Hom(LU, DU)
 
-  scu::Hom(S, CU)
-  pcu::Hom(P, CU)
+  sdu::Hom(S, DU)
+  pdu::Hom(P, DU)
 
 
 end
 
-@acset_type StockAndFlowUUntyped(TheoryStockAndFlowU, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp, :lpvv, :luu, :lucu, :scu, :pcu]) <: AbstractStockAndFlowF
+@acset_type StockAndFlowUUntyped(TheoryStockAndFlowU, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp, :lpvv, :luu, :ludu, :sdu, :pdu]) <: AbstractStockAndFlowF
 const StockAndFlowU = StockAndFlowUUntyped{Symbol,Symbol,Int8,Float64}
 
 
 
 
 nu(p::StockAndFlow0U) = nparts(p, :U)
-ncu(p::StockAndFlow0U) = nparts(p, :CU)
+ndu(p::StockAndFlow0U) = nparts(p, :DU)
 nlu(p::Union{StockAndFlowU, StockAndFlow0U}) = nparts(p, :LU)
 
 
 add_unit!(p::StockAndFlow0U;kw...) = add_part!(p,:U;kw...)
 add_units!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:U,n;kw...)
 
-add_cunit!(p::StockAndFlow0U;kw...) = add_part!(p,:CU;kw...)
-add_cunits!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:CU,n;kw...)
+add_dunit!(p::StockAndFlow0U;kw...) = add_part!(p,:DU;kw...)
+add_dunits!(p::StockAndFlow0U,n;kw...) = add_parts!(p,:DU,n;kw...)
 
-add_UCUlink!(p::StockAndFlow0U,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...)
-add_UCUlinks!(p::StockAndFlow0U,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
+add_UDUlink!(p::StockAndFlow0U,u,du;kw...) = add_part!(p,:LU;luu=u,ludu=du,kw...)
+add_UDUlinks!(p::StockAndFlow0U,n,u,du;kw...) = add_parts!(p,:LU,n;luu=u,ludu=du, kw...)
 
 uname(p::StockAndFlow0U,u) = subpart(p,u,:uname) 
 unames(p::StockAndFlow0U) = subpart(p,:uname) 
 
 set_unames!(p::StockAndFlow0U, names) = set_subpart!(p, :uname, names)
-set_cunames!(p::StockAndFlow0U, names) = set_subpart!(p, :cuname, names)
+set_dunames!(p::StockAndFlow0U, names) = set_subpart!(p, :duname, names)
 set_exps!(p::StockAndFlow0U, exps) = set_subpart!(p, :exp, exps)
 
 
-set_scu!(p::StockAndFlow0U, cu) = set_subpart!(p, :scu, cu)
+set_sdu!(p::StockAndFlow0U, du) = set_subpart!(p, :sdu, du)
 
 
 
 add_unit!(p::StockAndFlowU;kw...) = add_part!(p,:U;kw...)
 add_units!(p::StockAndFlowU,n;kw...) = add_parts!(p,:U,n;kw...)
 
-add_cunit!(p::StockAndFlowU;kw...) = add_part!(p,:CU;kw...)
-add_cunits!(p::StockAndFlowU,n;kw...) = add_parts!(p,:CU,n;kw...)
+add_dunit!(p::StockAndFlowU;kw...) = add_part!(p,:DU;kw...)
+add_dunits!(p::StockAndFlowU,n;kw...) = add_parts!(p,:DU,n;kw...)
 
-add_UCUlink!(p::StockAndFlowU,u,cu;kw...) = add_part!(p,:LU;luu=u,lucu=cu,kw...)
-add_UCUlinks!(p::StockAndFlowU,n,u,cu;kw...) = add_parts!(p,:LU,n;luu=u,lucu=cu, kw...)
+add_UDUlink!(p::StockAndFlowU,u,du;kw...) = add_part!(p,:LU;luu=u,ludu=du,kw...)
+add_UDUlinks!(p::StockAndFlowU,n,u,du;kw...) = add_parts!(p,:LU,n;luu=u,ludu=du, kw...)
 
 uname(p::StockAndFlowU,u) = subpart(p,u,:uname) 
 unames(p::StockAndFlowU) = subpart(p,:uname) 
 
-cuname(p::Union{StockAndFlowU, StockAndFlow0U}, u) = subpart(p,u, :cuname) 
-cunames(p::Union{StockAndFlowU, StockAndFlow0U}) = subpart(p,:cuname) 
+duname(p::Union{StockAndFlowU, StockAndFlow0U}, u) = subpart(p,u, :duname) 
+dunames(p::Union{StockAndFlowU, StockAndFlow0U}) = subpart(p,:duname) 
 
 
 set_unames!(p::StockAndFlowU, names) = set_subpart!(p, :uname, names)
-set_cunames!(p::StockAndFlowU, names) = set_subpart!(p, :cuname, names)
+set_dunames!(p::StockAndFlowU, names) = set_subpart!(p, :duname, names)
 set_exps!(p::StockAndFlowU, exps) = set_subpart!(p, :exp, exps)
 
 
-set_scu!(p::StockAndFlowU, cu) = set_subpart!(p, :scu, cu)
-set_pcu!(p::StockAndFlowU, cu) = set_subpart!(p, :pcu, cu)
+set_sdu!(p::StockAndFlowU, du) = set_subpart!(p, :sdu, du)
+set_pdu!(p::StockAndFlowU, du) = set_subpart!(p, :pdu, du)
 
+get_sdu(p::Union{StockAndFlowU, StockAndFlow0U}, s) = subpart(p, :sdu)[s]
+get_pdu(p::StockAndFlowU, param) = subpart(p, :pdu)[param]
 
+# get_sdu(p::StockAndFlowU, du) = subpart(p, :pdu, )
 
 
 lunames(p::Union{StockAndFlowU, StockAndFlow0U}) = begin
     luu = map(x->subpart(p,x,:luu),collect(1:nlu(p)))
-    lucu = map(x->subpart(p,x,:lucu),collect(1:nlu(p)))
+    ludu = map(x->subpart(p,x,:ludu),collect(1:nlu(p)))
     unit_names = map(x->uname(p,x),luu)
-    cunit_names = map(x->cuname(p,x),lucu)
-    plu = collect(zip(unit_names, cunit_names))
+    dunit_names = map(x->duname(p,x),ludu)
+    plu = collect(zip(unit_names, dunit_names))
 end
 
 
@@ -207,13 +210,13 @@ end
 function convert(::Type{StockAndFlowU}, sff::K) where {K <: AbstractStockAndFlowF}
     sfg = StockAndFlowU()
     
-    add_cunit!(sfg, cuname=:NONE)
+    add_dunit!(sfg, duname=:NONE)
     
-    add_stocks!(sfg, ns(sff), sname=snames(sff), scu=ones(Int, ns(sff)))
+    add_stocks!(sfg, ns(sff), sname=snames(sff), sdu=ones(Int, ns(sff)))
     add_svariables!(sfg, nsv(sff), svname=svnames(sff))
     add_variables!(sfg, nvb(sff), vname=vnames(sff))
     add_flows!(sfg, (fv(sff, i) for i in 1:nf(sff)), nf(sff), fname=fnames(sff))
-    add_parameters!(sfg, np(sff), pname=pnames(sff), pcu=ones(Int, np(sff)))
+    add_parameters!(sfg, np(sff), pname=pnames(sff), pdu=ones(Int, np(sff)))
     
     add_inflows!(sfg, ni(sff), subpart(sff, :is), subpart(sff, :ifn))
     add_outflows!(sfg, no(sff), subpart(sff, :os), subpart(sff, :ofn))
@@ -255,20 +258,20 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
     
     
 
-    cunits = collect(setdiff(Set(sunits) ∪ Set(punits)))
-    cunit_dict = state_dict(cunits)
+    dunits = collect(setdiff(Set(sunits) ∪ Set(punits)))
+    dunit_dict = state_dict(dunits)
 
       
 
-    cunit_exp_dict = Dict{Union{Symbol, Expr}, Dict{Symbol, Float64}}()
+    dunit_exp_dict = Dict{Union{Symbol, Expr}, Dict{Symbol, Float64}}()
     unit_set = Set{Symbol}()
     
-    for cu in cunits
-        if cu == :NONE
+    for du in dunits
+        if du == :NONE
             continue
         end
-        cunit_exp_dict[cu] = extract_exponents(cu)
-        union!(unit_set, keys(cunit_exp_dict[cu]))
+        dunit_exp_dict[du] = extract_exponents(du)
+        union!(unit_set, keys(dunit_exp_dict[du]))
     end
 
     
@@ -279,28 +282,28 @@ function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
 
     
     add_units!(sfg, length(units), uname=([Symbol(x) for x in units]))
-    add_cunits!(sfg, length(cunits), cuname=([Symbol(x) for x in cunits]))
+    add_dunits!(sfg, length(dunits), duname=([Symbol(x) for x in dunits]))
     
-    for cu in cunits
-        if cu == :NONE
+    for du in dunits
+        if du == :NONE
             continue
         end
-        for (u, exp) in pairs(cunit_exp_dict[cu])
-            add_UCUlink!(sfg, unit_dict[u], cunit_dict[cu], exp=exp)
+        for (u, exp) in pairs(dunit_exp_dict[du])
+            add_UDUlink!(sfg, unit_dict[u], dunit_dict[du], exp=exp)
         end
     end
     
 
 
-    scu = collect(map(x -> cunit_dict[x], sunits))
-    pcu = collect(map(x -> cunit_dict[x], punits))
+    sdu = collect(map(x -> dunit_dict[x], sunits))
+    pdu = collect(map(x -> dunit_dict[x], punits))
    
     
-    add_stocks!(sfg, ns(sff), sname=snames(sff), scu=scu)
+    add_stocks!(sfg, ns(sff), sname=snames(sff), sdu=sdu)
     add_svariables!(sfg, nsv(sff), svname=svnames(sff))
     add_variables!(sfg, nvb(sff), vname=vnames(sff))
     add_flows!(sfg, (fv(sff, i) for i in 1:nf(sff)), nf(sff), fname=fnames(sff))
-    add_parameters!(sfg, np(sff), pname=pnames(sff), pcu=pcu)
+    add_parameters!(sfg, np(sff), pname=pnames(sff), pdu=pdu)
     
     add_inflows!(sfg, ni(sff), subpart(sff, :is), subpart(sff, :ifn))
     add_outflows!(sfg, no(sff), subpart(sff, :os), subpart(sff, :ofn))
@@ -368,10 +371,10 @@ leg(a::StockAndFlow0U, x::StockAndFlowU) = begin
         ϕu = Int[]
       end
 
-      if ncu(a)>0 # if have links between stocks and sum-auxiliary-variables
-        ϕcu = ntcomponent(cunames(a), cunames(x))
+      if ndu(a)>0 # if have links between stocks and sum-auxiliary-variables
+        ϕdu = ntcomponent(dunames(a), dunames(x))
       else
-        ϕcu = Int[]
+        ϕdu = Int[]
       end
 
       if nlu(a)>0 # if have links between stocks and sum-auxiliary-variables        
@@ -381,7 +384,7 @@ leg(a::StockAndFlow0U, x::StockAndFlowU) = begin
       end
 
 
-    result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv, U=ϕu, CU=ϕcu, LU=ϕlu)
+    result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv, U=ϕu, DU=ϕdu, LU=ϕlu)
 
     result
 end
