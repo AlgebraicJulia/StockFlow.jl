@@ -5,6 +5,8 @@ sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol
 using MLStyle
 
 
+
+
 @present TheoryCausalLoop(FreeSchema) begin
   E::Ob
   N::Ob
@@ -18,6 +20,14 @@ using MLStyle
   nname::Attr(N, Name)
 end
 
+@enum Polarity begin
+  POL_ZERO
+  POL_REINFORCING
+  POL_BALANCING
+  POL_UNKNOWN
+end
+  
+
 @present TheoryCausalLoopF <: TheoryCausalLoop begin
   Polarity::AttrType
   epolarity::Attr(E, Polarity)
@@ -27,7 +37,7 @@ end
 @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
 @acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
 const CausalLoop = CausalLoopUntyped{Symbol} 
-const CausalLoopF = CausalLoopFUntyped{Symbol, Int8}
+const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
 add_node!(c::AbstractCausalLoop;kw...) = add_part!(c,:N;kw...) 
 add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)

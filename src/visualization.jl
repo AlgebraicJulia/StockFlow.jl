@@ -467,25 +467,60 @@ function extract_loops(cl::K) where {K <: CausalLoopF}
     g = SimpleDiGraph(SimpleEdge.(edges))
 
 
-    cycle_pol = Dict{Vector{Int}, Bool}()
+    cycle_pol = Dict{Tuple{Int, Vector{Int}}, Polarity}()
 
-    for cycle ∈ simplecycles(g)
-        neg_count = 0
-        for node_index ∈ 1:(length(cycle) - 1)
-            node_pair = (cycle[node_index], cycle[node_index+1])
-            edge = pair_to_edge[node_pair]
-            if epol(cl, edge) < 0
-                neg_count += 1
-            end
-        
-        end
-        # could be the same node if has a loop to itself
-        node_pair = (cycle[end], cycle[1])
+    for (i, cycle) ∈ enumerate(simplecycles(g))
+      cycle_length = length(cycle)
+      balancing_count = 0
+      zero_count = 0
+      is_unknown = false
+
+        # is_reinforcing = true # cycle of length 0 has even number of negatives
+        # is_unknown = false
+      for node_index ∈ 1:cycle_length
+        # Makes final pair be node_index[end], node_index[1]
+        node_pair = (cycle[node_index], cycle[(node_index % cycle_length) + 1])
         edge = pair_to_edge[node_pair]
-        if epol(cl, edge) < 0
-            neg_count += 1
+        current_pol = epol(cl, edge)
+        if current_pol == POL_BALANCING
+          balancing_count += 1
+        elseif current_pol == POL_ZERO
+          zero_count += 1
+        elseif current_pol == POL_UNKNOWN
+          is_unknown = true
+          break
         end
-        push!(cycle_pol, cycle => (neg_count % 2) == 0 ? 0 : 1)
+      end
+
+      if is_unknown
+        push!(cycle_pol, (i, cycle) => POL_UNKNOWN)
+      elseif zero_count == cycle_length # No relationship between any, so no relationship for loop
+        push!(cycle_pol, (i, cycle) => POL_ZERO)
+      elseif iseven(balancing_count)
+        push!(cycle_pol, (i, cycle) => POL_REINFORCING)
+      else
+        push!(cycle_pol, (i, cycle) => POL_BALANCING)
+      end
+
+
+
+        
+
+
+        #       is_reinforcing = ~is_reinforcing # true -> false -> true -> ...
+        #     elseif current_pol == POL_UNKNOWN
+        #       is_unknown = true
+        #       break
+        #     end
+        
+        # end
+        # # could be the same node if has a loop to itself
+        # node_pair = (cycle[end], cycle[1])
+        # edge = pair_to_edge[node_pair]
+        # if epol(cl, edge) == BALANCING
+        #     is_reinforcing = ~is_reinforcing
+        # end
+        # push!(cycle_pol, cycle => is_reinforcing)
     end
     
     cycle_pol
@@ -498,28 +533,37 @@ function Graph_RB(c)
 
     Edges=map(1:StockFlow.ne(c)) do k
       pol_int = epol(c,k)
-      if pol_int > 0
+      if pol_int == POL_REINFORCING
         pol = :+
-      elseif pol_int < 0
+      elseif pol_int == POL_BALANCING
         pol = :-
-      else
+      elseif pol_int == POL_ZERO
         pol = 0
+      elseif pol_int == POL_UNKNOWN
+        pol = :?
+      else
+        error("Unknown Polarity $pol_int.")
       end
       [Graphviz.Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
     end |> flatten |> collect
 
-    for (nodes, polarity) ∈ extract_loops(c)
-        
-        if polarity == 0 
-            label = "R" # reinforcing
-        else
-            label = "B" # balancing
-        end
-        new_node_index = length(NNodes) + 1
-        push!(NNodes, Node("n$new_node_index", Attributes(:label => label, :shape => "plaintext")))
-        for node ∈ nodes
-            push!(Edges, Graphviz.Edge(["n$node", "n$new_node_index"], Attributes(:color=>"yellow")))
-        end
+    for ((i, nodes), polarity) ∈ extract_loops(c)        
+      if polarity == POL_REINFORCING 
+        label = "R" # reinforcing
+      elseif polarity == POL_BALANCING
+        label = "B" # balancing
+      elseif polarity == POL_ZERO
+        label = "0"
+      elseif polarity == POL_UNKNOWN
+        label = "?"
+      else
+        error("Unknown cycle polarity $polarity")
+      end
+      new_node_index = length(NNodes) + 1
+      push!(NNodes, Node("n$new_node_index", Attributes(:label => label, :shape => "plaintext")))
+      for node ∈ nodes
+          push!(Edges, Graphviz.Edge(["n$node", "n$new_node_index"], Attributes(:color=>"yellow")))
+      end
             
     end
     

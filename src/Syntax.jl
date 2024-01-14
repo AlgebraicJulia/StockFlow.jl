@@ -1291,7 +1291,7 @@ function causal_loop_macro(block)
   Base.remove_linenums!(block)
   edges = Vector{Pair{Symbol, Symbol}}()
   nodes = Vector{Symbol}()
-  polarities = Vector{Int8}()
+  polarities = Vector{Polarity}()
 
   current_phase = (_, _) -> ()
   for statement in block.args
@@ -1304,15 +1304,19 @@ function causal_loop_macro(block)
           @match e begin
             :($A = $B) => begin
               push!(edges, A => B)
-              push!(polarities, 0)
+              push!(polarities, POL_ZERO)
             end
             :($A > $B) => begin
               push!(edges, A => B)
-              push!(polarities, -1)
+              push!(polarities, POL_BALANCING)
             end
             :($A < $B) => begin
               push!(edges, A => B)
-              push!(polarities, 1)
+              push!(polarities, POL_REINFORCING)
+            end
+            :($A ~ $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_UNKNOWN)
             end
             _ =>
               return error("Unknown syntax type for causal loop edge: " * string(e))
