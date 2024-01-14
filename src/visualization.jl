@@ -461,27 +461,32 @@ end
 
 
 function extract_loops(cl::K) where {K <: CausalLoopF}
-    edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
-    pair_to_edge = state_dict(edges)
-    
-    g = SimpleDiGraph(SimpleEdge.(edges))
+  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+  pair_to_edge = state_dict(edges)
+  g = SimpleDiGraph(SimpleEdge.(edges))
 
 
-    cycle_pol = Dict{Tuple{Int, Vector{Int}}, Polarity}()
+  cycle_pol = Dict{Vector{Int}, Polarity}()
+  for cycle ∈ simplecycles(g)
+    cycle_length = length(cycle)
+    node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
+    nonsimple_cycles = Vector{Vector{Int}}()
+    for (p1, p2) in node_pairs
+      matching_edges = Vector{Int}()
+      for cl_node in 1:ne(cl)
+        if sedge(cl, cl_node) == p1 && tedge(cl, cl_node) == p2
+          push!(matching_edges, cl_node)
+        end
+      end
+      push!(nonsimple_cycles, matching_edges)
+    end
 
-    for (i, cycle) ∈ enumerate(simplecycles(g))
-      cycle_length = length(cycle)
+    for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
       balancing_count = 0
       zero_count = 0
       is_unknown = false
-
-        # is_reinforcing = true # cycle of length 0 has even number of negatives
-        # is_unknown = false
-      for node_index ∈ 1:cycle_length
-        # Makes final pair be node_index[end], node_index[1]
-        node_pair = (cycle[node_index], cycle[(node_index % cycle_length) + 1])
-        edge = pair_to_edge[node_pair]
-        current_pol = epol(cl, edge)
+      for node_number in cycle_instance
+        current_pol = epol(cl, node_number)
         if current_pol == POL_BALANCING
           balancing_count += 1
         elseif current_pol == POL_ZERO
@@ -492,46 +497,31 @@ function extract_loops(cl::K) where {K <: CausalLoopF}
         end
       end
 
+      collected_cycle = collect(cycle_instance)
+
       if is_unknown
-        push!(cycle_pol, (i, cycle) => POL_UNKNOWN)
+        push!(cycle_pol, collected_cycle => POL_UNKNOWN)
       elseif zero_count == cycle_length # No relationship between any, so no relationship for loop
-        push!(cycle_pol, (i, cycle) => POL_ZERO)
+        push!(cycle_pol, collected_cycle => POL_ZERO)
       elseif iseven(balancing_count)
-        push!(cycle_pol, (i, cycle) => POL_REINFORCING)
+        push!(cycle_pol, collected_cycle => POL_REINFORCING)
       else
-        push!(cycle_pol, (i, cycle) => POL_BALANCING)
+        push!(cycle_pol, collected_cycle => POL_BALANCING)
       end
-
-
-
-        
-
-
-        #       is_reinforcing = ~is_reinforcing # true -> false -> true -> ...
-        #     elseif current_pol == POL_UNKNOWN
-        #       is_unknown = true
-        #       break
-        #     end
-        
-        # end
-        # # could be the same node if has a loop to itself
-        # node_pair = (cycle[end], cycle[1])
-        # edge = pair_to_edge[node_pair]
-        # if epol(cl, edge) == BALANCING
-        #     is_reinforcing = ~is_reinforcing
-        # end
-        # push!(cycle_pol, cycle => is_reinforcing)
     end
-    
-    cycle_pol
-            
+  end
+
+  cycle_pol
+          
 end
 
     
-function Graph_RB(c)
-    NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
+    NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"square")) for n in 1:nn(c)]
+    Edges = Vector{Edge}()
+    edge_to_intermediate_node = Dict{Int, Int}()
 
-    Edges=map(1:StockFlow.ne(c)) do k
+    for k in 1:StockFlow.ne(c)
       pol_int = epol(c,k)
       if pol_int == POL_REINFORCING
         pol = :+
@@ -544,10 +534,15 @@ function Graph_RB(c)
       else
         error("Unknown Polarity $pol_int.")
       end
-      [Graphviz.Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
-    end |> flatten |> collect
+      new_node_index = length(NNodes) + 1
+      push!(NNodes, Node("n$new_node_index", Attributes(:label => "$pol", :penwidth => "0", :style => "filled", :shape => "cds", :fillcolor => "$edge_label_color", )))
+      push!(Edges, Graphviz.Edge(["n$(sedge(c,k))", "n$new_node_index"],Attributes(:color=>"blue", :arrowhead=>"none")))
+      push!(Edges, Graphviz.Edge(["n$new_node_index", "n$(tedge(c,k))"],Attributes(:color=>"blue")))
+      push!(edge_to_intermediate_node, k => new_node_index)
+    end
 
-    for ((i, nodes), polarity) ∈ extract_loops(c)        
+    for (edges, polarity) ∈ extract_loops(c)
+
       if polarity == POL_REINFORCING 
         label = "R" # reinforcing
       elseif polarity == POL_BALANCING
@@ -560,9 +555,10 @@ function Graph_RB(c)
         error("Unknown cycle polarity $polarity")
       end
       new_node_index = length(NNodes) + 1
-      push!(NNodes, Node("n$new_node_index", Attributes(:label => label, :shape => "plaintext")))
-      for node ∈ nodes
-          push!(Edges, Graphviz.Edge(["n$node", "n$new_node_index"], Attributes(:color=>"yellow")))
+      push!(NNodes, Node("n$new_node_index", Attributes(:label => "$label", :shape => "circle", :fillcolor => "$cycle_color", :style => "filled")))
+      for edge ∈ edges
+          edge_node = edge_to_intermediate_node[edge]
+          push!(Edges, Graphviz.Edge(["n$edge_node", "n$new_node_index"], Attributes(:color=>"$cycle_color", :style=>"dashed")))
       end
             
     end
