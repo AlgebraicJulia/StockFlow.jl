@@ -461,18 +461,30 @@ end
 
 
 function extract_loops(cl::K) where {K <: CausalLoopF}
+
+  # Cycles are uniquely characterized by sets of edges, not sets of nodes
+  # We construct a simple graph, then for each edge, we check if there exist
+  # multiple edges with the same start and end node
+  # We then product all of them, to get every cycle.
+
+  # This could be made more efficient, but it should be fine for now.
+
+
   edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
-  pair_to_edge = state_dict(edges)
+  pair_to_edge = state_dict(edges) # Note, this is unique pairs, not all.
+  # Unique are sufficient for making simple graph.
   g = SimpleDiGraph(SimpleEdge.(edges))
 
-
+  # Edges -> Polarity
   cycle_pol = Dict{Vector{Int}, Polarity}()
   for cycle ∈ simplecycles(g)
     cycle_length = length(cycle)
+    # Last pair is cycle[end], cycle[1]
     node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
     nonsimple_cycles = Vector{Vector{Int}}()
     for (p1, p2) in node_pairs
       matching_edges = Vector{Int}()
+      # grab all edges with p1 as start and p2 as end
       for cl_node in 1:ne(cl)
         if sedge(cl, cl_node) == p1 && tedge(cl, cl_node) == p2
           push!(matching_edges, cl_node)
