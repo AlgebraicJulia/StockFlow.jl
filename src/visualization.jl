@@ -248,12 +248,16 @@ function Graph(c::CausalLoopF; schema="BASE")
   if occursin("BASE", schema)
     Edges=map(1:ne(c)) do k
       pol_int = epol(c,k)
-      if pol_int > 0
+      if pol_int == POL_REINFORCING
         pol = :+
-      elseif pol_int < 0
+      elseif pol_int == POL_BALANCING
         pol = :-
-      else
+      elseif pol_int == POL_ZERO
         pol = 0
+      elseif pol_int == POL_UNKNOWN
+        pol = :?
+      else
+        error("Unknown Polarity $pol_int.")
       end
       [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
     end |> flatten |> collect
@@ -547,9 +551,17 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
         error("Unknown Polarity $pol_int.")
       end
       new_node_index = length(NNodes) + 1
+      
+      # Graphviz doesn't allow us to have an edge from an edge, so we put a node
+      # in the middle of each edge and use that instead. 
+      
+      # Intermediate node in edge, with label
       push!(NNodes, Node("n$new_node_index", Attributes(:label => "$pol", :penwidth => "0", :style => "filled", :shape => "cds", :fillcolor => "$edge_label_color", )))
+      # edge to intermediate
       push!(Edges, Graphviz.Edge(["n$(sedge(c,k))", "n$new_node_index"],Attributes(:color=>"blue", :arrowhead=>"none")))
+      # edge from intermediate
       push!(Edges, Graphviz.Edge(["n$new_node_index", "n$(tedge(c,k))"],Attributes(:color=>"blue")))
+      # mapping of edge to its intermediate node
       push!(edge_to_intermediate_node, k => new_node_index)
     end
 
@@ -581,6 +593,22 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
     g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
     return g
 end
+
+
+
+
+
+
+# function collapse_on_RB(c)
+#   all_loops = extract_loops(c)
+#   all_loop_sequences = [edges for (edges, _) in all_loops]
+#   for (edges, polarity) in all_loops
+#     if 
+#     # if an edge is only in one loop, we can collapse it entirely.
+#     # If an edge is in multiple loops, we need to keep this subgraph.
+
+#   end
+# end
 
 
 
