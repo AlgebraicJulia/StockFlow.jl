@@ -1,6 +1,8 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
 nn, ne, nname,
-sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol
+sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, 
+add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol, combine_matching_parallel,
+split_parallel
 
 using MLStyle
 
@@ -101,6 +103,10 @@ nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
 
 epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
 
+outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
+incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
+
+
 
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     
@@ -154,3 +160,102 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
 
     return CausalLoop(ns,es)
 end
+
+
+
+function discard_zero_pol(c)
+  cl = CausalLoopF()
+  add_nodes!(cl, nn(c) ; nname = nnames(c))
+  for edge in 1:ne(c)
+    pol = epol(c, edge)
+    if pol != POL_ZERO
+      add_edge!(cl, sedge(c, edge), tedge(c, edge) ; epolarity = pol)
+    end
+  end
+  cl
+end
+
+function combine_matching_parallel(c)
+  cl = CausalLoopF()
+  add_nodes!(cl, nn(c) ; nname = nnames(c))
+  edge_counts = Dict{Tuple{Int, Int}, Vector{Int}}()
+  for edge in 1:ne(c)
+    start = sedge(c, edge)
+    target = tedge(c, edge)
+    if (start, target) ∉ keys(edge_counts)
+      push!(edge_counts, (start, target) => [edge])
+    else
+      push!(edge_counts[(start, target)], edge)
+    end
+  end
+  for ((s, t), edges) in edge_counts
+    zero_count = false
+    balance_count = false
+    reinforce_count = false
+    unknown_count = false
+    for edge in edges
+      pol = epol(c, edge)
+      if pol == POL_ZERO
+        zero_count = true
+      elseif pol == POL_BALANCING
+        balance_count = true
+      elseif pol == POL_REINFORCING
+        reinforce_count = true
+      elseif pol == POL_UNKNOWN
+        unknown_count = true
+      end
+    end
+
+    if zero_count
+      add_edge!(cl, s, t ; epolarity = POL_ZERO)
+    end
+    if balance_count
+      add_edge!(cl, s, t ; epolarity = POL_BALANCING)
+    end
+    if reinforce_count
+      add_edge!(cl, s, t ; epolarity = POL_REINFORCING)
+    end
+    if unknown_count
+      add_edge!(cl, s, t ; epolarity = POL_REINFORCING)
+    end
+  end
+  cl
+end
+
+
+
+
+function split_parallel(c)
+  cl = CausalLoopF()
+  add_nodes!(cl, nn(c) ; nname = nnames(c))
+
+  edge_counts = Dict{Tuple{Int, Int}, Vector{Int}}()
+  for edge in 1:ne(c)
+    start = sedge(c, edge)
+    target = tedge(c, edge)
+    if (start, target) ∉ keys(edge_counts)
+      push!(edge_counts, (start, target) => [edge])
+    else
+      push!(edge_counts[(start, target)], edge)
+    end
+  end
+
+
+  for ((s, t), edges) in edge_counts
+    add_edge!(cl, s, t ; epolarity = epol(c, edges[1]))
+    if length(edges) > 1
+      suffix = "′"
+      outgoing = outgoing_edges(cl, t)
+      for edge in edges[2:end]
+        add_node!(cl ; nname = Symbol("$(nname(c, t))$suffix"))
+        add_edges!(cl, length(outgoing), fill(nn(c), length(outgoing)), outgoing ; epolarity = collect((x -> epol(c, x)).(outgoing)))
+        add_edge!(cl, s, nn(cl) ; epolarity = epol(c, edge))
+        suffix *= "′"
+      end
+    end
+  end
+
+  cl
+
+end
+
