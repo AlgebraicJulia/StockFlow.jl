@@ -2,7 +2,7 @@ export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, Caus
 nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, 
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol, combine_matching_parallel,
-split_parallel
+split_parallel, outgoing_edges, incoming_edges
 
 using MLStyle
 
@@ -245,10 +245,10 @@ function split_parallel(c)
     add_edge!(cl, s, t ; epolarity = epol(c, edges[1]))
     if length(edges) > 1
       suffix = "′"
-      outgoing = outgoing_edges(cl, t)
+      outgoing = outgoing_edges(c, t)
       for edge in edges[2:end]
         add_node!(cl ; nname = Symbol("$(nname(c, t))$suffix"))
-        add_edges!(cl, length(outgoing), fill(nn(c), length(outgoing)), outgoing ; epolarity = collect((x -> epol(c, x)).(outgoing)))
+        add_edges!(cl, length(outgoing), fill(nn(cl), length(outgoing)), [tedge(c, x) for x in outgoing] ; epolarity = collect((x -> epol(c, x)).(outgoing)))
         add_edge!(cl, s, nn(cl) ; epolarity = epol(c, edge))
         suffix *= "′"
       end
