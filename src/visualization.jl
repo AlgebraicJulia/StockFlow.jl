@@ -256,6 +256,8 @@ function Graph(c::CausalLoopF; schema="BASE")
         pol = 0
       elseif pol_int == POL_UNKNOWN
         pol = :?
+      elseif pol_int == POL_NOT_WELL_DEFINED
+        pol = :±
       else
         error("Unknown Polarity $pol_int.")
       end
@@ -499,26 +501,31 @@ function extract_loops(cl::K) where {K <: CausalLoopF}
 
     for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
       balancing_count = 0
-      zero_count = 0
       is_unknown = false
+      is_zero = false
+      is_not_well_defined = false
       for node_number in cycle_instance
         current_pol = epol(cl, node_number)
         if current_pol == POL_BALANCING
           balancing_count += 1
-        elseif current_pol == POL_ZERO
-          zero_count += 1
         elseif current_pol == POL_UNKNOWN
           is_unknown = true
+        elseif current_pol == POL_ZERO
+          is_zero = true
           break
+        elseif current_pol == POL_NOT_WELL_DEFINED
+          is_not_well_defined = true
         end
       end
 
       collected_cycle = collect(cycle_instance)
 
-      if is_unknown
-        push!(cycle_pol, collected_cycle => POL_UNKNOWN)
-      elseif zero_count == cycle_length # No relationship between any, so no relationship for loop
+      if is_zero
         push!(cycle_pol, collected_cycle => POL_ZERO)
+      elseif is_unknown
+        push!(cycle_pol, collected_cycle => POL_UNKNOWN)
+      elseif is_not_well_defined
+        push!(cycle_pol, collected_cycle => POL_NOT_WELL_DEFINED)
       elseif iseven(balancing_count)
         push!(cycle_pol, collected_cycle => POL_REINFORCING)
       else
@@ -547,6 +554,8 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
         pol = 0
       elseif pol_int == POL_UNKNOWN
         pol = :?
+      elseif pol_int == POL_NOT_WELL_DEFINED
+        pol = :±
       else
         error("Unknown Polarity $pol_int.")
       end
@@ -575,6 +584,8 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
         label = "0"
       elseif polarity == POL_UNKNOWN
         label = "?"
+      elseif polarity == POL_NOT_WELL_DEFINED
+        label = "±"
       else
         error("Unknown cycle polarity $polarity")
       end

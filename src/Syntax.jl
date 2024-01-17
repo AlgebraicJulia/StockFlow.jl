@@ -1318,6 +1318,10 @@ function causal_loop_macro(block)
               push!(edges, A => B)
               push!(polarities, POL_UNKNOWN)
             end
+            :($A ^ $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_NOT_WELL_DEFINED)
+            end
             _ =>
               return error("Unknown syntax type for causal loop edge: " * string(e))
           end
