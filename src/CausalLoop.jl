@@ -27,6 +27,7 @@ end
   POL_REINFORCING
   POL_BALANCING
   POL_UNKNOWN
+  POL_NOT_WELL_DEFINED
 end
   
 
@@ -193,6 +194,7 @@ function combine_matching_parallel(c)
     balance_count = false
     reinforce_count = false
     unknown_count = false
+    not_well_defined_count = false
     for edge in edges
       pol = epol(c, edge)
       if pol == POL_ZERO
@@ -203,6 +205,8 @@ function combine_matching_parallel(c)
         reinforce_count = true
       elseif pol == POL_UNKNOWN
         unknown_count = true
+      elseif pol == POL_NOT_WELL_DEFINED
+        not_well_defined_count = true
       end
     end
 
@@ -217,6 +221,9 @@ function combine_matching_parallel(c)
     end
     if unknown_count
       add_edge!(cl, s, t ; epolarity = POL_REINFORCING)
+    end
+    if not_well_defined_count
+      add_edge!(cl, s, t ; epolarity = POL_NOT_WELL_DEFINED)
     end
   end
   cl
