@@ -1,8 +1,10 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
 nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
+Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops
+
 
 using MLStyle
 

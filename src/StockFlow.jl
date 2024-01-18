@@ -12,7 +12,6 @@ object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
 get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
 make_v_expr_nonrecursive, get_lpvpposition, get_lvsrcposition, get_lsvsvposition, get_lvsposition,
-Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED
 
 
 using Catlab
