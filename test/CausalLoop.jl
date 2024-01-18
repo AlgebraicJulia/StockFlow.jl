@@ -31,11 +31,11 @@ end
 
 @testset "Extract Loops" begin
   cl4 = CausalLoopF([:A], [:A => :A], [POL_UNKNOWN])
-  @test extract_loops(cl4) == Dict([1] => POL_UNKNOWN)
+  @test extract_loops(cl4) == [[1] => POL_UNKNOWN]
 
   # 2 balancing make a reinforcing
   cl5 = CausalLoopF([:A, :B], [:A => :A, :A => :B, :B => :A], [POL_BALANCING, POL_BALANCING, POL_BALANCING])
-  @test extract_loops(cl5) == Dict([1] => POL_BALANCING, [2, 3] => POL_REINFORCING)
+  @test extract_loops(cl5) == [[1] => POL_BALANCING, [2, 3] => POL_REINFORCING]
 
   # A -> B -> C -> D -> E
   # ^ - - - - |    |    |
@@ -49,7 +49,7 @@ end
   
   # shows that not well defined < unknown < zero
   # run Graph_RB(cl6) to see the cycles
-  @test extract_loops(cl6) == Dict([1,2,3] => POL_NOT_WELL_DEFINED, [1,2,4,5] => POL_UNKNOWN, [1,2,4,6,7] => POL_ZERO)
+  @test extract_loops(cl6) == [[1,2,3] => POL_NOT_WELL_DEFINED, [1,2,4,5] => POL_UNKNOWN, [1,2,4,6,7] => POL_ZERO]
 end
 
 @testset "Discard Zero Pol" begin
