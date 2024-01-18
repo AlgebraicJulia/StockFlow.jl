@@ -21,3 +21,8 @@ end
   @test nnames(cl3) == [:A] && ne(cl3) == 5 && epols(cl3) == [POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_ZERO, POL_NOT_WELL_DEFINED]
 end
 
+@testset "Discard Zero Pol" begin
+  cl4 = CausalLoop([:A], [:A => :A for _ in 1:10], [POL_ZERO for _ in 1:10])
+  cl4′ = discard_zero_pol(cl4)
+  @test nnames(cl4′) == [:A] && ne(cl4′) == 0 && epols(cl4′) == []
+end
