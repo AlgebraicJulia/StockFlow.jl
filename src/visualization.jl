@@ -5,8 +5,6 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
-import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
-
 export Graph, display_uwd, GraphF, Graph_RB
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
@@ -466,77 +464,7 @@ end
 
 
 
-function extract_loops(cl::K) where {K <: CausalLoopF}
 
-  # Cycles are uniquely characterized by sets of edges, not sets of nodes
-  # We construct a simple graph, then for each edge, we check if there exist
-  # multiple edges with the same start and end node
-  # We then product all of them, to get every cycle.
-
-  # This could be made more efficient, but it should be fine for now.
-
-
-  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
-  pair_to_edge = state_dict(edges) # Note, this is unique pairs, not all.
-  # Unique are sufficient for making simple graph.
-  g = SimpleDiGraph(SimpleEdge.(edges))
-
-  # Edges -> Polarity
-  cycle_pol = Dict{Vector{Int}, Polarity}()
-  for cycle ∈ simplecycles(g)
-    cycle_length = length(cycle)
-    # Last pair is cycle[end], cycle[1]
-    node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
-    nonsimple_cycles = Vector{Vector{Int}}()
-    for (p1, p2) in node_pairs
-      matching_edges = Vector{Int}()
-      # grab all edges with p1 as start and p2 as end
-      for cl_node in 1:ne(cl)
-        if sedge(cl, cl_node) == p1 && tedge(cl, cl_node) == p2
-          push!(matching_edges, cl_node)
-        end
-      end
-      push!(nonsimple_cycles, matching_edges)
-    end
-
-    for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
-      balancing_count = 0
-      is_unknown = false
-      is_zero = false
-      is_not_well_defined = false
-      for node_number in cycle_instance
-        current_pol = epol(cl, node_number)
-        if current_pol == POL_BALANCING
-          balancing_count += 1
-        elseif current_pol == POL_UNKNOWN
-          is_unknown = true
-        elseif current_pol == POL_ZERO
-          is_zero = true
-          break
-        elseif current_pol == POL_NOT_WELL_DEFINED
-          is_not_well_defined = true
-        end
-      end
-
-      collected_cycle = collect(cycle_instance)
-
-      if is_zero
-        push!(cycle_pol, collected_cycle => POL_ZERO)
-      elseif is_unknown
-        push!(cycle_pol, collected_cycle => POL_UNKNOWN)
-      elseif is_not_well_defined
-        push!(cycle_pol, collected_cycle => POL_NOT_WELL_DEFINED)
-      elseif iseven(balancing_count)
-        push!(cycle_pol, collected_cycle => POL_REINFORCING)
-      else
-        push!(cycle_pol, collected_cycle => POL_BALANCING)
-      end
-    end
-  end
-
-  cycle_pol
-          
-end
 
     
 function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
