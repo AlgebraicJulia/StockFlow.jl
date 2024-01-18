@@ -1,6 +1,6 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
 nn, ne, nname,
-sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, 
+sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol, combine_matching_parallel,
 split_parallel, outgoing_edges, incoming_edges
 
@@ -103,6 +103,9 @@ tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
 nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
 
 epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
+
+epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
+
 
 outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
 incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
