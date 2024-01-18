@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, infer_links
+export @stock_and_flow, @foot, @feet, infer_links, @causal_loop
 
 using ..StockFlow
 using MLStyle
@@ -1280,6 +1280,81 @@ Takes any arguments and returns nothing.
 Used so we can maintain equality when making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
+
+
+
+
+
+
+
+function causal_loop_macro(block)
+  Base.remove_linenums!(block)
+  edges = Vector{Pair{Symbol, Symbol}}()
+  nodes = Vector{Symbol}()
+  polarities = Vector{Polarity}()
+
+  current_phase = (_, _) -> ()
+  for statement in block.args
+    @match statement begin
+      QuoteNode(:nodes) => begin
+        current_phase = n -> push!(nodes, n)
+      end
+      QuoteNode(:edges) => begin
+        current_phase = e -> begin
+          @match e begin
+            :($A = $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_ZERO)
+            end
+            :($A > $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_BALANCING)
+            end
+            :($A < $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_REINFORCING)
+            end
+            :($A ~ $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_UNKNOWN)
+            end
+            :($A ^ $B) => begin
+              push!(edges, A => B)
+              push!(polarities, POL_NOT_WELL_DEFINED)
+            end
+            _ =>
+              return error("Unknown syntax type for causal loop edge: " * string(e))
+          end
+        end
+      end
+      QuoteNode(kw) =>
+        return error("Unknown block type for causal loop syntax: " * String(kw))
+      _ => current_phase(statement)
+    end
+    
+  end
+
+  return CausalLoopF(nodes, edges, polarities)
+
+end
+
+macro causal_loop(block)
+  escaped_block = Expr(:quote, block)
+  quote
+    causal_loop_macro($(esc(escaped_block)))
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
 
 
 
