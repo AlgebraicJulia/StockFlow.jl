@@ -457,15 +457,6 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
     
 function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
     NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"square")) for n in 1:nn(c)]
@@ -518,6 +509,7 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
         error("Unknown cycle polarity $polarity")
       end
       new_node_index = length(NNodes) + 1
+      # node to represent cycle polarity
       push!(NNodes, Node("n$new_node_index", Attributes(:label => "$label", :shape => "circle", :fillcolor => "$cycle_color", :style => "filled")))
       for edge ∈ edges
           edge_node = edge_to_intermediate_node[edge]

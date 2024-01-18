@@ -185,8 +185,8 @@ function extract_loops(cl::CausalLoopF)
   # Unique are sufficient for making simple graph.
   g = SimpleDiGraph(SimpleEdge.(edges))
 
-  # Edges -> Polarity
-  cycle_pol = Dict{Vector{Int}, Polarity}()
+  # Edges => Polarity
+  cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
   for cycle ∈ simplecycles(g)
     cycle_length = length(cycle)
     # Last pair is cycle[end], cycle[1]
