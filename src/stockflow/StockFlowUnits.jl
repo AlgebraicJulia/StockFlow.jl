@@ -73,14 +73,13 @@ StockAndFlow0U(s,sv,ssv,du,u) = begin
 
     stock_du = Dict(du)
 
-    add_dunits!(p0, length(du_vec), duname=du_vec)
+    add_dunits!(p0, length(du_vec), duname=[Symbol(du) for du in du_vec])
     add_units!(p0, length(u_vec), uname=u_vec)
       
     for dunit in keys(exps)
-        for (unit, power) in exps[dunit]
-            
-            add_UDUlink!(p0, u_idx[unit], du_idx[dunit], exp=power)
-        end
+      for (unit, power) in exps[dunit]
+        add_UDUlink!(p0, u_idx[unit], du_idx[dunit], exp=power)
+      end
     end
   
     if length(s)>0
@@ -368,21 +367,21 @@ leg(a::StockAndFlow0U, x::StockAndFlowU) = begin
 
     if nu(a)>0 # if have links between stocks and sum-auxiliary-variables
         ϕu = ntcomponent(unames(a), unames(x))
-      else
-        ϕu = Int[]
-      end
+    else
+      ϕu = Int[]
+    end
 
-      if ndu(a)>0 # if have links between stocks and sum-auxiliary-variables
-        ϕdu = ntcomponent(dunames(a), dunames(x))
-      else
-        ϕdu = Int[]
-      end
+    if ndu(a)>0 # if have links between stocks and sum-auxiliary-variables
+      ϕdu = ntcomponent(dunames(a), dunames(x))
+    else
+      ϕdu = Int[]
+    end
 
-      if nlu(a)>0 # if have links between stocks and sum-auxiliary-variables        
-        ϕlu = ntcomponent(lunames(a), lunames(x))
-      else
-        ϕlu = Int[]
-      end
+    if nlu(a)>0 # if have links between stocks and sum-auxiliary-variables        
+      ϕlu = ntcomponent(lunames(a), lunames(x))
+    else
+      ϕlu = Int[]
+    end
 
 
     result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv, U=ϕu, DU=ϕdu, LU=ϕlu)
