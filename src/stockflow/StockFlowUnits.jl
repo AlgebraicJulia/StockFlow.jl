@@ -4,11 +4,12 @@ using ..StockFlow
 using Catlab.GATs, Catlab.CategoricalAlgebra
 using MLStyle
 
-import ..StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent
+import ..StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent,
+FK_FLOW_NAME, FK_VARIABLE_NAME, FK_SVARIABLE_NAME, FK_SVVARIABLE_NAME
 
 export add_unit!, add_units!, add_dunit!, add_dunits!, add_UDUlink!, add_UDUlinks!,
 uname, unames, duname, dunames, set_unames!, set_exps!, convert, StockAndFlowU, set_sdu!, set_pdu!,
-FtoU, StockAndFlow0U, footU, Open, get_sdu, get_pdu
+FtoU, StockAndFlow0U, footU, Open, get_sdu, get_pdu, extract_exponents
 
 
 @present TheoryStockAndFlow0U <: TheoryStockAndFlow0 begin
@@ -391,11 +392,113 @@ end
 
 
 Open(p::StockAndFlowU, feet...) = begin
-    legs = map(x->leg(x, p), feet)
-    OpenStockAndFlowU{Symbol,Symbol,Int8,Float64}(p, legs...)
+  legs = map(x->leg(x, p), feet)
+  OpenStockAndFlowU{Symbol,Symbol,Int8,Float64}(p, legs...)
+end
+
+
+
+
+
+
+
+
+
+
+
+StockAndFlowU(s,p,v,f,sv,du,u) = begin  
+  sf = StockAndFlowU()
+
+  s = vectorify(s)
+  f = vectorify(f)
+  v = vectorify(v)
+  p = vectorify(p)
+  sv = vectorify(sv)
+  du = vectorify(du)
+  u = vectorify(u)
+
+  sname = map(x -> first(first(x)), s)
+  fname = map(first,f)
+  vname = map(first,v)
+  pname = map(first, p)
+  duname = map(first, du)
+
+  op=map(last,map(last,v))
+
+  s_idx = state_dict(sname)
+  f_idx = state_dict(fname)
+  v_idx = state_dict(vname)
+  p_idx = state_dict(p)
+  sv_idx = state_dict(sv)
+  du_idx = state_dict(duname)
+  u_idx = state_dict(u)
+
+  add_units!(sf, length(u), uname=u)
+  add_dunits!(sf, length(du), duname=duname)
+
+  luu = Vector{Int}()
+  ludu = Vector{Int}()
+  exp = Vector{Float64}()
+
+  for (derived_unit, unit_exponent_pairs) in du
+    append!(ludu, fill(du_idx[derived_unit], length(unit_exponent_pairs)))
+    append!(luu, [u_idx[u] for u in first.(unit_exponent_pairs)])
+    append!(exp, [power for power in last.(unit_exponent_pairs)])
   end
 
 
+  add_UDUlinks!(sf, length(ludu), luu, ludu ; exp=exp)
+
+  add_parameters!(sf,length(p),pname=pname, pdu=[du_idx[derived_unit] for derived_unit in map(last, p)])
+  add_svariables!(sf, length(sv), svname=sv)
+  add_variables!(sf, length(vname), vname=vname, vop=op)
+  add_flows!(sf,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)
+
+
+  # Parse the elements included in "s" -- stocks
+  for (i, ((name, dunit),(ins,outs,svs))) in enumerate(s)
+    i = add_stock!(sf,sname=name, sdu=du_idx[dunit]) # add objects :S (stocks)
+    ins=vectorify(ins) # inflows of each stock
+    outs=vectorify(outs) # outflows of each stock
+    svs=vectorify(svs) # sum auxiliary variables depends on the stock
+    # filter out the fake (empty) elements
+    ins = ins[ins .!= FK_FLOW_NAME]
+    outs = outs[outs .!= FK_FLOW_NAME]
+    svs = svs[svs .!= FK_SVARIABLE_NAME]
+
+    if length(ins)>0
+      add_inflows!(sf, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
+    end
+    if length(outs)>0
+      add_outflows!(sf, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
+    end
+    if length(svs)>0
+      add_Slinks!(sf, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
+    end
+  end
+
+  # Parse the elements included in "v" -- auxiliary vairables
+  for (vn,(args,op)) in v
+
+    args=vectorify(args)
+#    @assert op in Operators[length(args)]
+
+    for (i,arg) in enumerate(args)
+      if arg in sname
+        add_Vlink!(sf, s_idx[arg], v_idx[vn], lvsposition=i)
+      elseif arg in vname
+        add_VVlink!(sf, v_idx[arg], v_idx[vn], lvsrcposition=i)
+      elseif arg in p
+        add_Plink!(sf, p_idx[arg], v_idx[vn], lpvpposition=i)
+      elseif arg in sv
+        add_SVlink!(sf, sv_idx[arg], v_idx[vn], lsvsvposition=i)
+      else
+        error("arg: " * string(arg) * " does not belong to any stock, auxilliary variable, constant parameter or sum auxilliary variable!")
+      end
+    end
+  end
+  sf
+end
 
 
 

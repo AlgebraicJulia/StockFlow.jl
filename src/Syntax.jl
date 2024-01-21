@@ -103,9 +103,10 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, infer_links
+export @stock_and_flow, @foot, @feet, infer_links, @stock_and_flow_U
 
 using ..StockFlow
+using ..StockFlow.StockFlowUnits
 using MLStyle
 
 import Base: ==, Iterators.flatmap
@@ -158,6 +159,10 @@ macro stock_and_flow(block)
     end
 end
 
+
+StockArg = Tuple{Symbol, Union{Symbol, Expr}}
+ParamArg = Tuple{Symbol, Union{Symbol, Expr}}
+
 """
     StockAndFlowBlock
 
@@ -174,12 +179,13 @@ Contains the elements that make up the Stock and Flow block syntax.
               `sum_name = [a, b, c, ...]`
 """
 struct StockAndFlowBlock
-    stocks::Vector{Symbol}
-    params::Vector{Symbol}
+    stocks::Vector{StockArg}
+    params::Vector{ParamArg}
     dyvars::Vector{Tuple{Symbol,Expr}}
     flows::Vector{Tuple{Symbol,Expr,Symbol}}
     sums::Vector{Tuple{Symbol,Vector{Symbol}}}
 end
+ 
 
 """
 Contains the five parameters required to instantiate a StockAndFlowF data type,
@@ -187,6 +193,9 @@ representing a Stock and Flow model.
 
 This can be used to directly instantiate StockAndFlowF.
 """
+
+
+
 abstract type DyvarExprT end
 struct Binop{P1,P2} <: DyvarExprT
     binop::Pair{Tuple{P1,P2},Symbol}
@@ -213,6 +222,27 @@ struct StockAndFlowArguments
     sums::Vector{Symbol}
 end
 
+struct StockAndFlowUArguments
+    stocks::Vector{
+        Pair{
+            Pair{Symbol, Symbol},
+            Tuple{
+                Union{Symbol,Vector{Symbol}},
+                Union{Symbol,Vector{Symbol}},
+                Union{Symbol,Vector{Symbol}},
+            },
+        },
+    }
+    params::Vector{Pair{Symbol, Symbol}}
+    dyvars::Vector{Pair{Symbol, DyvarExprT}}
+    flows::Vector{Pair{Symbol,Symbol}}
+    sums::Vector{Symbol}
+    dunits::Vector{Pair{Symbol, Vector{Pair{Symbol, Float64}}}}
+    units::Vector{Symbol}
+end 
+
+
+
 """
     parse_stock_and_flow_syntax(statements :: Vector{Any})
 
@@ -228,8 +258,8 @@ A StockAndFlowSyntax data type which contains the syntax pieces required to defi
 a Stock and Flow model: stocks, parameters, dynamic variables, flows, and sums.
 """
 function parse_stock_and_flow_syntax(statements::Vector{Any})
-    stocks::Vector{Symbol} = []
-    params::Vector{Symbol} = []
+    stocks::Vector{StockArg} = []
+    params::Vector{ParamArg} = []
     dyvars::Vector{Tuple{Symbol,Expr}} = []
     flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
     sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
@@ -275,12 +305,14 @@ data type instantiation
 Parameters for instantiation of a StockAndFlowF data type.
 """
 function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
+    stocks_no_units = [stock for (stock, unit) in syntax_elements.stocks]
+    params_no_units = [param for (param, unit) in syntax_elements.params]
     stocks = assemble_stock_definitions(
-        syntax_elements.stocks,
+        stocks_no_units,
         syntax_elements.flows,
         syntax_elements.sums,
     )
-    params = syntax_elements.params
+    params = params_no_units
     dyvars = dyvar_exprs_to_symbolic_repr(syntax_elements.dyvars)
     dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
     (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
@@ -289,7 +321,7 @@ function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
 end
 
 """
-    parse_stock!(stocks :: Vector{Symbol}, stock :: Symbol)
+    parse_stock!(stocks :: Vector{StockArg}, stock :: Symbol)
 
 Add a stock to the list of stocks.
 
@@ -303,15 +335,19 @@ is currently done by this function.
 ### Output
 None. This mutates the given stocks vector.
 """
-function parse_stock!(stocks::Vector{Symbol}, stock::Symbol)
+function parse_stock!(stocks::Vector{StockArg}, stock::Union{Symbol, Expr})
     push!(stocks, parse_stock(stock))
 end
 
 """
-    parse_stock(stock :: Symbol)
+    parse_stock(stock :: StockArg)
 """
-function parse_stock(stock::Symbol)
-    stock
+function parse_stock(stock::Union{Symbol, Expr})
+    @match stock begin
+        stock::Symbol => (stock, :NONE)
+        :($s:$unit) => (s, unit)
+        _ => error("Unknown argument $stock in stock syntax.")
+    end
 end
 
 
@@ -330,12 +366,16 @@ so no work is currently done by this function.
 ### Output
 None. This mutates the given params vector.
 """
-function parse_param!(params::Vector{Symbol}, param::Symbol)
-    push!(params, param)
+function parse_param!(params::Vector{ParamArg}, param::Union{Symbol, Expr})
+    push!(params, parse_param(param))
 end
 
-function parse_param(param::Symbol)
-    param
+function parse_param(param::Union{Symbol, Expr})
+    @match param begin
+        param::Symbol => (param, :NONE)
+        :($p:$unit) => (p, unit)
+        _ => error("Unknown argument $param in param syntax.")
+    end
 end
 """
    is_recursive_dyvar(dyvar_name :: Symbol, dyvar_def :: Expr)
@@ -1282,6 +1322,71 @@ Used so we can maintain equality when making ACSetTransformations.
 NothingFunction(x...)::Nothing = nothing;
 
 
+function stock_and_flow_units_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
+    # stocks_units = [stock => Symbol(unit) for (stock, unit) in syntax_elements.stocks]
+    stocks_symbols = map(first, syntax_elements.stocks)
+    stock_dunits = map(last, syntax_elements.stocks)
+    params_units = [param => Symbol(unit) for (param, unit) in syntax_elements.params]
+    stocks = assemble_stock_definitions(
+        stocks_symbols,
+        syntax_elements.flows,
+        syntax_elements.sums,
+    )
+    stocks = [(stock => Symbol(dunit)) => vals for ((stock, vals), dunit) in zip(stocks, stock_dunits)]
+    params = params_units
+    dyvars = dyvar_exprs_to_symbolic_repr(syntax_elements.dyvars)
+    dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
+    (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
+    sums = sum_variables(syntax_elements.sums)
+
+    dunits = Vector{Pair{Symbol, Vector{Pair{Symbol, Float64}}}}()
+    units = Vector{Symbol}()
+
+    dunit_set = Set{Union{Expr, Symbol}}()
+    unit_set = Set{Symbol}()
+    for (object, dunit) in vcat(syntax_elements.stocks, syntax_elements.params)
+        if dunit ∉ dunit_set
+            push!(dunit_set, dunit)
+            if dunit == :NONE
+                push!(dunits, :NONE => Vector{Pair{Symbol, Float64}}())
+                continue
+            end
+            dunit_exps = extract_exponents(dunit)
+            for unit in keys(dunit_exps)
+                if unit ∉ units
+                    push!(unit_set, unit)
+                    push!(units, unit)
+                end
+            end
+            push!(dunits, Symbol(dunit) => collect(pairs(dunit_exps)))
+        end
+    end
+    return StockAndFlowUArguments(stocks, params, vcat(dyvars, flow_dyvars), flows, sums, dunits, units)
+end
+
+
+macro stock_and_flow_U(block)
+    
+    Base.remove_linenums!(block)
+    block_args = block.args
+    
+    return quote
+        
+      local syntax_lines = parse_stock_and_flow_syntax($block_args)
+      local saff_args = stock_and_flow_units_syntax_to_arguments(syntax_lines)
+      StockAndFlowU(
+          saff_args.stocks,
+          saff_args.params,
+          map(kv -> kv.first => get(kv.second), saff_args.dyvars),
+          saff_args.flows,
+          saff_args.sums,
+          saff_args.dunits,
+          saff_args.units
+      )
+    end
+end
+
+
 
 
 include("syntax/Composition.jl")
@@ -1289,7 +1394,7 @@ include("syntax/Stratification.jl")
 include("syntax/Rewrite.jl")
 
 # not a submodule
-include("syntax/StockFlowUnitsSyntax.jl")
+# include("syntax/StockFlowUnitsSyntax.jl")
 
 end
  
