@@ -5,7 +5,7 @@ using Catlab.GATs, Catlab.CategoricalAlgebra
 using MLStyle
 
 import ..StockFlow: StockAndFlowF, state_dict, ns, np, vectorify, ntcomponent,
-FK_FLOW_NAME, FK_VARIABLE_NAME, FK_SVARIABLE_NAME, FK_SVVARIABLE_NAME
+FK_FLOW_NAME, FK_VARIABLE_NAME, FK_SVARIABLE_NAME, FK_SVVARIABLE_NAME, Open
 
 export add_unit!, add_units!, add_dunit!, add_dunits!, add_UDUlink!, add_UDUlinks!,
 uname, unames, duname, dunames, set_unames!, set_exps!, convert, StockAndFlowU, set_sdu!, set_pdu!,
@@ -53,6 +53,11 @@ end
 
 
 StockAndFlow0U(s,sv,ssv,du,u) = begin
+    println(s)
+    println(sv)
+    println(ssv)
+    println(du)
+    println(u)
     p0 = StockAndFlow0U()
     s = vectorify(s)
     sv = vectorify(sv)

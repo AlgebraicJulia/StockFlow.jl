@@ -160,8 +160,8 @@ macro stock_and_flow(block)
 end
 
 
-StockArg = Tuple{Symbol, Union{Symbol, Expr}}
-ParamArg = Tuple{Symbol, Union{Symbol, Expr}}
+StockArg = Union{Symbol, Tuple{Symbol, Union{Symbol, Expr}}}
+ParamArg = Union{Symbol, Tuple{Symbol, Union{Symbol, Expr}}}
 
 """
     StockAndFlowBlock
@@ -305,8 +305,9 @@ data type instantiation
 Parameters for instantiation of a StockAndFlowF data type.
 """
 function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
-    stocks_no_units = [stock for (stock, unit) in syntax_elements.stocks]
-    params_no_units = [param for (param, unit) in syntax_elements.params]
+    println(syntax_elements.stocks)
+    stocks_no_units = map(x -> isa(x, Tuple) ? x[1] : x, syntax_elements.stocks)
+    params_no_units = map(x -> isa(x, Tuple) ? x[1] : x, syntax_elements.params)
     stocks = assemble_stock_definitions(
         stocks_no_units,
         syntax_elements.flows,
@@ -317,6 +318,8 @@ function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
     dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
     (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
     sums = sum_variables(syntax_elements.sums)
+    println(stocks)
+    println(params)
     return StockAndFlowArguments(stocks, params, vcat(dyvars, flow_dyvars), flows, sums)
 end
 
@@ -1437,6 +1440,10 @@ end
 macro foot_U(block::Expr)
     Base.remove_linenums!(block)
     return create_foot_U(block)
+end
+
+macro foot_U(block::Symbol)
+    return footU([],[],[],[],[block])
 end
 
 
