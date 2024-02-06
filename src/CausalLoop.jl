@@ -3,7 +3,7 @@ nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
-outgoing_edges, incoming_edges, extract_loops
+outgoing_edges, incoming_edges, extract_loops, reverse_edges
 
 
 using MLStyle
@@ -256,4 +256,17 @@ function discard_zero_pol(c)
   end
   cl
 end
+
+
+function reverse_edges(c)
+  cl = CausalLoopF()
+  add_nodes!(cl, nn(c) ; nname = nnames(c))
+  for edge in 1:ne(c)
+    pol = epol(c, edge)
+    add_edge!(cl, tedge(c, edge), sedge(c, edge) ; epolarity = pol)
+  end
+  cl
+end
+
+
 

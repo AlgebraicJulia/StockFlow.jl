@@ -58,3 +58,14 @@ end
   @test nnames(cl_disc_zero′) == [:A] && ne(cl_disc_zero′) == 0 && epols(cl_disc_zero′) == []
 end
 
+@testset "Reverse" begin
+  cl7 = CausalLoopF([:A, :B], [:A => :B], [POL_BALANCING])
+  cl7_rev = CausalLoopF([:A, :B], [:B => :A], [POL_BALANCING])
+  @test reverse_edges(cl7) == cl7_rev
+
+  cl8 =  CausalLoopF([:A, :B, :C], [:A => :B, :B => :A, :B => :C], [POL_BALANCING, POL_REINFORCING, POL_UNKNOWN])
+  cl8_rev =  CausalLoopF([:A, :B, :C], [:B => :A, :A => :B, :C => :B], [POL_BALANCING, POL_REINFORCING, POL_UNKNOWN])
+
+  @test reverse_edges(cl8) == cl8_rev
+
+end
