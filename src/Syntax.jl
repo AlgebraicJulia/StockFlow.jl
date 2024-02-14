@@ -1264,17 +1264,6 @@ function sf_to_block(sf::AbstractStockAndFlowF)
 end
 
 
-
-"""
-Convert a vector of unique elements to a dictionary with each element pointing to their original index.
-"""
-function invert_vector(v::Vector{K})::Dict{K, Int} where {K} # Elements of v must be hashable
-    new_dict = Dict(val => i for (i, val) ∈ enumerate(v))
-    @assert length(new_dict) == length(v) "Nonunique key in vector v: $v"
-    return new_dict
-end
-
-
 """
 Takes any arguments and returns nothing.
 Used so we can maintain equality when making ACSetTransformations.
