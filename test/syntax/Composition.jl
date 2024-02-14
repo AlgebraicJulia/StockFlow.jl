@@ -39,7 +39,7 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
 
     @test (@compose A A (begin
         (sf1, sf2)
-        sf1, sf2 ^ A => ()
+        (sf1, sf2) ^ A => ()
     end)) == A
 
     @test (@compose A B (begin
@@ -47,7 +47,7 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
 
     @test (@compose B B A (begin
         (B1, B2)
-        B1, B2 ^ B => ()
+        (B1, B2) ^ B => ()
         end)) == BA
 
     @test ((@compose (@stock_and_flow begin
@@ -72,7 +72,7 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
             N = [B,C]
         end) (begin
             (sfA, sfC)
-            sfA, sfC ^ B => N
+            (sfA, sfC) ^ B => N
         end))
         ==
         (@stock_and_flow begin
@@ -96,27 +96,30 @@ end
 @testset "interpret_composition_notation interprets arguments correctly" begin
     # @test interpret_composition_notation(:(() ^ A => N)) == (Vector{Symbol}(), (@foot A => N))
     @test interpret_composition_notation(:(sf ^ A => N)) == ([:sf], (@foot A => N))
-    @test interpret_composition_notation(:(sf1, sf2 ^ A => N)) == ([:sf1,:sf2], (@foot A => N))
-    @test interpret_composition_notation(:(sf1, sf2 ^ A => N, A => NI)) == ([:sf1,:sf2], (@foot A => N, A => NI))
-    @test interpret_composition_notation(:(sf1, sf2, sf3, sf4 ^ () => NI)) == ([:sf1, :sf2, :sf3, :sf4], (@foot () => NI))
-    @test interpret_composition_notation(:(sf1, sf2 ^ L => ())) == ([:sf1,:sf2], (@foot L => ()))
+    @test interpret_composition_notation(:((sf1, sf2) ^ A => N)) == ([:sf1,:sf2], (@foot A => N))
+    @test interpret_composition_notation(:((sf1, sf2) ^ A => N, A => NI)) == ([:sf1,:sf2], (@foot A => N, A => NI))
+    @test interpret_composition_notation(:((sf1, sf2, sf3, sf4) ^ () => NI)) == ([:sf1, :sf2, :sf3, :sf4], (@foot () => NI))
+    @test interpret_composition_notation(:((sf1, sf2) ^ L => ())) == ([:sf1,:sf2], (@foot L => ()))
 
-    @test interpret_composition_notation(:(sf1, sf2 ^ () => ())) == ([:sf1,:sf2], (@foot () => ()))
+    @test interpret_composition_notation(:((sf1, sf2) ^ () => ())) == ([:sf1,:sf2], (@foot () => ()))
+
+
+    @test interpret_composition_notation(:((sf1, sf2, sf3) ^ () => (), A => N)) == ([:sf1,:sf2,:sf3], (@foot () => (), A => N))
 
 end
 
 @testset "invalid composition expressions fail" begin
-    @test_throws AssertionError interpret_composition_notation(:(B => C))
-    @test_throws AssertionError interpret_composition_notation(:(A, B, C))
-    @test_throws AssertionError interpret_composition_notation(:(A ^ B ^ C))
-    @test_throws AssertionError interpret_composition_notation(:(A => B => C))
-    @test_throws ErrorException interpret_composition_notation(:(A ^ B => C => D)) # caught by create_foot
+    @test_throws ErrorException interpret_composition_notation(:(B => C))
+    @test_throws ErrorException interpret_composition_notation(:(A, B, C))
+    @test_throws ErrorException interpret_composition_notation(:(A ^ B ^ C))
+    @test_throws ErrorException interpret_composition_notation(:(A => B => C))
+    @test_throws ErrorException interpret_composition_notation(:(A ^ B => C => D))
 end
 
 @testset "invalid sfcompose calls fail" begin
     @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1, sf2)
-        sf1, sf2 ^ () => ()
+        (sf1, sf2) ^ () => ()
     end) # not allowed to map to empty
     @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1, sf2)

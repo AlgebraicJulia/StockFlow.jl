@@ -250,8 +250,8 @@ First line of the expression block must be the aliases used for the
 corresponding stockflow in the block.  Every alias must be unique.
 
 Use the same syntax for @foot to specify feet to be composed on.  Each line
-takes the form X, Y ^ A => B, C => (), where the left side of ^ are
-stockflows, the right are feet.
+takes the form (X, Y) ^ A => B, C => (), where the left side of ^ are
+stockflows, the right are feet.  Right side feet can optionally be in a tuple.  If only one stockflow is on the left, it doesn't need to be in a tuple.
 
 Cannot compose on an empty foot.  Cannot use a foot which has been used
 on a previous line.  Changing the order of stock-sum links - eg, 
@@ -268,24 +268,24 @@ end) == (@compose begin end) == StockAndFlow()
 
 sirv = @compose sir svi begin
   (sir, svi)
-  sir, svi ^ S => N, I => N
+  (sir, svi) ^ S => N, I => N
 end
 
 XAY_model = @compose X SIS_A SIS_Y begin
     (X, A, Y)
-    X, A, Y ^ X => N
-    A, Y ^ () => NI
+    (X, A, Y) ^ X => N
+    (A, Y) ^ () => NI
 end
 
 Diabetes_Model = @compose Model_Normoglycemic Model_Hyperglycemic Model_Norm_Hyper begin
     (Normo, Hyper, NH)
 
-    Normo, NH ^ NormalWeight => N
-    Normo, NH ^ OverWeight => N
-    Normo, NH ^ Obese => N
+    (Normo, NH) ^ NormalWeight => N
+    (Normo, NH) ^ OverWeight => N
+    (Normo, NH) ^ Obese => N
 
-    Hyper, NH ^ Prediabetic_U => N
-    Hyper, NH ^ Prediabetic_D => N
+    (Hyper, NH) ^ Prediabetic_U => N
+    (Hyper, NH) ^ Prediabetic_D => N
 end
 ```
 
