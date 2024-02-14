@@ -124,30 +124,30 @@ end </code></pre><hr/><p>Given n stockflows A_1, ..., A_{n-1}, Z and an expressi
     # Nor is sums header necessary
     :sums
     [N,N] =&gt; N
-end</code></pre><hr/><h1 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h1><h2 id="@compose"><a class="docs-heading-anchor" href="#@compose">@compose</a><a id="@compose-1"></a><a class="docs-heading-anchor-permalink" href="#@compose" title="Permalink"></a></h2><p>Given n stockflows A_1, ..., A_n and an expression block, return a new stockflow such that specified shared stocks, sums and links between them are treated as the same.</p><p>First line of the expression block must be the aliases used for the corresponding stockflow in the block.  Every alias must be unique.</p><p>Use the same syntax for @foot to specify feet to be composed on.  Each line takes the form X, Y ^ A =&gt; B, C =&gt; (), where the left side of ^ are stockflows, the right are feet.</p><p>Cannot compose on an empty foot.  Cannot use a foot which has been used on a previous line.  Changing the order of stock-sum links - eg,  A =&gt; B, C =&gt; () and C =&gt; (), A =&gt; B - will be treated as different feet. Each stockflow involved in a particular composition must have all stocks and sums which are in the corresponding foot.</p><p>Composition with no stockflows given as argument returns an empty stockflow.</p><pre><code class="language-julia hljs">(@compose begin 
+end</code></pre><hr/><h1 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h1><h2 id="@compose"><a class="docs-heading-anchor" href="#@compose">@compose</a><a id="@compose-1"></a><a class="docs-heading-anchor-permalink" href="#@compose" title="Permalink"></a></h2><p>Given n stockflows A_1, ..., A_n and an expression block, return a new stockflow such that specified shared stocks, sums and links between them are treated as the same.</p><p>First line of the expression block must be the aliases used for the corresponding stockflow in the block.  Every alias must be unique.</p><p>Use the same syntax for @foot to specify feet to be composed on.  Each line takes the form (X, Y) ^ A =&gt; B, C =&gt; (), where the left side of ^ are stockflows, the right are feet.  Right side feet can optionally be in a tuple.  If only one stockflow is on the left, it doesn&#39;t need to be in a tuple.</p><p>Cannot compose on an empty foot.  Cannot use a foot which has been used on a previous line.  Changing the order of stock-sum links - eg,  A =&gt; B, C =&gt; () and C =&gt; (), A =&gt; B - will be treated as different feet. Each stockflow involved in a particular composition must have all stocks and sums which are in the corresponding foot.</p><p>Composition with no stockflows given as argument returns an empty stockflow.</p><pre><code class="language-julia hljs">(@compose begin 
     ()
 end) == (@compose begin end) == StockAndFlow()
 
 sirv = @compose sir svi begin
   (sir, svi)
-  sir, svi ^ S =&gt; N, I =&gt; N
+  (sir, svi) ^ S =&gt; N, I =&gt; N
 end
 
 XAY_model = @compose X SIS_A SIS_Y begin
     (X, A, Y)
-    X, A, Y ^ X =&gt; N
-    A, Y ^ () =&gt; NI
+    (X, A, Y) ^ X =&gt; N
+    (A, Y) ^ () =&gt; NI
 end
 
 Diabetes_Model = @compose Model_Normoglycemic Model_Hyperglycemic Model_Norm_Hyper begin
     (Normo, Hyper, NH)
 
-    Normo, NH ^ NormalWeight =&gt; N
-    Normo, NH ^ OverWeight =&gt; N
-    Normo, NH ^ Obese =&gt; N
+    (Normo, NH) ^ NormalWeight =&gt; N
+    (Normo, NH) ^ OverWeight =&gt; N
+    (Normo, NH) ^ Obese =&gt; N
 
-    Hyper, NH ^ Prediabetic_U =&gt; N
-    Hyper, NH ^ Prediabetic_D =&gt; N
+    (Hyper, NH) ^ Prediabetic_U =&gt; N
+    (Hyper, NH) ^ Prediabetic_D =&gt; N
 end</code></pre><hr/><h1 id="Rewrite"><a class="docs-heading-anchor" href="#Rewrite">Rewrite</a><a id="Rewrite-1"></a><a class="docs-heading-anchor-permalink" href="#Rewrite" title="Permalink"></a></h1><h2 id="@rewrite"><a class="docs-heading-anchor" href="#@rewrite">@rewrite</a><a id="@rewrite-1"></a><a class="docs-heading-anchor-permalink" href="#@rewrite" title="Permalink"></a></h2><p>Given a stockflow sf and an expression block, create a new stockflow with edits made based on the block.  The expression block will be used to create three stockflows L, I, R such that sf ⊇ L ⊇ I and R ⊇ I, then apply a rewrite rule to replace L with R in sf.</p><p>Every object in sf must have a unique name.</p><p>Rewrite has 8 headers, :stocks, :flows, :sums, :dynamic_variables, :redefs, :removes, and :dyvar_swaps</p><p>The first five are used to indicate if an instance of that type is being added.  Use the same definition syntax as in @stock<em>and</em>flow.</p><p>:redefs is used to change the definition of a dynamic variable, flow or sum.  Again, use the same syntax as in @stock<em>and</em>flow.</p><p>:removes indicates that an object should be deleted.  You just need the name of it in the original.</p><p>:dyvar_swaps is used to swap all instances of an object inside dynamic variables with another object.  Use the notation A =&gt; B to indicate every A in a dynamic variable should now instead be B.</p><p>For this to work, there must exist homomorphisms I =&gt; L and I =&gt; R, and every name in the original stockflow must be unique.</p><pre><code class="language-julia hljs">aged_sir_rewritten = @rewrite aged_sir begin
 
     :redefs
@@ -218,4 +218,4 @@ end</code></pre><hr/><h1 id="Homomorphism"><a class="docs-heading-anchor" href="
   ~id =&gt; f_aging
   _ =&gt; f_death
 
-end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« StockFlow.jl</a><a class="docs-footer-nextpage" href="../json/">Serialization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Thursday 18 January 2024 21:52">Thursday 18 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« StockFlow.jl</a><a class="docs-footer-nextpage" href="../json/">Serialization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 14 February 2024 19:06">Wednesday 14 February 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
