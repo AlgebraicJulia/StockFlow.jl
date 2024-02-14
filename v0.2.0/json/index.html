@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Serialization · StockFlow.jl</title><meta name="title" content="Serialization · StockFlow.jl"/><meta property="og:title" content="Serialization · StockFlow.jl"/><meta property="twitter:title" content="Serialization · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">StockFlow.jl</a></li><li><a class="tocitem" href="../DSLs/">Domain Specific Languages</a></li><li class="is-active"><a class="tocitem" href>Serialization</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li></ul></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../generated/Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/stratification/sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Serialization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Serialization</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/src/json.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Serializing-Stock-and-Flow-Models"><a class="docs-heading-anchor" href="#Serializing-Stock-and-Flow-Models">Serializing Stock and Flow Models</a><a id="Serializing-Stock-and-Flow-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Serializing-Stock-and-Flow-Models" title="Permalink"></a></h1><pre><code class="language-julia hljs">using StockFlow
+using Catlab
+using Catlab.CategoricalAlgebra
+using JSON3
+import StockFlow: StockAndFlowpUntyped, vectorify, state_dict, add_stocks!, add_flow!, add_links!</code></pre><p>In order to serialize our models to JSON, we need to encode our functions as strings instead of julia functions. You can always recover the original model with <code>Base.Meta.parse</code> and <code>eval</code>.</p><pre><code class="language-julia hljs">StockAndFlowSymbolic = StockAndFlowpUntyped{Symbol,String}
+
+# This is our constructor specialized to String formulas.
+NewStockAndFlowSymbolic(s,f) = begin
+	d = StockAndFlowSymbolic()
+
+    s = vectorify(s)
+    add_stocks!(d,length(s),sname=s)
+
+    s_idx = state_dict(s)
+    f = vectorify(f)
+    for (i, ((fattr,uds),ls)) in enumerate(f)
+      fn = first(fattr)
+      ff = last(fattr)
+    	sui = s_idx[first(uds)]
+    	sdi = s_idx[last(uds)]
+    	ls = vectorify(ls)
+    	add_flow!(d,sui,sdi,fname=fn,ϕf=ff)
+    	add_links!(d,map(x-&gt;s_idx[x],ls),repeat([i], length(ls)), length(ls))
+    end
+    d
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">NewStockAndFlowSymbolic (generic function with 1 method)</code></pre><h2 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h2><p>Our first example model is SIR.</p><pre><code class="language-julia hljs"># define functions ϕ of flows in the SIR model
+fNewIncidence = &quot;p.cβ*u.S*u.I/p.N&quot;
+fNewRecovery = &quot;u.I/p.tr&quot;
+
+# StockAndFlowp(stocks,
+#               (flow=&gt;function, upstream=&gt;downstream) =&gt; stocks linked)
+sir = NewStockAndFlowSymbolic((:S, :I, :R),
+   ((:NewIncidence=&gt;fNewIncidence, :S=&gt;:I)=&gt;(:S,:I),
+    (:NewRecovery=&gt;fNewRecovery, :I=&gt;:R)=&gt;:I))</code></pre><div class="c-set">
+<span class="c-set-summary">StockFlow.StockAndFlowpUntyped{Symbol, String} {Flow:2, Stock:3, Link:3, Name:0, FuncFlow:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Flow</th>
+      <th style = "text-align: right;">u</th>
+      <th style = "text-align: right;">d</th>
+      <th style = "text-align: right;">fname</th>
+      <th style = "text-align: right;">ϕf</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">NewIncidence</td>
+      <td style = "text-align: right;">p.cβ*u.S*u.I/p.N</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">NewRecovery</td>
+      <td style = "text-align: right;">u.I/p.tr</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Stock</th>
+      <th style = "text-align: right;">sname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">I</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Link</th>
+      <th style = "text-align: right;">s</th>
+      <th style = "text-align: right;">t</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>@example JSON JSON3.pretty(generate<em>json</em>acset(sir))</p><pre><code class="nohighlight hljs">
+We can include some of the premade models, which are found in the `PremadeModels` module. They are all full-bore Stock and Flows.
+</code></pre><p>@example JSON m = StockFlow.PremadeModels.seir_model</p><pre><code class="nohighlight hljs"></code></pre><p>@example JSON JSON3.pretty(generate<em>json</em>acset(m))</p><pre><code class="nohighlight hljs">
+## Schemas
+
+The restricted class of primitive models.
+</code></pre><p>@example JSON JSON3.pretty(generate<em>json</em>acset_schema(TheoryStockAndFlowp))</p><pre><code class="nohighlight hljs">
+And for the generic schema
+</code></pre><p>@example JSON JSON3.pretty(generate<em>json</em>acset_schema(TheoryStockAndFlow)) ```</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../DSLs/">« Domain Specific Languages</a><a class="docs-footer-nextpage" href="../generated/Covid19_composition_model_in_paper/">COVID-19 Composition Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 14 February 2024 22:02">Wednesday 14 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

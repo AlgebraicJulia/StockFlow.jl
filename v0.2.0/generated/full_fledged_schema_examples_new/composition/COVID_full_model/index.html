@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>COVID Full Model · StockFlow.jl</title><meta name="title" content="COVID Full Model · StockFlow.jl"/><meta property="og:title" content="COVID Full Model · StockFlow.jl"/><meta property="twitter:title" content="COVID Full Model · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../DSLs/">Domain Specific Languages</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li class="is-active"><a class="tocitem" href>COVID Full Model</a></li><li><a class="tocitem" href="../curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../../stratification/sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../../stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>COVID Full Model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>COVID Full Model</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/composition/COVID_full_model.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="COVID-Full-Model"><a class="docs-heading-anchor" href="#COVID-Full-Model">COVID Full Model</a><a id="COVID-Full-Model-1"></a><a class="docs-heading-anchor-permalink" href="#COVID-Full-Model" title="Permalink"></a></h1><pre><code class="language-julia hljs">using GraphViz
+
+using StockFlow
+using StockFlow.Syntax
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.WiringDiagrams
+
+display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=&gt;&quot;1&quot;));
+
+seir = @stock_and_flow begin
+
+    :stocks
+    S
+    E
+    IA
+    IYU
+    IYN
+    R
+
+    :parameters
+    β
+    rLatent
+    rIncubation
+    rDevelop
+    rRecovery
+    rw
+
+    :dynamic_variables
+    v_NewIncidence₁ = β * NIC
+    v_NewIncidence₂ = v_NewIncidence₁ / N # λ
+    v_NewIncidence₃ = v_NewIncidence₂ * S
+
+
+    v_NewInfectious = E * rLatent
+    v_BecomingSymptomatic = IA * rIncubation
+    v_SymptomicsNotDevelopingComplications = IYU * rDevelop
+    v_NewRecovery = IYN * rRecovery
+    v_WaningImmunityR = R * rw
+
+    :flows
+    S =&gt; fNewIncidence(v_NewIncidence₃) =&gt; E
+    E =&gt; fNewInfectious(v_NewInfectious) =&gt; IA
+    IA =&gt; fBecomingSymptomatic(v_BecomingSymptomatic) =&gt; IYU
+    IYU =&gt; fSymptomicsNotDevelopingComplications(v_SymptomicsNotDevelopingComplications) =&gt; IYN
+    IYN =&gt; fNewRecovery(v_NewRecovery) =&gt; R
+    R =&gt; fWaningImmunityR(v_WaningImmunityR) =&gt; S
+
+
+
+    :sums
+    N = [S, E, IA, IYU, IYN, R]
+    NIC = [IA, IYU, IYN]
+    NI = [IA, IYU, IYN]
+
+end
+
+
+GraphF(seir)
+
+v = @stock_and_flow begin
+    :stocks
+    S
+    E
+    VP
+    VF
+
+
+    :parameters
+    rv
+    rw
+    λ
+    eP_complement # 1.0 - eP
+    eF_complement # 1.0 - eF
+
+
+    :dynamic_variables
+    v_NewIncidenceVP = VP * eP_complement
+    v_NewIncidenceVF = VF * eF_complement
+
+    v_infVP = v_NewIncidenceVP * λ
+    v_infVF = v_NewIncidenceVF * λ
+
+
+    :flows
+    S =&gt; fFirstdoseVaccine(S * rv) =&gt; VP
+    VP =&gt; fWaningImmunityVP(VP * rw) =&gt; S
+    VP =&gt; fSeconddoseVaccine(VP * rv) =&gt; VF
+    VF =&gt; fWaningImmunityVF(VF * rw) =&gt; VP
+    VP =&gt; fNewIncidenceVP(v_infVP) =&gt; E
+    VF =&gt; fNewIncidenceVF(v_infVF) =&gt; E
+
+
+
+    :sums
+    N = [S, E, VP, VF]
+    NIC = []
+end
+
+GraphF(v;rd=&quot;TB&quot;)
+
+ia = @stock_and_flow begin
+    :stocks
+    IA
+    IA2
+    IA3
+    R
+
+    :parameters
+    rIncubationIA
+    rDevelopIA2
+    rRecoveryIA3
+
+    :flows
+    IA =&gt; fDevelopmentOfPersistentAsymptomaticity(IA * rIncubationIA) =&gt; IA2
+    IA2 =&gt; fProgressionIA2_IA3(IA2 * rDevelopIA2) =&gt; IA3
+    IA3 =&gt; fNewrecoveryIA3(IA3 * rRecoveryIA3) =&gt; R
+
+    :sums
+    N = [IA, IA2, IA3, R]
+    NIC = [IA, IA2, IA3]
+    NI = [IA, IA2, IA3]
+end
+
+GraphF(ia)
+
+h = @stock_and_flow begin
+    :stocks
+     IYU
+     HICU
+     HNICU
+     R
+     D
+
+     :parameters
+     rAdmICU
+     rAdmNICU
+     rOutICU
+     rrH
+     rDeathICU
+     rDeathNICU
+
+     :dynamic_variables
+     v_HICUAdmission = IYU * rAdmICU
+     v_HNICUAdmission = IYU * rAdmNICU
+     v_OutICU = HICU * rOutICU
+     v_RecoveryH = HNICU * rrH
+     v_NewDeathsHICU = HICU * rDeathICU
+     v_NewDeathsHNICU = HNICU * rDeathNICU
+
+     :flows
+     IYU =&gt; f_HICUAdmission(v_HICUAdmission) =&gt; HICU
+     IYU =&gt; f_HNICUAdmission(v_HNICUAdmission) =&gt; HNICU
+     HICU =&gt; f_OutICU(v_OutICU) =&gt; HNICU
+     HNICU =&gt; f_RecoveryH(v_RecoveryH) =&gt; R
+     HICU =&gt; f_NewDeathsHICU(v_NewDeathsHICU) =&gt; D
+     HNICU =&gt; f_NewDeathsHNICU(v_NewDeathsHNICU) =&gt; D
+
+     :sums
+     N = [IYU, HICU, HNICU, R]
+     NIC = [IYU]
+     NI = [IYU, HICU, HNICU]
+
+
+ end
+
+GraphF(h;rd=&quot;TB&quot;)
+
+footIYUN=foot(:IYU, (:NI,:NIC,:N), (:IYU=&gt;:NI, :IYU=&gt;:NIC, :IYU=&gt;:N))
+GraphF(footIYUN;schema=&quot;C0&quot;)
+
+footRN=foot(:R, :N, :R=&gt;:N)
+GraphF(footRN;schema=&quot;C0&quot;)
+
+
+footIAN=foot(:IA, (:NI,:NIC,:N), (:IA=&gt;:NI, :IA=&gt;:NIC, :IA=&gt;:N))
+GraphF(footIAN;schema=&quot;C0&quot;)
+
+footSN=foot(:S, :N, :S=&gt;:N)
+GraphF(footSN;schema=&quot;C0&quot;)
+
+footEN=foot(:E, :N, :E=&gt;:N)
+GraphF(footEN;schema=&quot;C0&quot;)
+
+footNIC=foot((),:NIC,())
+GraphF(footNIC;schema=&quot;C0&quot;)
+
+covid = @relation (footSN, footEN, footIAN, footIYUN, footRN, footNIC) begin
+    modelA(footSN, footEN, footIAN, footIYUN, footRN, footNIC)
+    modelB(footSN, footEN, footNIC)
+    modelC(footIAN, footRN)
+    modelD(footIYUN, footRN)
+end;
+display_uwd(covid)
+
+open_modelA=Open(seir, footSN, footEN, footIAN, footIYUN, footRN, footNIC)
+open_modelB=Open(v,footSN,footEN, footNIC)
+open_modelC=Open(ia,footIAN,footRN)
+open_modelD=Open(h,footIYUN,footRN)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Catlab.CategoricalAlgebra.StructuredCospans.StructuredCospan{Catlab.CategoricalAlgebra.StructuredCospans.DiscreteACSet{StockAndFlow0, StockAndFlowF}, Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowF, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}, StaticArraysCore.SVector{2, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}}}, StaticArraysCore.SVector{2, StockAndFlow0}}(Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowF, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}, StaticArraysCore.SVector{2, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}}}(StockAndFlowF:
+  S = 1:5
+  SV = 1:3
+  LS = 1:8
+  F = 1:6
+  I = 1:6
+  O = 1:6
+  V = 1:6
+  LV = 1:6
+  LSV = 1:0
+  P = 1:6
+  LVV = 1:0
+  LPV = 1:6
+  Name = 1:0
+  Op = 1:0
+  Position = 1:0
+  lss : LS → S = [1, 1, 1, 2, 2, 3, 3, 4]
+  lssv : LS → SV = [1, 2, 3, 1, 3, 1, 3, 1]
+  ifn : I → F = [1, 2, 3, 4, 5, 6]
+  is : I → S = [2, 3, 3, 4, 5, 5]
+  ofn : O → F = [1, 2, 3, 5, 4, 6]
+  os : O → S = [1, 1, 2, 2, 3, 3]
+  fv : F → V = [1, 2, 3, 4, 5, 6]
+  lvs : LV → S = [1, 1, 2, 3, 2, 3]
+  lvv : LV → V = [1, 2, 3, 4, 5, 6]
+  lsvsv : LSV → SV = Int64[]
+  lsvv : LSV → V = Int64[]
+  lvsrc : LVV → V = Int64[]
+  lvtgt : LVV → V = Int64[]
+  lpvp : LPV → P = [1, 2, 3, 4, 5, 6]
+  lpvv : LPV → V = [1, 2, 3, 4, 5, 6]
+  sname : S → Name = [:IYU, :HICU, :HNICU, :R, :D]
+  svname : SV → Name = [:N, :NIC, :NI]
+  fname : F → Name = [:f_HICUAdmission, :f_HNICUAdmission, :f_OutICU, :f_RecoveryH, :f_NewDeathsHICU, :f_NewDeathsHNICU]
+  vname : V → Name = [:v_HICUAdmission, :v_HNICUAdmission, :v_OutICU, :v_RecoveryH, :v_NewDeathsHICU, :v_NewDeathsHNICU]
+  pname : P → Name = [:rAdmICU, :rAdmNICU, :rOutICU, :rrH, :rDeathICU, :rDeathNICU]
+  vop : V → Op = [:*, :*, :*, :*, :*, :*]
+  lvsposition : LV → Position = Int8[1, 1, 1, 1, 1, 1]
+  lsvsvposition : LSV → Position = Int8[]
+  lvsrcposition : LVV → Position = Int8[]
+  lpvpposition : LPV → Position = Int8[2, 2, 2, 2, 2, 2], Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}[ACSetTransformation((S = FinFunction([1], 1, 5), SV = FinFunction([3, 2, 1], 3, 3), LS = FinFunction([3, 2, 1], 3, 8), F = FinFunction(Int64[], 0, 6), I = FinFunction(Int64[], 0, 6), O = FinFunction(Int64[], 0, 6), V = FinFunction(Int64[], 0, 6), LV = FinFunction(Int64[], 0, 6), LSV = FinFunction(Int64[], 0, 0), P = FinFunction(Int64[], 0, 6), LVV = FinFunction(Int64[], 0, 0), LPV = FinFunction(Int64[], 0, 6), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:3, LS:3, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:5, SV:3, LS:8, F:6, I:6, O:6, V:6, LV:6, LSV:0, P:6, LVV:0, LPV:6, Name:0, Op:0, Position:0}), ACSetTransformation((S = FinFunction([4], 1, 5), SV = FinFunction([1], 1, 3), LS = FinFunction([8], 1, 8), F = FinFunction(Int64[], 0, 6), I = FinFunction(Int64[], 0, 6), O = FinFunction(Int64[], 0, 6), V = FinFunction(Int64[], 0, 6), LV = FinFunction(Int64[], 0, 6), LSV = FinFunction(Int64[], 0, 0), P = FinFunction(Int64[], 0, 6), LVV = FinFunction(Int64[], 0, 0), LPV = FinFunction(Int64[], 0, 6), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:1, LS:1, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:5, SV:3, LS:8, F:6, I:6, O:6, V:6, LV:6, LSV:0, P:6, LVV:0, LPV:6, Name:0, Op:0, Position:0})]), StockAndFlow0[StockAndFlow0:
+  S = 1:1
+  SV = 1:3
+  LS = 1:3
+  Name = 1:0
+  lss : LS → S = [1, 1, 1]
+  lssv : LS → SV = [1, 2, 3]
+  sname : S → Name = [:IYU]
+  svname : SV → Name = [:NI, :NIC, :N], StockAndFlow0:
+  S = 1:1
+  SV = 1:1
+  LS = 1:1
+  Name = 1:0
+  lss : LS → S = [1]
+  lssv : LS → SV = [1]
+  sname : S → Name = [:R]
+  svname : SV → Name = [:N]])</code></pre><p>Compose those three models according the UWD-algebra</p><pre><code class="language-julia hljs">openCOVID19 = oapply(covid, [open_modelA, open_modelB, open_modelC, open_modelD])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Catlab.CategoricalAlgebra.StructuredCospans.StructuredMulticospan{Catlab.CategoricalAlgebra.StructuredCospans.DiscreteACSet{StockAndFlow0, StockAndFlowF}, Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowF, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}, Vector{Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}}}, Vector{Union{Nothing, StockAndFlow0}}}(Catlab.CategoricalAlgebra.FreeDiagrams.Multicospan{StockAndFlowF, Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}, Vector{Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}}}(StockAndFlowF:
+  S = 1:13
+  SV = 1:3
+  LS = 1:24
+  F = 1:21
+  I = 1:21
+  O = 1:21
+  V = 1:25
+  LV = 1:21
+  LSV = 1:2
+  P = 1:20
+  LVV = 1:4
+  LPV = 1:23
+  Name = 1:0
+  Op = 1:0
+  Position = 1:0
+  lss : LS → S = [1, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7, 8, 9, 9, 9, 10, 10, 10, 11, 11, 12, 12]
+  lssv : LS → SV = [1, 1, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 1, 1, 1, 2, 3, 1, 2, 3, 1, 3, 1, 3]
+  ifn : I → F = [6, 1, 2, 3, 4, 5, 8, 11, 12, 7, 10, 9, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+  is : I → S = [1, 2, 3, 4, 5, 6, 1, 2, 2, 7, 7, 8, 9, 10, 6, 11, 12, 12, 6, 13, 13]
+  ofn : O → F = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 10, 12, 13, 14, 15, 16, 17, 18, 20, 19, 21]
+  os : O → S = [1, 2, 3, 4, 5, 6, 1, 7, 7, 7, 8, 8, 3, 9, 10, 4, 4, 11, 11, 12, 12]
+  fv : F → V = [3, 4, 5, 6, 7, 8, 13, 14, 15, 16, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+  lvs : LV → S = [1, 2, 3, 4, 5, 6, 7, 8, 1, 7, 7, 8, 3, 9, 10, 4, 4, 11, 12, 11, 12]
+  lvv : LV → V = [3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+  lsvsv : LSV → SV = [2, 1]
+  lsvv : LSV → V = [1, 2]
+  lvsrc : LVV → V = [1, 2, 9, 10]
+  lvtgt : LVV → V = [2, 3, 11, 12]
+  lpvp : LPV → P = [1, 2, 3, 4, 5, 6, 10, 11, 9, 9, 7, 8, 7, 8, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  lpvv : LPV → V = [1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+  sname : S → Name = [:S, :E, :IA, :IYU, :IYN, :R, :VP, :VF, :IA2, :IA3, :HICU, :HNICU, :D]
+  svname : SV → Name = [:N, :NIC, :NI]
+  fname : F → Name = [:fNewIncidence, :fNewInfectious, :fBecomingSymptomatic, :fSymptomicsNotDevelopingComplications, :fNewRecovery, :fWaningImmunityR, :fFirstdoseVaccine, :fWaningImmunityVP, :fSeconddoseVaccine, :fWaningImmunityVF, :fNewIncidenceVP, :fNewIncidenceVF, :fDevelopmentOfPersistentAsymptomaticity, :fProgressionIA2_IA3, :fNewrecoveryIA3, :f_HICUAdmission, :f_HNICUAdmission, :f_OutICU, :f_RecoveryH, :f_NewDeathsHICU, :f_NewDeathsHNICU]
+  vname : V → Name = [:v_NewIncidence₁, :v_NewIncidence₂, :v_NewIncidence₃, :v_NewInfectious, :v_BecomingSymptomatic, :v_SymptomicsNotDevelopingComplications, :v_NewRecovery, :v_WaningImmunityR, :v_NewIncidenceVP, :v_NewIncidenceVF, :v_infVP, :v_infVF, Symbol(&quot;##v_fFirstdoseVaccine#600&quot;), Symbol(&quot;##v_fWaningImmunityVP#601&quot;), Symbol(&quot;##v_fSeconddoseVaccine#602&quot;), Symbol(&quot;##v_fWaningImmunityVF#603&quot;), Symbol(&quot;##v_fDevelopmentOfPersistentAsymptomaticity#604&quot;), Symbol(&quot;##v_fProgressionIA2_IA3#605&quot;), Symbol(&quot;##v_fNewrecoveryIA3#606&quot;), :v_HICUAdmission, :v_HNICUAdmission, :v_OutICU, :v_RecoveryH, :v_NewDeathsHICU, :v_NewDeathsHNICU]
+  pname : P → Name = [:β, :rLatent, :rIncubation, :rDevelop, :rRecovery, :rw, :rv, :rw, :λ, :eP_complement, :eF_complement, :rIncubationIA, :rDevelopIA2, :rRecoveryIA3, :rAdmICU, :rAdmNICU, :rOutICU, :rrH, :rDeathICU, :rDeathNICU]
+  vop : V → Op = [:*, :/, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*]
+  lvsposition : LV → Position = Int8[2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  lsvsvposition : LSV → Position = Int8[2, 2]
+  lvsrcposition : LVV → Position = Int8[1, 1, 1, 1]
+  lpvpposition : LPV → Position = Int8[1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], Catlab.CategoricalAlgebra.CSets.StructTightACSetTransformation{ACSets.Schemas.TypeLevelBasicSchema{Symbol, Tuple{:S, :SV, :LS, :F, :I, :O, :V, :LV, :LSV, :P, :LVV, :LPV}, Tuple{(:lss, :LS, :S), (:lssv, :LS, :SV), (:ifn, :I, :F), (:is, :I, :S), (:ofn, :O, :F), (:os, :O, :S), (:fv, :F, :V), (:lvs, :LV, :S), (:lvv, :LV, :V), (:lsvsv, :LSV, :SV), (:lsvv, :LSV, :V), (:lvsrc, :LVV, :V), (:lvtgt, :LVV, :V), (:lpvp, :LPV, :P), (:lpvv, :LPV, :V)}, Tuple{:Name, :Op, :Position}, Tuple{(:sname, :S, :Name), (:svname, :SV, :Name), (:fname, :F, :Name), (:vname, :V, :Name), (:pname, :P, :Name), (:vop, :V, :Op), (:lvsposition, :LV, :Position), (:lsvsvposition, :LSV, :Position), (:lvsrcposition, :LVV, :Position), (:lpvpposition, :LPV, :Position)}}, @NamedTuple{S::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, SV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LS::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, F::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, I::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, O::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, V::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LSV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, P::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LVV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, LPV::Catlab.CategoricalAlgebra.FinSets.FinDomFunctionVector{Int64, Vector{Int64}, Catlab.CategoricalAlgebra.FinSets.FinSetInt}, Name::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Op::Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}, Position::Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}}, StockAndFlowF, StockAndFlowF}[ACSetTransformation((S = FinFunction([1], 1, 13), SV = FinFunction([1], 1, 3), LS = FinFunction([1], 1, 24), F = FinFunction(Int64[], 0, 21), I = FinFunction(Int64[], 0, 21), O = FinFunction(Int64[], 0, 21), V = FinFunction(Int64[], 0, 25), LV = FinFunction(Int64[], 0, 21), LSV = FinFunction(Int64[], 0, 2), P = FinFunction(Int64[], 0, 20), LVV = FinFunction(Int64[], 0, 4), LPV = FinFunction(Int64[], 0, 23), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:1, LS:1, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:13, SV:3, LS:24, F:21, I:21, O:21, V:25, LV:21, LSV:2, P:20, LVV:4, LPV:23, Name:0, Op:0, Position:0}), ACSetTransformation((S = FinFunction([2], 1, 13), SV = FinFunction([1], 1, 3), LS = FinFunction([2], 1, 24), F = FinFunction(Int64[], 0, 21), I = FinFunction(Int64[], 0, 21), O = FinFunction(Int64[], 0, 21), V = FinFunction(Int64[], 0, 25), LV = FinFunction(Int64[], 0, 21), LSV = FinFunction(Int64[], 0, 2), P = FinFunction(Int64[], 0, 20), LVV = FinFunction(Int64[], 0, 4), LPV = FinFunction(Int64[], 0, 23), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:1, LS:1, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:13, SV:3, LS:24, F:21, I:21, O:21, V:25, LV:21, LSV:2, P:20, LVV:4, LPV:23, Name:0, Op:0, Position:0}), ACSetTransformation((S = FinFunction([3], 1, 13), SV = FinFunction([3, 2, 1], 3, 3), LS = FinFunction([5, 4, 3], 3, 24), F = FinFunction(Int64[], 0, 21), I = FinFunction(Int64[], 0, 21), O = FinFunction(Int64[], 0, 21), V = FinFunction(Int64[], 0, 25), LV = FinFunction(Int64[], 0, 21), LSV = FinFunction(Int64[], 0, 2), P = FinFunction(Int64[], 0, 20), LVV = FinFunction(Int64[], 0, 4), LPV = FinFunction(Int64[], 0, 23), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:3, LS:3, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:13, SV:3, LS:24, F:21, I:21, O:21, V:25, LV:21, LSV:2, P:20, LVV:4, LPV:23, Name:0, Op:0, Position:0}), ACSetTransformation((S = FinFunction([4], 1, 13), SV = FinFunction([3, 2, 1], 3, 3), LS = FinFunction([8, 7, 6], 3, 24), F = FinFunction(Int64[], 0, 21), I = FinFunction(Int64[], 0, 21), O = FinFunction(Int64[], 0, 21), V = FinFunction(Int64[], 0, 25), LV = FinFunction(Int64[], 0, 21), LSV = FinFunction(Int64[], 0, 2), P = FinFunction(Int64[], 0, 20), LVV = FinFunction(Int64[], 0, 4), LPV = FinFunction(Int64[], 0, 23), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:3, LS:3, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:13, SV:3, LS:24, F:21, I:21, O:21, V:25, LV:21, LSV:2, P:20, LVV:4, LPV:23, Name:0, Op:0, Position:0}), ACSetTransformation((S = FinFunction([6], 1, 13), SV = FinFunction([1], 1, 3), LS = FinFunction([12], 1, 24), F = FinFunction(Int64[], 0, 21), I = FinFunction(Int64[], 0, 21), O = FinFunction(Int64[], 0, 21), V = FinFunction(Int64[], 0, 25), LV = FinFunction(Int64[], 0, 21), LSV = FinFunction(Int64[], 0, 2), P = FinFunction(Int64[], 0, 20), LVV = FinFunction(Int64[], 0, 4), LPV = FinFunction(Int64[], 0, 23), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:1, SV:1, LS:1, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:13, SV:3, LS:24, F:21, I:21, O:21, V:25, LV:21, LSV:2, P:20, LVV:4, LPV:23, Name:0, Op:0, Position:0}), ACSetTransformation((S = FinFunction(Int64[], 0, 13), SV = FinFunction([2], 1, 3), LS = FinFunction(Int64[], 0, 24), F = FinFunction(Int64[], 0, 21), I = FinFunction(Int64[], 0, 21), O = FinFunction(Int64[], 0, 21), V = FinFunction(Int64[], 0, 25), LV = FinFunction(Int64[], 0, 21), LSV = FinFunction(Int64[], 0, 2), P = FinFunction(Int64[], 0, 20), LVV = FinFunction(Int64[], 0, 4), LPV = FinFunction(Int64[], 0, 23), Name = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Op = Catlab.CategoricalAlgebra.FinSets.VarFunction{Symbol}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Symbol}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Symbol})), FinSet(0)), Position = Catlab.CategoricalAlgebra.FinSets.VarFunction{Int8}(FinDomFunction(Union{ACSets.ColumnImplementations.AttrVar, Int8}[], FinSet(0), TypeSet(Union{ACSets.ColumnImplementations.AttrVar, Int8})), FinSet(0))), StockAndFlowF {S:0, SV:1, LS:0, F:0, I:0, O:0, V:0, LV:0, LSV:0, P:0, LVV:0, LPV:0, Name:0, Op:0, Position:0}, StockAndFlowF {S:13, SV:3, LS:24, F:21, I:21, O:21, V:25, LV:21, LSV:2, P:20, LVV:4, LPV:23, Name:0, Op:0, Position:0})]), Union{Nothing, StockAndFlow0}[StockAndFlow0:
+  S = 1:1
+  SV = 1:1
+  LS = 1:1
+  Name = 1:0
+  lss : LS → S = [1]
+  lssv : LS → SV = [1]
+  sname : S → Name = [:S]
+  svname : SV → Name = [:N], StockAndFlow0:
+  S = 1:1
+  SV = 1:1
+  LS = 1:1
+  Name = 1:0
+  lss : LS → S = [1]
+  lssv : LS → SV = [1]
+  sname : S → Name = [:E]
+  svname : SV → Name = [:N], StockAndFlow0:
+  S = 1:1
+  SV = 1:3
+  LS = 1:3
+  Name = 1:0
+  lss : LS → S = [1, 1, 1]
+  lssv : LS → SV = [1, 2, 3]
+  sname : S → Name = [:IA]
+  svname : SV → Name = [:NI, :NIC, :N], StockAndFlow0:
+  S = 1:1
+  SV = 1:3
+  LS = 1:3
+  Name = 1:0
+  lss : LS → S = [1, 1, 1]
+  lssv : LS → SV = [1, 2, 3]
+  sname : S → Name = [:IYU]
+  svname : SV → Name = [:NI, :NIC, :N], StockAndFlow0:
+  S = 1:1
+  SV = 1:1
+  LS = 1:1
+  Name = 1:0
+  lss : LS → S = [1]
+  lssv : LS → SV = [1]
+  sname : S → Name = [:R]
+  svname : SV → Name = [:N], StockAndFlow0:
+  S = 1:0
+  SV = 1:1
+  LS = 1:0
+  Name = 1:0
+  lss : LS → S = Int64[]
+  lssv : LS → SV = Int64[]
+  sname : S → Name = Symbol[]
+  svname : SV → Name = [:NIC]])</code></pre><p>composed model</p><pre><code class="language-julia hljs">COVID19=apex(openCOVID19)
+
+GraphF(COVID19)
+
+L = @stock_and_flow begin
+    :stocks
+    VP
+    VF
+    E
+
+    :parameters
+    eP_complement
+    eF_complement
+    λ
+    β
+
+
+    :flows
+    VP =&gt; fNewIncidenceVP(v_infVP) =&gt; E
+    VF =&gt; fNewIncidenceVF(v_infVF) =&gt; E
+
+    :dynamic_variables
+    v_NewIncidence₁ = β * NIC
+    v_NewIncidence₂ = v_NewIncidence₁ / N # λ
+
+    v_NewIncidenceVP = VP * eP_complement
+    v_NewIncidenceVF = VF * eF_complement
+
+    v_infVP = v_NewIncidenceVP * λ
+    v_infVF = v_NewIncidenceVF * λ
+
+
+    :sums
+    N = [VP, VF, E]
+    NIC = []
+end;
+
+GraphF(L)
+
+I = @stock_and_flow begin
+    :stocks
+    VP
+    VF
+    E
+
+    :parameters
+    eP_complement
+    eF_complement
+    β
+
+    :flows
+    VP =&gt; fNewIncidenceVP(v_infVP) =&gt; E
+    VF =&gt; fNewIncidenceVF(v_infVF) =&gt; E
+
+    :dynamic_variables
+    v_NewIncidence₁ = β * NIC
+    v_NewIncidence₂ = v_NewIncidence₁ / N # λ
+    v_NewIncidenceVP = VP * eP_complement
+    v_NewIncidenceVF = VF * eF_complement
+
+
+    v_infVP = *(v_NewIncidenceVP)
+    v_infVF = *(v_NewIncidenceVF)
+
+    :sums
+    N = [VP, VF, E]
+    NIC = []
+end;
+
+GraphF(I)
+
+R = @stock_and_flow begin
+    :stocks
+    VP
+    VF
+    E
+
+    :parameters
+    eP_complement
+    eF_complement
+    β
+
+    :flows
+    VP =&gt; fNewIncidenceVP(v_infVP) =&gt; E
+    VF =&gt; fNewIncidenceVF(v_infVF) =&gt; E
+
+    :dynamic_variables
+    v_NewIncidence₁ = β * NIC
+    v_NewIncidence₂ = v_NewIncidence₁ / N # λ
+
+    v_NewIncidenceVP = VP * eP_complement
+    v_NewIncidenceVF = VF * eF_complement
+
+
+    v_infVP = v_NewIncidenceVP * v_NewIncidence₂
+    v_infVF = v_NewIncidenceVF * v_NewIncidence₂
+
+
+    :sums
+    N = [VP, VF, E]
+    NIC = []
+end;
+
+GraphF(R)
+
+using AlgebraicRewriting
+using AlgebraicRewriting: rewrite
+const hom = Catlab.CategoricalAlgebra.homomorphism
+
+rule = Rule(hom(I,L), hom(I,R))
+
+Covid19_rewritten = rewrite(rule, COVID19)
+GraphF(Covid19_rewritten)
+
+Covid19_rewritten
+
+GraphF(Covid19_rewritten; type=&quot;SF&quot;, rd=&quot;TB&quot;)</code></pre><img src="f27a3c35.svg" alt="Example block output"/><p>define constant parameters</p><pre><code class="language-julia hljs">p_COVID19_raw = LVector(
+    β=0.8, tLatent=2.9, tIncubation=2.72, tDevelop=6.0, tRecovery=3.5,tw=2*365.0,
+    fH=0.002, fICU=0.23, tICU=6.0, tH = 12.0, tOutICU=6.0, fractionIA=0.4
+)
+
+
+p_COVID19 = LVector(
+    β=p_COVID19_raw.β, rLatent=1.0/p_COVID19_raw.tLatent, rIncubation=(1.0-p_COVID19_raw.fractionIA)/p_COVID19_raw.tIncubation,
+    rDevelop=(1.0-p_COVID19_raw.fH)/p_COVID19_raw.tDevelop, rRecovery=1.0/p_COVID19_raw.tRecovery, rw=1.0/p_COVID19_raw.tw,
+    rv=0.01, eP=0.6, eF=0.85, rIncubationIA=p_COVID19_raw.fractionIA/p_COVID19_raw.tIncubation,
+    rDevelopIA2=1.0/p_COVID19_raw.tDevelop, rRecoveryIA3=1.0/p_COVID19_raw.tRecovery,
+    rAdmICU=p_COVID19_raw.fH*p_COVID19_raw.fICU/p_COVID19_raw.tDevelop,
+    rAdmNICU=p_COVID19_raw.fH*(1.0-p_COVID19_raw.fICU)/p_COVID19_raw.tDevelop,
+    rrH=1.0/p_COVID19_raw.tH, rOutICU=1.0/p_COVID19_raw.tOutICU,rDeathICU=0.085, rDeathNICU=0.018,
+    eP_complement = 0.4, eF_complement = 0.15
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">20-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:β, :rLatent, :rIncubation, :rDevelop, :rRecovery, :rw, :rv, :eP, :eF, :rIncubationIA, :rDevelopIA2, :rRecoveryIA3, :rAdmICU, :rAdmNICU, :rrH, :rOutICU, :rDeathICU, :rDeathNICU, :eP_complement, :eF_complement)}:
+             :β =&gt; 0.8
+       :rLatent =&gt; 0.3448275862068966
+   :rIncubation =&gt; 0.2205882352941176
+      :rDevelop =&gt; 0.16633333333333333
+     :rRecovery =&gt; 0.2857142857142857
+            :rw =&gt; 0.0013698630136986301
+                ⋮
+       :rOutICU =&gt; 0.16666666666666666
+     :rDeathICU =&gt; 0.085
+    :rDeathNICU =&gt; 0.018
+ :eP_complement =&gt; 0.4
+ :eF_complement =&gt; 0.15</code></pre><p>define initial values for stocks</p><pre><code class="language-julia hljs">u0_COVID19 = LVector(
+    S=38010000.0, E=0.0, IYU=10.0, IA=0.0, R=0.0, HICU=0.0, HNICU=0.0, VP=0.0, VF=0.0,
+    D=0.0, IA2=0.0, IA3=0.0, IYN=0.0
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">13-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :IYU, :IA, :R, :HICU, :HNICU, :VP, :VF, :D, :IA2, :IA3, :IYN)}:
+    :S =&gt; 3.801e7
+    :E =&gt; 0.0
+  :IYU =&gt; 10.0
+   :IA =&gt; 0.0
+    :R =&gt; 0.0
+ :HICU =&gt; 0.0
+       ⋮
+   :VF =&gt; 0.0
+    :D =&gt; 0.0
+  :IA2 =&gt; 0.0
+  :IA3 =&gt; 0.0
+  :IYN =&gt; 0.0</code></pre><p>results are tested the same as the Anylogic model</p><pre><code class="language-julia hljs">prob_COVID19 = ODEProblem(vectorfield(Covid19_rewritten),u0_COVID19,(0.0,100.0),p_COVID19);
+sol_COVID19 = solve(prob_COVID19,Tsit5(),abstol=1e-8);
+plot(sol_COVID19)</code></pre><img src="cb229d08.svg" alt="Example block output"/><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
+&lt;style&gt;
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+&lt;/style&gt;
+&quot;&quot;&quot;)</code></pre><style>
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../composed_open_population_SIRV_model/">« Composed Open Population SIRV Model</a><a class="docs-footer-nextpage" href="../curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 14 February 2024 22:02">Wednesday 14 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Diabetes Diagnose · StockFlow.jl</title><meta name="title" content="Diabetes Diagnose · StockFlow.jl"/><meta property="og:title" content="Diabetes Diagnose · StockFlow.jl"/><meta property="twitter:title" content="Diabetes Diagnose · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../DSLs/">Domain Specific Languages</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../../composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../../composition/COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../../composition/curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../../composition/diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../../composition/SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li class="is-active"><a class="tocitem" href>Diabetes Diagnose</a></li><li><a class="tocitem" href="../sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>Diabetes Diagnose</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Diabetes Diagnose</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/stratification/diabetes_diagnose.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Diabetes-Diagnose"><a class="docs-heading-anchor" href="#Diabetes-Diagnose">Diabetes Diagnose</a><a id="Diabetes-Diagnose-1"></a><a class="docs-heading-anchor-permalink" href="#Diabetes-Diagnose" title="Permalink"></a></h1><pre><code class="language-julia hljs">using GraphViz
+
+using StockFlow
+using StockFlow.Syntax
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.WiringDiagrams
+
+using Catlab.Graphics.Graphviz: Html
+using Catlab.Graphics.Graphviz</code></pre><p>Functions for graphing typed Petri nets</p><pre><code class="language-julia hljs">colors_vflow = [&quot;antiquewhite4&quot;,&quot;antiquewhite&quot;, &quot;gold&quot;, &quot;saddlebrown&quot;, &quot;slateblue&quot;, &quot;blueviolet&quot;, &quot;olive&quot;]
+colors_s = [&quot;deeppink&quot;,&quot;darkorchid&quot;,&quot;darkred&quot;,&quot;coral&quot;] # red series
+colors_sv = [&quot;cornflowerblue&quot;,&quot;cyan4&quot;,&quot;cyan&quot;,&quot;chartreuse&quot;] # green and blue series
+colors_p = [&quot;gold&quot;,&quot;gold4&quot;,&quot;darkorange1&quot;,&quot;lightgoldenrod&quot;,&quot;goldenrod&quot;] # yellow and orange
+
+flatten(fname::Symbol) = &quot;$fname&quot;
+
+function flatten(fname::Tuple)
+    names = split(replace(string(fname), &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;, &quot;:&quot;=&gt;&quot;&quot;), &quot;,&quot;)
+    for i in 1:length(names)
+        name = strip(names[i])
+        if name[1:2] == &quot;id&quot;
+            continue
+        end
+        return name
+    end
+    return &quot;id&quot;
+end
+
+def_stock(typed_StockFlow::ACSetTransformation, colors) =
+  (p,s) -&gt; (&quot;s$s&quot;, Attributes(:label=&gt;sname(p,s) isa Tuple where T ? Html(replace(string(sname(p,s)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(sname(p,s))&quot;,
+                                     :shape=&gt;&quot;square&quot;,
+                                     :color=&gt;&quot;black&quot;,
+                                     :style=&gt;&quot;filled&quot;,
+                                     :fillcolor=&gt;colors[typed_StockFlow[:S](s)]))
+
+def_parameter(typed_StockFlow::ACSetTransformation, colors) =
+(p, pp) -&gt; (&quot;p$pp&quot;, Attributes(:label=&gt;pname(p,pp) isa Tuple where T ? Html(replace(string(pname(p,pp)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(pname(p,pp))&quot;,
+                                     :shape=&gt;&quot;circle&quot;,
+                                     :color=&gt;colors[typed_StockFlow[:P](pp)],
+                                     :fontcolor=&gt;colors[typed_StockFlow[:P](pp)]))
+
+def_auxiliaryVF(typed_StockFlow::ACSetTransformation, colors)=
+  (p, v) -&gt; (&quot;v$v&quot;, Attributes(:label=&gt;make_v_expr(p,v) isa Tuple where T ? Html(replace(string(make_v_expr(p,v)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(make_v_expr(p,v))&quot;,
+                                          :shape=&gt;&quot;plaintext&quot;,
+                                          :fontcolor=&gt;colors[typed_StockFlow[:V](v)]))
+
+
+def_sumV(typed_StockFlow::ACSetTransformation, colors) =
+  (p, sv) -&gt; (&quot;sv$sv&quot;, Attributes(:label=&gt;svname(p,sv) isa Tuple where T ? Html(replace(string(svname(p,sv)), &quot;:&quot;=&gt;&quot;&quot;, &quot;,&quot; =&gt; &quot;&lt;BR/&gt;&quot;, &quot;(&quot;=&gt;&quot;&quot;, &quot;)&quot;=&gt;&quot;&quot;)) : &quot;$(svname(p,sv))&quot;,
+                                       :shape=&gt;&quot;circle&quot;,
+                                       :color=&gt;&quot;black&quot;,
+                                       :fillcolor=&gt;colors[typed_StockFlow[:SV](sv)],
+                                       :style=&gt;&quot;filled&quot;))
+
+
+def_flow_V(typed_StockFlow::ACSetTransformation, colors)=
+  (p, us, ds, v, f) -&gt; begin
+    labelfontsize = &quot;6&quot;
+    colorType = colors[typed_StockFlow[:F](f)]
+    color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+    arrowhead = &quot;none&quot;
+    splines = &quot;ortho&quot;
+    return ([us, &quot;v$v&quot;],Attributes(:label=&gt;&quot;&quot;, :labelfontsize=&gt;labelfontsize, :color=&gt;color, :arrowhead=&gt;arrowhead, :splines=&gt;splines)),
+           ([&quot;v$v&quot;, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;labelfontsize, :color=&gt;color, :splines=&gt;splines))
+end
+
+def_flow_noneV(typed_StockFlow::ACSetTransformation, colors)=
+  (p, us, ds, f) -&gt; begin
+     colorType = colors[typed_StockFlow[:F](f)]
+     color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+     ([us, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;&quot;6&quot;, :color=&gt;color))
+end
+
+def_flow_V(colors = colors_vflow)=
+  (p, us, ds, v, f) -&gt; begin
+    labelfontsize = &quot;6&quot;
+    colorType = colors[f]
+    color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+    arrowhead = &quot;none&quot;
+    splines = &quot;ortho&quot;
+    return ([us, &quot;v$v&quot;],Attributes(:label=&gt;&quot;&quot;, :labelfontsize=&gt;labelfontsize, :color=&gt;color, :arrowhead=&gt;arrowhead, :splines=&gt;splines)),
+           ([&quot;v$v&quot;, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;labelfontsize, :color=&gt;color, :splines=&gt;splines))
+
+end
+
+def_flow_noneV(colors = colors_vflow)=
+  (p, us, ds, f) -&gt; begin
+     colorType = colors[f]
+     color = &quot;$colorType&quot;*&quot;:invis:&quot;*&quot;$colorType&quot;
+     ([us, ds],Attributes(:label=&gt;Html(flatten(fname(p,f))), :labelfontsize=&gt;&quot;6&quot;, :color=&gt;color))
+end
+
+GraphF_typed(typed_StockFlow::ACSetTransformation, colors_vflow = colors_vflow, colors_s = colors_s, colors_p = colors_p, colors_sv = colors_sv; schema::String=&quot;C&quot;, type::String=&quot;SFVL&quot;, rd::String=&quot;LR&quot;) = GraphF(dom(typed_StockFlow),
+    make_stock = def_stock(typed_StockFlow, colors_s), make_auxiliaryV=def_auxiliaryVF(typed_StockFlow, colors_vflow), make_sumV=def_sumV(typed_StockFlow, colors_sv),
+    make_flow_V=def_flow_V(typed_StockFlow, colors_vflow), make_flow_noneV=def_flow_noneV(typed_StockFlow, colors_vflow),make_parameter=def_parameter(typed_StockFlow, colors_p),schema=schema, type=type, rd=rd
+)
+
+diabetes_type = @stock_and_flow begin
+    :stocks
+    Pop
+
+    :parameters
+    rDeath
+    rProgress
+    rStrata
+
+    :dynamic_variables
+    v_death = rDeath * Pop
+    v_progress = rProgress * Pop
+    v_strata = rStrata * Pop
+
+    :flows
+    Pop =&gt; f_death(v_death) =&gt; CLOUD
+    Pop =&gt; f_progress(v_progress) =&gt; Pop
+    Pop =&gt; f_strata(v_strata) =&gt; Pop
+
+    :sums
+    N = [Pop]
+
+end
+
+GraphF(diabetes_type)
+
+GraphF_typed(id(diabetes_type))
+
+s, = parts(diabetes_type, :S)
+sv, = parts(diabetes_type, :SV)
+lsn, = parts(diabetes_type, :LS)
+f_death, f_progress, f_strata = parts(diabetes_type, :F)
+i_progress, i_strata = parts(diabetes_type, :I)
+o_death, o_progress, o_strata = parts(diabetes_type, :O)
+v_death, v_progress, v_strata = parts(diabetes_type, :V)
+lv_death, lv_progress, lv_strata = parts(diabetes_type, :LV)
+p_death, p_progress, p_strata = parts(diabetes_type, :P)
+lpv_death, lpv_progress, lpv_strata = parts(diabetes_type, :LPV)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1:3</code></pre><p>remove names to allow for the loose ACSet transform to be natural</p><pre><code class="language-julia hljs">diabetes_type = map(diabetes_type, Name=name-&gt;nothing, Op = op -&gt; nothing, Position = pos -&gt; nothing);
+
+diagnosis_strata = @stock_and_flow begin
+
+    :stocks
+    U
+    D
+
+    :dynamic_variables
+    v_death_U = rDeath_U * U
+    v_progress_U = rProgress_U * U
+    v_death_D = rDeath_D * D
+    v_progress_D = rProgress_D * D
+    v_strata = rDiagnosis * U
+
+    :parameters
+    rDeath_U
+    rProgress_U
+
+    rDeath_D
+    rProgress_D
+
+    rDiagnosis
+
+
+
+    :flows
+    U =&gt; f_death_U(v_death_U) =&gt; CLOUD
+    U =&gt; f_progress_U(v_progress_U) =&gt; U
+
+    D =&gt; f_death_D(v_death_D) =&gt; CLOUD
+    D =&gt; f_progress_D(v_progress_D) =&gt; D
+
+    U =&gt; f_strata(v_strata) =&gt; D
+
+
+    :sums
+    N = [U, D]
+
+
+end
+
+GraphF(diagnosis_strata)
+
+typed_diagnosis_strata=ACSetTransformation(diagnosis_strata, diabetes_type,
+  S = [s, s],
+  SV = [sv],
+  LS = [lsn, lsn],
+  F = [f_death, f_progress, f_death, f_progress, f_strata],
+  I = [i_progress, i_progress, i_strata],
+  O = [o_death, o_progress, o_strata, o_death, o_progress],
+  V = [v_death, v_progress, v_death, v_progress, v_strata],
+  LV = [lv_death, lv_progress, lv_death, lv_progress, lv_strata],
+  P = [p_death, p_progress, p_death, p_progress, p_strata],
+  LPV = [lpv_death, lpv_progress, lpv_death, lpv_progress, lpv_strata],
+ Name=name-&gt;nothing, Op = op -&gt; nothing, Position = pos -&gt; nothing
+)
+
+@assert is_natural(typed_diagnosis_strata)
+
+GraphF_typed(typed_diagnosis_strata)
+
+diabetes_progress = @stock_and_flow begin
+    :stocks
+    PreDiabetic
+    DiabeticWtComp
+    DiabeticEarly
+    DiabeticLate
+
+    :parameters
+
+    rDevelopingDiabetic
+    rDevelopingEarly
+    rDevelopingLate
+
+    rMortalityPreDiabetic
+    rMortalityDiabeticEarly
+    rMortalityDiabeticLate
+    rMortalityDiabeticWtComp
+
+
+    rDiagnosePreDiabetic
+    rDiagnoseDiabeticWtComp
+    rDiagnoseDiabeticEarly
+    rDiagnoseDiabeticLate
+
+    :dynamic_variables
+    v_DevelopingDiabetic = PreDiabetic * rDevelopingDiabetic
+    v_DevelopingEarly = DiabeticWtComp * rDevelopingEarly
+    v_DevelopingLate = DiabeticEarly * rDevelopingLate
+
+    v_DeathPreDiabetic = PreDiabetic * rMortalityPreDiabetic
+    v_DeathDiabeticWtComp = DiabeticWtComp * rMortalityDiabeticWtComp
+    v_DeathDiabeticEarly = DiabeticEarly * rMortalityDiabeticEarly
+    v_DeathDiabeticLate = DiabeticLate * rMortalityDiabeticLate
+
+    v_DiagnosePreDiabetic = PreDiabetic * rDiagnosePreDiabetic
+    v_DiagnoseDiabeticWtComp = DiabeticWtComp * rDiagnoseDiabeticWtComp
+    v_DiagnoseDiabeticEarly = DiabeticEarly * rDiagnoseDiabeticEarly
+    v_DiagnoseDiabeticLate = DiabeticLate * rDiagnoseDiabeticLate
+
+    :flows
+    PreDiabetic =&gt; f_DevelopingDiabetic(v_DevelopingDiabetic) =&gt; DiabeticWtComp
+    PreDiabetic =&gt; f_DeathPreDiabetic(v_DeathPreDiabetic) =&gt; CLOUD
+    DiabeticWtComp =&gt; f_DevelopingEarly(v_DevelopingEarly) =&gt; DiabeticEarly
+    DiabeticWtComp =&gt; f_DeathDiabeticWtComp(v_DeathDiabeticWtComp) =&gt; CLOUD
+    DiabeticEarly =&gt; f_DevelopingLate(v_DevelopingLate) =&gt; DiabeticLate
+    DiabeticEarly =&gt; f_DeathDiabeticEarly(v_DeathDiabeticEarly) =&gt; CLOUD
+    DiabeticLate =&gt; f_DeathDiabeticLate(v_DeathDiabeticLate) =&gt; CLOUD
+
+    PreDiabetic =&gt; f_DiagnosePreDiabetic(v_DiagnosePreDiabetic) =&gt; PreDiabetic
+    DiabeticWtComp =&gt; f_DiagnoseDiabeticWtComp(v_DiagnoseDiabeticWtComp) =&gt; DiabeticWtComp
+    DiabeticEarly =&gt; f_DiagnoseDiabeticEarly(v_DiagnoseDiabeticEarly) =&gt; DiabeticEarly
+    DiabeticLate =&gt; f_DiagnoseDiabeticLate(v_DiagnoseDiabeticLate) =&gt; DiabeticLate
+
+    :sums
+    N = [PreDiabetic, DiabeticWtComp, DiabeticEarly, DiabeticLate]
+
+end
+
+typed_diabetes_progress=ACSetTransformation(diabetes_progress, diabetes_type,
+  S = [s, s, s, s],
+  SV = [sv],
+  LS = [lsn, lsn, lsn, lsn],
+  F = [f_progress, f_death, f_progress, f_death, f_progress, f_death, f_death, f_strata, f_strata, f_strata, f_strata],
+  I = [i_strata, i_progress, i_strata, i_progress, i_strata, i_progress, i_strata],
+  O = [o_progress, o_death, o_strata, o_progress, o_death, o_strata, o_progress, o_death, o_strata, o_death, o_strata],
+  V = [v_progress, v_progress, v_progress, v_death, v_death, v_death, v_death, v_strata, v_strata, v_strata, v_strata],
+  P = [p_progress, p_progress, p_progress, p_death, p_death, p_death, p_death, p_strata, p_strata, p_strata, p_strata],
+  LV = [lv_progress, lv_progress, lv_progress, lv_death, lv_death, lv_death, lv_death, lv_strata, lv_strata, lv_strata, lv_strata],
+  LPV = [lpv_progress, lpv_progress, lpv_progress, lpv_death, lpv_death, lpv_death, lpv_death, lpv_strata, lpv_strata, lpv_strata, lpv_strata],
+ Name=name-&gt;nothing, Op = op -&gt; nothing, Position = pos -&gt; nothing
+
+)
+
+
+
+@assert is_natural(typed_diabetes_progress)
+
+GraphF_typed(typed_diabetes_progress)
+
+strat_model = pullback(typed_diagnosis_strata, typed_diabetes_progress)
+apex(strat_model)
+
+stratify(typed_model1, typed_model2) = ob(pullback(typed_model1, typed_model2))
+
+typed_stratify(typed_model1, typed_model2) =
+  compose(proj1(pullback(typed_model1, typed_model2)), typed_model1);
+
+typed_stratified_model = typed_stratify(typed_diagnosis_strata, typed_diabetes_progress)
+GraphF_typed(typed_stratified_model)</code></pre><img src="e1d41db2.svg" alt="Example block output"/><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
+&lt;style&gt;
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+&lt;/style&gt;
+&quot;&quot;&quot;)</code></pre><style>
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../composition/SEIR_full_model_measles_chickenpox/">« SEIR Full Model Measles Chickenpox</a><a class="docs-footer-nextpage" href="../sir_linear_stratification/">SIR Linear Stratification »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 14 February 2024 22:02">Wednesday 14 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
