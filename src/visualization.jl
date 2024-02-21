@@ -5,9 +5,9 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
-using ..StockFlow.StockFlowUnits
+# using ..StockFlow.StockFlowUnits
 
-export Graph, display_uwd, GraphF
+export Graph, display_uwd, GraphF, Graph_RB
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
 
@@ -260,6 +260,42 @@ function Graph(c::CausalLoop)
 
 end
 
+function Graph(c::CausalLoopF; schema="BASE")
+
+  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+
+  if occursin("BASE", schema)
+    Edges=map(1:ne(c)) do k
+      pol_int = epol(c,k)
+      if pol_int == POL_REINFORCING
+        pol = :+
+      elseif pol_int == POL_BALANCING
+        pol = :-
+      elseif pol_int == POL_ZERO
+        pol = 0
+      elseif pol_int == POL_UNKNOWN
+        pol = :?
+      elseif pol_int == POL_NOT_WELL_DEFINED
+        pol = :±
+      else
+        error("Unknown Polarity $pol_int.")
+      end
+      [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
+    end |> flatten |> collect
+  elseif schema == "C0"
+    Edges=map(1:ne(c)) do k
+      [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
+    end |> flatten |> collect
+  end
+
+  stmts=vcat(NNodes,Edges)
+
+  g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
+  return g
+
+end
+
+
 
 
 function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_auxiliaryV::Function=def_auxiliaryVF,
@@ -445,3 +481,102 @@ function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_a
   return g
 
 end
+
+
+
+
+
+    
+function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
+    NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"square")) for n in 1:nn(c)]
+    Edges = Vector{Edge}()
+    edge_to_intermediate_node = Dict{Int, Int}()
+
+    for k in 1:StockFlow.ne(c)
+      pol_int = epol(c,k)
+      if pol_int == POL_REINFORCING
+        pol = :+
+      elseif pol_int == POL_BALANCING
+        pol = :-
+      elseif pol_int == POL_ZERO
+        pol = 0
+      elseif pol_int == POL_UNKNOWN
+        pol = :?
+      elseif pol_int == POL_NOT_WELL_DEFINED
+        pol = :±
+      else
+        error("Unknown Polarity $pol_int.")
+      end
+      new_node_index = length(NNodes) + 1
+      
+      # Graphviz doesn't allow us to have an edge from an edge, so we put a node
+      # in the middle of each edge and use that instead. 
+      
+      # Intermediate node in edge, with label
+      push!(NNodes, Node("n$new_node_index", Attributes(:label => "$pol", :penwidth => "0", :style => "filled", :shape => "cds", :fillcolor => "$edge_label_color", )))
+      # edge to intermediate
+      push!(Edges, Graphviz.Edge(["n$(sedge(c,k))", "n$new_node_index"],Attributes(:color=>"blue", :arrowhead=>"none")))
+      # edge from intermediate
+      push!(Edges, Graphviz.Edge(["n$new_node_index", "n$(tedge(c,k))"],Attributes(:color=>"blue")))
+      # mapping of edge to its intermediate node
+      push!(edge_to_intermediate_node, k => new_node_index)
+    end
+
+    for (edges, polarity) ∈ extract_loops(c)
+
+      if polarity == POL_REINFORCING 
+        label = "R" # reinforcing
+      elseif polarity == POL_BALANCING
+        label = "B" # balancing
+      elseif polarity == POL_ZERO
+        label = "0"
+      elseif polarity == POL_UNKNOWN
+        label = "?"
+      elseif polarity == POL_NOT_WELL_DEFINED
+        label = "±"
+      else
+        error("Unknown cycle polarity $polarity")
+      end
+      new_node_index = length(NNodes) + 1
+      # node to represent cycle polarity
+      push!(NNodes, Node("n$new_node_index", Attributes(:label => "$label", :shape => "circle", :fillcolor => "$cycle_color", :style => "filled")))
+      for edge ∈ edges
+          edge_node = edge_to_intermediate_node[edge]
+          push!(Edges, Graphviz.Edge(["n$edge_node", "n$new_node_index"], Attributes(:color=>"$cycle_color", :style=>"dashed")))
+      end
+            
+    end
+    
+    
+    stmts=vcat(NNodes,Edges)
+
+    g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
+    return g
+end
+
+
+
+
+
+
+# function collapse_on_RB(c)
+#   all_loops = extract_loops(c)
+#   all_loop_sequences = [edges for (edges, _) in all_loops]
+#   for (edges, polarity) in all_loops
+#     if 
+#     # if an edge is only in one loop, we can collapse it entirely.
+#     # If an edge is in multiple loops, we need to keep this subgraph.
+
+#   end
+# end
+
+
+
+
+
+
+
+
+
+
+

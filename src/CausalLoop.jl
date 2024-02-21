@@ -1,5 +1,17 @@
-export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, nn, ne, nname,
-sedge, tedge, convertToCausalLoop, nnames
+export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
+nn, ne, nname,
+sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
+Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
+add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
+outgoing_edges, incoming_edges, extract_loops
+
+
+using MLStyle
+
+import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
+
+
+
 
 
 @present TheoryCausalLoop(FreeSchema) begin
@@ -15,9 +27,25 @@ sedge, tedge, convertToCausalLoop, nnames
   nname::Attr(N, Name)
 end
 
+@enum Polarity begin
+  POL_ZERO
+  POL_REINFORCING
+  POL_BALANCING
+  POL_UNKNOWN
+  POL_NOT_WELL_DEFINED
+end
+  
+
+@present TheoryCausalLoopF <: TheoryCausalLoop begin
+  Polarity::AttrType
+  epolarity::Attr(E, Polarity)
+end
+
 @abstract_acset_type AbstractCausalLoop
 @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
+@acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
 const CausalLoop = CausalLoopUntyped{Symbol} 
+const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
 add_node!(c::AbstractCausalLoop;kw...) = add_part!(c,:N;kw...) 
 add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)
@@ -44,6 +72,25 @@ CausalLoop(ns,es) = begin
     c
 end
 
+
+CausalLoopF(ns, es, pols) = begin
+  @assert length(pols) == length(es)
+
+  c = CausalLoopF()
+  ns = vectorify(ns)
+  es = vectorify(es)
+  
+  ns_idx=state_dict(ns)
+  add_nodes!(c, length(ns), nname=ns)
+
+  s=map(first,es)
+  t=map(last,es)
+
+  add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t), epolarity=pols)
+
+  c
+end
+
 # return the count of each components
 """ return count of nodes of CLD """
 nn(c::AbstractCausalLoop) = nparts(c,:N) #nodes
@@ -59,6 +106,15 @@ tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
 
 """ return node names of CLD """
 nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
+
+epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
+
+epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
+
+
+outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
+incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
+
 
 
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
@@ -113,3 +169,91 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
 
     return CausalLoop(ns,es)
 end
+
+""" 
+Cycles are uniquely characterized by sets of edges, not sets of nodes
+We construct a simple graph, then for each edge, we check if there exist
+multiple edges with the same start and end node
+We then product all of them, to get every cycle.
+
+This could be made more efficient, but it should be fine for now.
+"""
+function extract_loops(cl::CausalLoopF)
+
+  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+  pair_to_edge = state_dict(edges) # Note, this is unique pairs, not all.
+  # Unique are sufficient for making simple graph.
+  g = SimpleDiGraph(SimpleEdge.(edges))
+
+  # Edges => Polarity
+  cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
+  for cycle ∈ simplecycles(g)
+    cycle_length = length(cycle)
+    # Last pair is cycle[end], cycle[1]
+    node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
+    nonsimple_cycles = Vector{Vector{Int}}()
+    for (p1, p2) in node_pairs
+      matching_edges = Vector{Int}()
+      # grab all edges with p1 as start and p2 as end
+      # This is the bit that could be made more efficient, it loops over all edges every time
+      for cl_node in 1:ne(cl)
+        if sedge(cl, cl_node) == p1 && tedge(cl, cl_node) == p2
+          push!(matching_edges, cl_node)
+        end
+      end
+      push!(nonsimple_cycles, matching_edges)
+    end
+
+    for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
+      balancing_count = 0
+      is_unknown = false
+      is_zero = false
+      is_not_well_defined = false
+      for node_number in cycle_instance
+        current_pol = epol(cl, node_number)
+        if current_pol == POL_BALANCING
+          balancing_count += 1
+        elseif current_pol == POL_UNKNOWN
+          is_unknown = true
+        elseif current_pol == POL_ZERO
+          is_zero = true
+          break
+        elseif current_pol == POL_NOT_WELL_DEFINED
+          is_not_well_defined = true
+        end
+      end
+
+      collected_cycle = collect(cycle_instance)
+
+      if is_zero
+        push!(cycle_pol, collected_cycle => POL_ZERO)
+      elseif is_unknown
+        push!(cycle_pol, collected_cycle => POL_UNKNOWN)
+      elseif is_not_well_defined
+        push!(cycle_pol, collected_cycle => POL_NOT_WELL_DEFINED)
+      elseif iseven(balancing_count)
+        push!(cycle_pol, collected_cycle => POL_REINFORCING)
+      else
+        push!(cycle_pol, collected_cycle => POL_BALANCING)
+      end
+    end
+  end
+
+  cycle_pol
+          
+end
+
+
+
+function discard_zero_pol(c)
+  cl = CausalLoopF()
+  add_nodes!(cl, nn(c) ; nname = nnames(c))
+  for edge in 1:ne(c)
+    pol = epol(c, edge)
+    if pol != POL_ZERO
+      add_edge!(cl, sedge(c, edge), tedge(c, edge) ; epolarity = pol)
+    end
+  end
+  cl
+end
+

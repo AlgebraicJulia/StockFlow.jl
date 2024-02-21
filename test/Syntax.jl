@@ -5,7 +5,7 @@ using StockFlow.Syntax
 using StockFlow.Syntax: is_binop_or_unary, sum_variables, 
 infix_expression_to_binops, fnone_value_or_vector, 
 extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, 
-apply_flags, substitute_symbols
+apply_flags, substitute_symbols, DSLArgument
 
 
 @testset "Stratification DSL" begin
@@ -565,5 +565,35 @@ end
 
     @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), Vector{Symbol}()) # fails because it's not looking for substrings, and :NOMATCH isn't in the list of options.
     @test_throws AssertionError apply_flags(:NOMATCH, Set{Symbol}(), [:nomatch]) # same reason
+
+end
+
+
+@testset "Causal Loop F DSL" begin
+    @test (@causal_loop begin end) == CausalLoopF()
+    @test (@causal_loop begin; :nodes; A; end) == CausalLoopF([:A], [],[])
+    @test (@causal_loop begin; :nodes; A; :edges; A = A; end) == CausalLoopF([:A], [:A => :A], [POL_ZERO])
+    
+    @test (@causal_loop begin
+        :nodes
+        A
+
+        :edges
+        A > A
+        A < A
+        A = A
+        A ^ A
+        A ~ A
+    end) == CausalLoopF([:A], [:A => :A for _ in 1:5], [POL_BALANCING, POL_REINFORCING, POL_ZERO, POL_NOT_WELL_DEFINED, POL_UNKNOWN])
+    
+    @test (@causal_loop begin
+       :nodes
+       A
+       B
+       
+       :edges
+       A > B
+       B < A
+    end) == CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_BALANCING, POL_REINFORCING])
 
 end
