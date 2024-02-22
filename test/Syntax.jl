@@ -1,5 +1,3 @@
-using Pkg; Pkg.activate(".")
-
 using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
@@ -647,5 +645,8 @@ end
     @test (@foot_U () => ()) == footU()
     @test (@foot_U km) == footU([],[],[],[],[:km])
     @test (@foot_U S => N: people, E => N: people) == footU([:S, :E], [:N], [:S => :N, :E => :N], [:S => :people, :E => :people], [:people])
+    @test (@foot_U km, S => () : s) == footU([:S], [], [], [:S => :s], [:km, :s])
+    @test (@foot_U km, S => N : s/km, s) == footU([:S], [:N], [:S => :N], [:S => :(s/km)], [:km, :s])
 
+    @test (@foot_U S => N : people, E => X : people/time) == footU([:S, :E], [:N, :X], [:S => :N, :E => :X], [:S => :people, :E => :(people/time)], [:people, :time])
 end
