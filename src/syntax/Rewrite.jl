@@ -8,7 +8,8 @@ using ...StockFlow
 
 using ..Syntax
 import ..Syntax: parse_dyvar, parse_flow, parse_sum, parse_stock, 
-parse_param, sf_to_block, StockAndFlowBlock, stock_and_flow_syntax_to_arguments
+parse_param, sf_to_block, StockAndFlowBlock, stock_and_flow_syntax_to_arguments,
+StockArg, ParamArg
 
 
 using Catlab.ACSets.ACSetInterface
@@ -367,22 +368,24 @@ Function call to create a new stockflow,
 using an existing stockflow and a block describing the modifications.
 """
 function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
+
   Base.remove_linenums!(block)
   name_vector = [snames(sf) ; svnames(sf) ; vnames(sf) ; fnames(sf) ; pnames(sf)]
   @assert allunique(name_vector) "Not all names are unique!  $(filter(x -> count(y -> y == x, name_vector) >= 2, name_vector))"
 
   sf_block::StockAndFlowBlock = sf_to_block(sf)
-  
-  L_stocks::Vector{Symbol} = []
-  L_params::Vector{Symbol} = []
+
+
+  L_stocks::Vector{StockArg} = []
+  L_params::Vector{ParamArg} = []
   L_dyvars::Vector{Tuple{Symbol,Expr}} = []
   L_flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
   L_sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
 
   L_block = StockAndFlowBlock(L_stocks, L_params, L_dyvars, L_flows, L_sums)
   
-  R_stocks::Vector{Symbol} = []
-  R_params::Vector{Symbol} = []
+  R_stocks::Vector{StockArg} = []
+  R_params::Vector{ParamArg} = []
   R_dyvars::Vector{Tuple{Symbol,Expr}} = []
   R_flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
   R_sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
@@ -410,7 +413,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   # Allows me to update in R repeatedly.
   R_dict = Dict{Any, Tuple}()
 
-  
+
   
   current_phase = (_, _) -> ()
   for statement in block.args
@@ -533,7 +536,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             val::Symbol => begin # stocks, params
               object_definition = parse_stock(val)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
-              push!(R_dict, object_definition => (object_definition,))
+              push!(R_dict, object_definition[1] => object_definition)
               push!(R_block.stocks, object_definition)
             end
           end
@@ -546,7 +549,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             val::Symbol => begin # stocks, params
               object_definition = parse_param(val)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
-              push!(R_dict, object_definition => (object_definition,))
+              push!(R_dict, object_definition[1] => object_definition)
               push!(R_block.params, object_definition)
             end
           end
@@ -798,6 +801,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
   sf_rewritten = rewrite(rule, sf)
+
 
   if isnothing(sf_rewritten)
     println(L)

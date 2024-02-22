@@ -306,7 +306,6 @@ data type instantiation
 Parameters for instantiation of a StockAndFlowF data type.
 """
 function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
-    println(syntax_elements.stocks)
     stocks_no_units = map(x -> isa(x, Tuple) ? x[1] : x, syntax_elements.stocks)
     params_no_units = map(x -> isa(x, Tuple) ? x[1] : x, syntax_elements.params)
     stocks = assemble_stock_definitions(
@@ -319,8 +318,6 @@ function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
     dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
     (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
     sums = sum_variables(syntax_elements.sums)
-    println(stocks)
-    println(params)
     return StockAndFlowArguments(stocks, params, vcat(dyvars, flow_dyvars), flows, sums)
 end
 
@@ -1296,8 +1293,8 @@ Could be different from the initial definition, since this creates flows of form
 Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
 """
 function sf_to_block(sf::AbstractStockAndFlowF)
-    stocks = snames(sf)
-    params = pnames(sf)
+    stocks = Vector{StockArg}(snames(sf))
+    params = Vector{StockArg}(pnames(sf))
     sums = Vector{Tuple{Symbol, Vector{Symbol}}}([(svname, collect(map(x -> sname(sf, x), stockssv(sf, i)))) for (i, svname) ∈ enumerate(svnames(sf))])
     dyvars = Vector{Tuple{Symbol, Expr}}([(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))])
     flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]
