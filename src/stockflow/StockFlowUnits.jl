@@ -47,11 +47,6 @@ end
 
 
 StockAndFlow0U(s,sv,ssv,du,u) = begin
-    println(s)
-    println(sv)
-    println(ssv)
-    println(du)
-    println(u)
     p0 = StockAndFlow0U()
     s = vectorify(s)
     sv = vectorify(sv)
@@ -105,7 +100,7 @@ StockAndFlow0U(s,sv,ssv,du,u) = begin
 end
 
 footU(s,sv,ssv,du,u) = StockAndFlow0U(s,sv,ssv,du,u)
-
+footU() = StockAndFlow0U()
 
 
 @present TheoryStockAndFlowU <: TheoryStockAndFlowF begin

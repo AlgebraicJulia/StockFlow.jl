@@ -1396,10 +1396,10 @@ function match_foot_format_U(footblock::Union{Expr, Symbol})
         :(()              => $(sv :: Symbol)) => ((), sv, (), (), ())
         :($(s :: Symbol)  => $(sv :: Symbol)) => (s, sv, s => sv, s => :NONE, ())
 
-        :(()              => () : $cu)              => ((), (), (), :NONE => cu, ())
-        :($(s :: Symbol)  => () : $cu)              => (s, (), (), s => cu, ())
-        :(()              => $(sv :: Symbol) : $cu) => ((), sv, (), :NONE => cu, ())
-        :($(s :: Symbol)  => $(sv :: Symbol): $cu) => (s, sv, s => sv, s => cu, ())
+        :(()              => () : $du)              => ((), (), (), :NONE => du, ())
+        :($(s :: Symbol)  => () : $du)              => (s, (), (), s => du, ())
+        :(()              => $(sv :: Symbol) : $du) => ((), sv, (), :NONE => du, ())
+        :($(s :: Symbol)  => $(sv :: Symbol): $du) => (s, sv, s => sv, s => du, ())
 
         :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
         :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
@@ -1419,16 +1419,16 @@ function create_foot_U(block::Expr)
             foot_s = Vector{Symbol}()
             foot_sv = Vector{Symbol}()
             foot_ssv = Vector{Pair{Symbol, Symbol}}()
-            foot_cu = Vector{Pair{Symbol, Union{Symbol, Expr}}}()
+            foot_du = Vector{Pair{Symbol, Union{Symbol, Expr}}}()
             foot_u = Vector{Symbol}()
-            for (s, sv, ssv, cu, u) ∈ map(match_foot_format_U, block.args)
+            for (s, sv, ssv, du, u) ∈ map(match_foot_format_U, block.args)
                 if s != () push!(foot_s, s) end
                 if sv != () push!(foot_sv, sv) end
                 if ssv != () push!(foot_ssv, ssv) end
-                if cu != () push!(foot_cu, cu) end
+                if du != () push!(foot_du, du) end
                 if u != () push!(foot_u, u) end
             end
-            return footU(unique(foot_s), unique(foot_sv), foot_ssv, foot_cu, unique(foot_u))
+            return footU(unique(foot_s), unique(foot_sv), foot_ssv, foot_du, unique(foot_u))
         end
         :call => footU(match_foot_format_U(block)...)
         _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")

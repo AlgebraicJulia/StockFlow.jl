@@ -640,6 +640,12 @@ apply_flags, substitute_symbols, DSLArgument
         [:km, :s]
     )
 
+end
 
+
+@testset "Stock Flow Units Foot DSL" begin 
+    @test (@foot_U () => ()) == footU()
+    @test (@foot_U km) == footU([],[],[],[],[:km])
+    @test (@foot_U S => N: people, E => N: people) == footU([:S, :E], [:N], [:S => :N, :E => :N], [:S => :people, :E => :people], [:people])
 
 end
