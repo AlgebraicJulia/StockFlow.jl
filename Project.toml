@@ -2,7 +2,7 @@ name = "StockFlow"
 uuid = "58c4a0e8-2944-4d18-9fa2-e17726aee9e5"
 license = "MIT"
 authors = ["Xiaoyan Li <xiaoyan.lyu.li@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
@@ -25,11 +25,11 @@ Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-AlgebraicRewriting = "≥ 0.2.1"
-Catlab = "≥ 0.15.5"
+AlgebraicRewriting = "0.2.1 - 0.3.1"
+Catlab = "0.15.5 - 0.16.7"
 Combinatorics = "1.0.2"
 CompTime = "0.1"
-Graphs = "≥ 1.9.0"
+Graphs = "1.9.0"
 GraphViz = "0.2"
 JSON = "0.21.0"
 LabelledArrays = "^1"
@@ -40,7 +40,7 @@ StaticArrays = "1.5.2"
 StatsBase = "^0.33, 0.34"
 StringManipulation = "0.3"
 Tables = "1.7.0"
-julia = "≥ 1.9"
+julia = "1.9 - 1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

@@ -9,6 +9,7 @@ using Catlab.WiringDiagrams
 import ..Syntax: create_foot
 import Catlab.Programs.RelationalPrograms: UntypedUnnamedRelationDiagram
 
+using MLStyle
 
 
 """
@@ -29,49 +30,47 @@ function create_uwd(;
     return uwd
 end
 
-"""
-Parse expression of form A ^ B => C, extract sf A and foot B => C
-"""
-function interpret_center_of_composition_statement(center::Expr)::Tuple{Symbol, Expr} # sf, foot defintion
-    @assert length(center.args) == 3 && center.args[1] == :(=>) && typeof(center.args[2]) == Expr "Invalid argument: expected A ^ B => C, A ^ () => C or A ^ B => (), got $center"
-        # third argument can be symbol or (), the latter of which is an Expr
-        center_caret_statement = center.args[2]
-        @assert length(center_caret_statement.args) == 3 && center_caret_statement.args[1] == :^ && typeof(center_caret_statement.args[2]) == Symbol "Invalid center argument: expected A ^ B or A ^ (), got $center"
-        # third argument here, too, can be symbol or ()
-        return (center_caret_statement.args[2], Expr(:call, :(=>), center_caret_statement.args[3], center.args[3]))
-end
 
-"""
-Go line by line and associate stockflows and feet
-"""
-function interpret_composition_notation(mapping_pair::Expr)::Tuple{Vector{Symbol}, StockAndFlow0}
 
-    if mapping_pair.head == :call # (A ^ B => C) case (incl where B or C are ())
-        sf, foot_def = interpret_center_of_composition_statement(mapping_pair)
-        return [sf], create_foot(foot_def)
+function interpret_composition_notation(statement::Expr)::Tuple{Vector{Symbol}, StockAndFlow0}
+    sf_symbols = nothing
+    foot_expressions = nothing
+
+    @match statement begin
+        :($sfs ^ $foot) => begin
+            sf_symbols = sfs
+            foot_expressions = foot
+        end
+        :($sfs ^ $stock => $sum) => begin
+            sf_symbols = sfs
+            foot_expressions = Expr(:call, :(=>), stock, sum)
+        end
+
+        :($sfs ^ $stock1 => $sum1, $(foot...)) => begin
+            sf_symbols = sfs
+            foot_expressions = :($stock1 => $sum1, $(foot...))
+        end
+        _ => error("Unknown composition syntax: $statement")
     end
 
-    expr_args = mapping_pair.args
-    stockflows = collect(Base.Iterators.takewhile(x -> typeof(x) == Symbol, expr_args))
-    center_index = length(stockflows) + 1
-    @assert center_index <= length(expr_args) "A tuple is an invalid expression for composition syntax.  Expected argument of form sf1, sf2, ... ^ stock1 => sum1, stock2 => sum2, ..."
-    center = expr_args[center_index]
+    sf_foot = create_foot(foot_expressions)
+    sf_vector = nothing
 
-    foot_temp = Vector{Expr}()
+    @match sf_symbols begin
+        ::Symbol => begin sf_vector = [sf_symbols] end
+        ::Expr => begin sf_vector = collect(sf_symbols.args) end
+        _ => error("Unknown composition syntax in stockflow arguments: $sf_symbols")
+    end
 
-    sf, foot_def = interpret_center_of_composition_statement(center)
-    push!(foot_temp, foot_def)
-    push!(stockflows, sf)
-    append!(foot_temp, expr_args[center_index+1:end])
-
-    return (stockflows, create_foot(Expr(:tuple, foot_temp...)))
+    return sf_vector, sf_foot
 end
+
 
 
 """
 sirv = sfcompose(sir, svi, quote
     (sr, sv)
-    sr, sv ^ S => N, I => N
+    (sr, sv) ^ S => N, I => N
 end)
 
 Cannot use () => () as a foot, 
