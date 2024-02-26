@@ -197,145 +197,6 @@ lunames(p::Union{StockAndFlowU, StockAndFlow0U}) = begin
 end
 
 
-
-
-
-
-function convert(::Type{StockAndFlowU}, sff::K) where {K <: AbstractStockAndFlowF}
-    sfg = StockAndFlowU()
-    
-    add_dunit!(sfg, duname=:NONE)
-    
-    add_stocks!(sfg, ns(sff), sname=snames(sff), sdu=ones(Int, ns(sff)))
-    add_svariables!(sfg, nsv(sff), svname=svnames(sff))
-    add_variables!(sfg, nvb(sff), vname=vnames(sff))
-    add_flows!(sfg, (fv(sff, i) for i in 1:nf(sff)), nf(sff), fname=fnames(sff))
-    add_parameters!(sfg, np(sff), pname=pnames(sff), pdu=ones(Int, np(sff)))
-    
-    add_inflows!(sfg, ni(sff), subpart(sff, :is), subpart(sff, :ifn))
-    add_outflows!(sfg, no(sff), subpart(sff, :os), subpart(sff, :ofn))
-    add_Vlinks!(sfg, nlv(sff), subpart(sff, :lvs), subpart(sff, :lvv))
-    add_Slinks!(sfg, nls(sff), subpart(sff, :lss), subpart(sff, :lssv))
-    add_SVlinks!(sfg, nsv(sff), subpart(sff, :lsvsv), subpart(sff, :lsvv))
-    add_VVlinks!(sfg, nlvv(sff), subpart(sff, :lvsrc), subpart(sff, :lvtgt))
-    add_Plinks!(sfg, nlpv(sff), subpart(sff, :lpvp), subpart(sff, :lpvv))
-    
-
-    vop = subpart(sff, :vop)
-    set_subpart!(sfg, :vop, vop)
-
-    lvv = subpart(sff, :lvsposition)
-    set_subpart!(sfg, :lvsposition, lvv)
-
-
-    lvtgt = subpart(sff, :lvsrcposition)
-    set_subpart!(sfg, :lvsrcposition, lvtgt)
-
-
-    lsvv = subpart(sff, :lsvsvposition)
-    set_subpart!(sfg, :lsvsvposition, lsvv)
-
-
-    lpvv = subpart(sff, :lpvpposition)
-    set_subpart!(sfg, :lpvpposition, lpvv)
-
-    
-    return sfg
-
-end
-
-StockAndFlowU(sff::K) where {K <: AbstractStockAndFlowF} = convert(StockAndFlowU, sff)
-
-
-function FtoU(sff::K, sunits, punits) where {K <: AbstractStockAndFlowF}
-    sfg = StockAndFlowU()
-    
-    
-
-    dunits = collect(setdiff(Set(sunits) ∪ Set(punits)))
-    dunit_dict = state_dict(dunits)
-
-      
-
-    dunit_exp_dict = Dict{Union{Symbol, Expr}, Dict{Symbol, Float64}}()
-    unit_set = Set{Symbol}()
-    
-    for du in dunits
-        if du == :NONE
-            continue
-        end
-        dunit_exp_dict[du] = extract_exponents(du)
-        union!(unit_set, keys(dunit_exp_dict[du]))
-    end
-
-    
-    units = collect(unit_set)
-    
-    unit_dict = state_dict(units)
-    
-
-    
-    add_units!(sfg, length(units), uname=([Symbol(x) for x in units]))
-    add_dunits!(sfg, length(dunits), duname=([Symbol(x) for x in dunits]))
-    
-    for du in dunits
-        if du == :NONE
-            continue
-        end
-        for (u, exp) in pairs(dunit_exp_dict[du])
-            add_UDUlink!(sfg, unit_dict[u], dunit_dict[du], exp=exp)
-        end
-    end
-    
-
-
-    sdu = collect(map(x -> dunit_dict[x], sunits))
-    pdu = collect(map(x -> dunit_dict[x], punits))
-   
-    
-    add_stocks!(sfg, ns(sff), sname=snames(sff), sdu=sdu)
-    add_svariables!(sfg, nsv(sff), svname=svnames(sff))
-    add_variables!(sfg, nvb(sff), vname=vnames(sff))
-    add_flows!(sfg, (fv(sff, i) for i in 1:nf(sff)), nf(sff), fname=fnames(sff))
-    add_parameters!(sfg, np(sff), pname=pnames(sff), pdu=pdu)
-    
-    add_inflows!(sfg, ni(sff), subpart(sff, :is), subpart(sff, :ifn))
-    add_outflows!(sfg, no(sff), subpart(sff, :os), subpart(sff, :ofn))
-    add_Vlinks!(sfg, nlv(sff), subpart(sff, :lvs), subpart(sff, :lvv))
-    add_Slinks!(sfg, nls(sff), subpart(sff, :lss), subpart(sff, :lssv))
-    add_SVlinks!(sfg, nsv(sff), subpart(sff, :lsvsv), subpart(sff, :lsvv))
-    add_VVlinks!(sfg, nlvv(sff), subpart(sff, :lvsrc), subpart(sff, :lvtgt))
-    add_Plinks!(sfg, nlpv(sff), subpart(sff, :lpvp), subpart(sff, :lpvv))
-    
-
-    vop = subpart(sff, :vop)
-    set_subpart!(sfg, :vop, vop)
-
-    lvv = subpart(sff, :lvsposition)
-    set_subpart!(sfg, :lvsposition, lvv)
-
-
-    lvtgt = subpart(sff, :lvsrcposition)
-    set_subpart!(sfg, :lvsrcposition, lvtgt)
-
-
-    lsvv = subpart(sff, :lsvsvposition)
-    set_subpart!(sfg, :lsvsvposition, lsvv)
-
-
-    lpvv = subpart(sff, :lpvpposition)
-    set_subpart!(sfg, :lpvpposition, lpvv)
-
-    
-    return sfg
-end
-
-
-
-
-
-
-# const OpenStockAndFlowStructureUOb, OpenStockAndFlowStructureU = OpenACSetTypes(StockAndFlowUUntyped,StockAndFlowUntyped0U)
 const OpenStockAndFlowUOb, OpenStockAndFlowU = OpenACSetTypes(StockAndFlowUUntyped,StockAndFlowUntyped0U)
 
 
@@ -388,13 +249,6 @@ Open(p::StockAndFlowU, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenStockAndFlowU{Symbol,Symbol,Int8,Float64}(p, legs...)
 end
-
-
-
-
-
-
-
 
 
 
@@ -492,7 +346,3 @@ StockAndFlowU(s,p,v,f,sv,du,u) = begin
   end
   sf
 end
-
-
-
-# end
