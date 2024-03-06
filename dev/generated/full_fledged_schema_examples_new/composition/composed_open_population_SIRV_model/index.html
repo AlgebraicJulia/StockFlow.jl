@@ -251,7 +251,7 @@ open_svi=Open(svi, footS, footI)</code></pre><pre class="documenter-example-outp
   sname : S → Name = [:S, :V, :I]
   svname : SV → Name = [:N]
   fname : F → Name = [:f_vacc, :f_deathV, :f_infV]
-  vname : V → Name = [:v_vacV, :v_infV, Symbol(&quot;##v_f_vacc#628&quot;), Symbol(&quot;##v_f_deathV#629&quot;)]
+  vname : V → Name = [:v_vacV, :v_infV, Symbol(&quot;##v_f_vacc#615&quot;), Symbol(&quot;##v_f_deathV#616&quot;)]
   pname : P → Name = [:rvaccine, :rdeath, :lambda, :evaccine_complement]
   vop : V → Op = [:*, :*, :*, :*]
   lvsposition : LV → Position = Int8[2, 1, 1]
@@ -307,7 +307,7 @@ open_svi=Open(svi, footS, footI)</code></pre><pre class="documenter-example-outp
   sname : S → Name = [:S, :I, :R, :V]
   svname : SV → Name = [:N]
   fname : F → Name = [:f_birth, :f_inf, :f_rec, :f_deathS, :f_deathI, :f_deathR, :f_vacc, :f_deathV, :f_infV]
-  vname : V → Name = [:v_inf₁, :v_inf₂, :v_inf₃, Symbol(&quot;##v_f_birth#623&quot;), Symbol(&quot;##v_f_rec#624&quot;), Symbol(&quot;##v_f_deathS#625&quot;), Symbol(&quot;##v_f_deathI#626&quot;), Symbol(&quot;##v_f_deathR#627&quot;), :v_vacV, :v_infV, Symbol(&quot;##v_f_vacc#628&quot;), Symbol(&quot;##v_f_deathV#629&quot;)]
+  vname : V → Name = [:v_inf₁, :v_inf₂, :v_inf₃, Symbol(&quot;##v_f_birth#610&quot;), Symbol(&quot;##v_f_rec#611&quot;), Symbol(&quot;##v_f_deathS#612&quot;), Symbol(&quot;##v_f_deathI#613&quot;), Symbol(&quot;##v_f_deathR#614&quot;), :v_vacV, :v_infV, Symbol(&quot;##v_f_vacc#615&quot;), Symbol(&quot;##v_f_deathV#616&quot;)]
   pname : P → Name = [:rbirth, :cbeta, :rrecovery, :rdeath, :rvaccine, :rdeath, :lambda, :evaccine_complement]
   vop : V → Op = [:/, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*, :*]
   lvsposition : LV → Position = Int8[1, 2, 2, 1, 1, 1, 2, 1, 1]
@@ -441,7 +441,7 @@ GraphF(sirv_rewritten)</code></pre><img src="31353573.svg" alt="Example block ou
 
 prob_sirv = ODEProblem(vectorfield(sirv_rewritten),u0,(0.0,100.0),p);
 sol_sirv = solve(prob_sirv,Tsit5(),abstol=1e-8);
-plot(sol_sirv)</code></pre><img src="7150ee33.svg" alt="Example block output"/><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
+plot(sol_sirv)</code></pre><img src="44513998.svg" alt="Example block output"/><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
 &lt;style&gt;
 .output_svg div{
   width: 100% !important;
@@ -454,4 +454,4 @@ plot(sol_sirv)</code></pre><img src="7150ee33.svg" alt="Example block output"/><
   height: 100% !important;
 }
 </style>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">« Convert from SEIR Stock Flow Diagram</a><a class="docs-footer-nextpage" href="../COVID_full_model/">COVID Full Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Wednesday 14 February 2024 21:33">Wednesday 14 February 2024</span>. Using Julia version 1.10.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">« Convert from SEIR Stock Flow Diagram</a><a class="docs-footer-nextpage" href="../COVID_full_model/">COVID Full Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.3.0 on <span class="colophon-date" title="Wednesday 6 March 2024 18:29">Wednesday 6 March 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
