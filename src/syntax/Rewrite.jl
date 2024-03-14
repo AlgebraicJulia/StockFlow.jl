@@ -9,7 +9,7 @@ using ...StockFlow
 using ..Syntax
 import ..Syntax: parse_dyvar, parse_flow, parse_sum, parse_stock, 
 parse_param, sf_to_block, StockAndFlowBlock, stock_and_flow_syntax_to_arguments,
-StockArg, ParamArg
+StockArgT, ParamArgT
 
 
 using Catlab.ACSets.ACSetInterface
@@ -376,16 +376,16 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   sf_block::StockAndFlowBlock = sf_to_block(sf)
 
 
-  L_stocks::Vector{StockArg} = []
-  L_params::Vector{ParamArg} = []
+  L_stocks::Vector{StockArgT} = []
+  L_params::Vector{ParamArgT} = []
   L_dyvars::Vector{Tuple{Symbol,Expr}} = []
   L_flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
   L_sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
 
   L_block = StockAndFlowBlock(L_stocks, L_params, L_dyvars, L_flows, L_sums)
   
-  R_stocks::Vector{StockArg} = []
-  R_params::Vector{ParamArg} = []
+  R_stocks::Vector{StockArgT} = []
+  R_params::Vector{ParamArgT} = []
   R_dyvars::Vector{Tuple{Symbol,Expr}} = []
   R_flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
   R_sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
@@ -411,7 +411,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
   # Allows me to update in R repeatedly.
-  R_dict = Dict{Any, Tuple}()
+  R_dict = Dict{Any, Any}()
 
 
   
@@ -536,7 +536,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             val::Symbol => begin # stocks, params
               object_definition = parse_stock(val)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
-              push!(R_dict, object_definition[1] => object_definition)
+              push!(R_dict, object_definition.val => object_definition)
               push!(R_block.stocks, object_definition)
             end
           end
@@ -549,7 +549,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             val::Symbol => begin # stocks, params
               object_definition = parse_param(val)
               # You're adding it, so it's gonna be added.  No checking if it's already there.
-              push!(R_dict, object_definition[1] => object_definition)
+              push!(R_dict, object_definition.val => object_definition)
               push!(R_block.params, object_definition)
             end
           end

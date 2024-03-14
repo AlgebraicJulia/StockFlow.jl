@@ -107,7 +107,6 @@ export @stock_and_flow, @foot, @feet, infer_links, @stock_and_flow_U, @foot_U,
 @causal_loop
 
 using ..StockFlow
-# using ..StockFlow.StockFlowUnits
 using MLStyle
 
 import Base: ==, Iterators.flatmap
@@ -160,9 +159,47 @@ macro stock_and_flow(block)
     end
 end
 
+abstract type StockArgT end
+abstract type ParamArgT end
 
-StockArg = Union{Symbol, Tuple{Symbol, Union{Symbol, Expr}}}
-ParamArg = Union{Symbol, Tuple{Symbol, Union{Symbol, Expr}}}
+# struct StockArgUnitless <: StockArgT
+#     val::Symbol
+# end
+
+struct StockArgUnitSymbol <: StockArgT
+    val::Symbol
+    unit::Symbol
+end
+
+
+struct StockArgUnitExpr <: StockArgT
+    val::Symbol
+    unit::Expr
+end
+
+# convert(::Type{StockArgT}, s::Symbol) = StockArgUnitSymbol(s, :NONE)
+# convert(::Type{StockArgT}, s::Symbol, u::Symbol) = StockArgUnitSymbol(s, u)
+# convert(::Type{StockArgT}, s::Symbol, u::Expr) = StockArgUnitExpr(s, u)
+
+
+# struct ParamArgUnitless <: ParamArgT
+#     val::Symbol
+# end
+
+struct ParamArgUnitSymbol <: ParamArgT
+    val::Symbol
+    unit::Symbol
+end
+
+
+struct ParamArgUnitExpr <: ParamArgT
+    val::Symbol
+    unit::Expr
+end
+
+# convert(::Type{StockArgT}, p::Symbol) = ParamArgUnitSymbol(p, :NONE)
+# convert(::Type{StockArgT}, p::Symbol, u::Symbol) = ParamArgUnitSymbol(p, u)
+# convert(::Type{StockArgT}, p::Symbol, u::Expr) = ParamArgUnitExpr(p, u)
 
 """
     StockAndFlowBlock
@@ -180,8 +217,8 @@ Contains the elements that make up the Stock and Flow block syntax.
               `sum_name = [a, b, c, ...]`
 """
 struct StockAndFlowBlock
-    stocks::Vector{StockArg}
-    params::Vector{ParamArg}
+    stocks::Vector{StockArgT}
+    params::Vector{ParamArgT}
     dyvars::Vector{Tuple{Symbol,Expr}}
     flows::Vector{Tuple{Symbol,Expr,Symbol}}
     sums::Vector{Tuple{Symbol,Vector{Symbol}}}
@@ -259,8 +296,8 @@ A StockAndFlowSyntax data type which contains the syntax pieces required to defi
 a Stock and Flow model: stocks, parameters, dynamic variables, flows, and sums.
 """
 function parse_stock_and_flow_syntax(statements::Vector{Any})
-    stocks::Vector{StockArg} = []
-    params::Vector{ParamArg} = []
+    stocks::Vector{StockArgT} = []
+    params::Vector{ParamArgT} = []
     dyvars::Vector{Tuple{Symbol,Expr}} = []
     flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
     sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
@@ -306,8 +343,8 @@ data type instantiation
 Parameters for instantiation of a StockAndFlowF data type.
 """
 function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
-    stocks_no_units = map(x -> isa(x, Tuple) ? x[1] : x, syntax_elements.stocks)
-    params_no_units = map(x -> isa(x, Tuple) ? x[1] : x, syntax_elements.params)
+    stocks_no_units = Vector{Symbol}([s.val for s in syntax_elements.stocks])
+    params_no_units = Vector{Symbol}([p.val for p in syntax_elements.params])
     stocks = assemble_stock_definitions(
         stocks_no_units,
         syntax_elements.flows,
@@ -322,7 +359,7 @@ function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
 end
 
 """
-    parse_stock!(stocks :: Vector{StockArg}, stock :: Symbol)
+    parse_stock!(stocks :: Vector{StockArgT}, stock :: Symbol)
 
 Add a stock to the list of stocks.
 
@@ -336,17 +373,18 @@ is currently done by this function.
 ### Output
 None. This mutates the given stocks vector.
 """
-function parse_stock!(stocks::Vector{StockArg}, stock::Union{Symbol, Expr})
+function parse_stock!(stocks::Vector{StockArgT}, stock::Union{Symbol, Expr})
     push!(stocks, parse_stock(stock))
 end
 
 """
-    parse_stock(stock :: StockArg)
+    parse_stock(stock :: StockArgT)
 """
 function parse_stock(stock::Union{Symbol, Expr})
     @match stock begin
-        stock::Symbol => (stock, :NONE)
-        :($s:$unit) => (s, unit)
+        stock::Symbol => StockArgUnitSymbol(stock, :NONE)
+        :($s:$unit::Symbol) => StockArgUnitSymbol(s, unit)
+        :($s:$unit::Expr) => StockArgUnitExpr(s, unit)
         _ => error("Unknown argument $stock in stock syntax.")
     end
 end
@@ -367,15 +405,15 @@ so no work is currently done by this function.
 ### Output
 None. This mutates the given params vector.
 """
-function parse_param!(params::Vector{ParamArg}, param::Union{Symbol, Expr})
+function parse_param!(params::Vector{ParamArgT}, param::Union{Symbol, Expr})
     push!(params, parse_param(param))
 end
 
 function parse_param(param::Union{Symbol, Expr})
     @match param begin
-        param::Symbol => (param, :NONE)
-        :($p:$unit) => (p, unit)
-        _ => error("Unknown argument $param in param syntax.")
+        param::Symbol => ParamArgUnitSymbol(param, :NONE)
+        :($p:$unit::Symbol) => StockArgUnitSymbol(p, unit)
+        :($p:$unit::Expr) => StockArgUnitExpr(p, unit)
     end
 end
 """
@@ -1293,8 +1331,8 @@ Could be different from the initial definition, since this creates flows of form
 Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
 """
 function sf_to_block(sf::AbstractStockAndFlowF)
-    stocks = Vector{StockArg}(snames(sf))
-    params = Vector{StockArg}(pnames(sf))
+    stocks = Vector{StockArgT}(map(x -> StockArgUnitSymbol(x, :NONE), snames(sf)))
+    params = Vector{ParamArgT}(map(x -> StockArgUnitSymbol(x, :NONE), pnames(sf)))
     sums = Vector{Tuple{Symbol, Vector{Symbol}}}([(svname, collect(map(x -> sname(sf, x), stockssv(sf, i)))) for (i, svname) ∈ enumerate(svnames(sf))])
     dyvars = Vector{Tuple{Symbol, Expr}}([(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))])
     flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]
