@@ -1,9 +1,9 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
 nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
-Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
+POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
-outgoing_edges, incoming_edges, extract_loops
+outgoing_edges, incoming_edges, extract_loops, OpenCausalLoopF, Open
 
 
 using MLStyle
@@ -27,14 +27,22 @@ import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
   nname::Attr(N, Name)
 end
 
-@enum Polarity begin
-  POL_ZERO
-  POL_REINFORCING
-  POL_BALANCING
-  POL_UNKNOWN
-  POL_NOT_WELL_DEFINED
-end
-  
+POL_ZERO = :POL_ZERO
+POL_REINFORCING = :POL_REINFORCING
+POL_BALANCING = :POL_BALANCING
+POL_UNKNOWN = :POL_UNKNOWN
+POL_NOT_WELL_DEFINED = :POL_NOT_WELL_DEFINED
+
+# @enum Polarity begin
+#   POL_ZERO
+#   POL_REINFORCING
+#   POL_BALANCING
+#   POL_UNKNOWN
+#   POL_NOT_WELL_DEFINED
+# end
+
+# convert(::Type{Union{ACSets.ColumnImplementations.AttrVar, Function}}, x::Polarity) = convert(ACSets.ColumnImplementations.AttrVar, Int64(x))
+
 
 @present TheoryCausalLoopF <: TheoryCausalLoop begin
   Polarity::AttrType
@@ -45,7 +53,10 @@ end
 @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
 @acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
 const CausalLoop = CausalLoopUntyped{Symbol} 
-const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
+const CausalLoopF = CausalLoopFUntyped{Symbol, Symbol}
+
+const OpenCausalLoopFOb, OpenCausalLoopF = OpenACSetTypes(CausalLoopFUntyped, CausalLoopFUntyped)
+
 
 add_node!(c::AbstractCausalLoop;kw...) = add_part!(c,:N;kw...) 
 add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)
@@ -91,6 +102,9 @@ CausalLoopF(ns, es, pols) = begin
   c
 end
 
+
+
+
 # return the count of each components
 """ return count of nodes of CLD """
 nn(c::AbstractCausalLoop) = nparts(c,:N) #nodes
@@ -111,11 +125,17 @@ epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
 
 epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
 
+ename(c::AbstractCausalLoop, e) = (sedge(c, e), tedge(c, e), epol(c,e))
+enames(c::AbstractCausalLoop) = [ename(c,e) for e in 1:ne(c)]
 
 outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
 incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
 
-
+leg(a::CausalLoopF, x::CausalLoopF) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), N=ntcomponent(nnames(a), nnames(x)))
+Open(p::CausalLoopF, feet...) = begin
+  legs = map(x->leg(x, p), feet)
+  OpenCausalLoopF{Symbol,Symbol}(p, legs...)
+end
 
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     
@@ -186,7 +206,7 @@ function extract_loops(cl::CausalLoopF)
   g = SimpleDiGraph(SimpleEdge.(edges))
 
   # Edges => Polarity
-  cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
+  cycle_pol = Vector{Pair{Vector{Int}, Symbol}}()
   for cycle ∈ simplecycles(g)
     cycle_length = length(cycle)
     # Last pair is cycle[end], cycle[1]

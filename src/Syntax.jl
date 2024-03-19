@@ -1291,7 +1291,7 @@ function causal_loop_macro(block)
   Base.remove_linenums!(block)
   edges = Vector{Pair{Symbol, Symbol}}()
   nodes = Vector{Symbol}()
-  polarities = Vector{Polarity}()
+  polarities = Vector{Symbol}()
 
   current_phase = (_, _) -> ()
   for statement in block.args
