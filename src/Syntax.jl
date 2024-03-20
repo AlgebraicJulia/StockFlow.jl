@@ -1291,7 +1291,7 @@ function causal_loop_macro(block)
   Base.remove_linenums!(block)
   edges = Vector{Pair{Symbol, Symbol}}()
   nodes = Vector{Symbol}()
-  polarities = Vector{Symbol}()
+  polarities = Vector{Polarity}()
 
   current_phase = (_, _) -> ()
   for statement in block.args
@@ -1302,23 +1302,23 @@ function causal_loop_macro(block)
       QuoteNode(:edges) => begin
         current_phase = e -> begin
           @match e begin
-            :($A = $B) => begin
+            :($A -> ! $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_ZERO)
             end
-            :($A > $B) => begin
+            :($A -> - $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_BALANCING)
             end
-            :($A < $B) => begin
+            :($A -> + $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_REINFORCING)
             end
-            :($A ~ $B) => begin
+            :($A -> ~ $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_UNKNOWN)
             end
-            :($A ^ $B) => begin
+            :($A -> ± $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_NOT_WELL_DEFINED)
             end
