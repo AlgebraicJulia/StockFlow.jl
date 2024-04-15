@@ -383,8 +383,8 @@ end
 function parse_stock(stock::Union{Symbol, Expr})
     @match stock begin
         stock::Symbol => StockArgUnitSymbol(stock, :NONE)
-        :($s:$unit::Symbol) => StockArgUnitSymbol(s, unit)
-        :($s:$unit::Expr) => StockArgUnitExpr(s, unit)
+        :($s:$(unit::Symbol)) => StockArgUnitSymbol(s, unit)
+        :($s:$(unit::Expr)) => StockArgUnitExpr(s, unit)
         _ => error("Unknown argument $stock in stock syntax.")
     end
 end
@@ -412,8 +412,8 @@ end
 function parse_param(param::Union{Symbol, Expr})
     @match param begin
         param::Symbol => ParamArgUnitSymbol(param, :NONE)
-        :($p:$unit::Symbol) => StockArgUnitSymbol(p, unit)
-        :($p:$unit::Expr) => StockArgUnitExpr(p, unit)
+        :($p:$(unit::Symbol)) => ParamArgUnitSymbol(p, unit)
+        :($p:$(unit::Expr)) => ParamArgUnitExpr(p, unit)
     end
 end
 """
@@ -1360,30 +1360,48 @@ Used so we can maintain equality when making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
 
-
+"""
+StockAndFlowBlock -> StockAndFlowUArguments
+"""
 function stock_and_flow_units_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
-    # stocks_units = [stock => Symbol(unit) for (stock, unit) in syntax_elements.stocks]
-    stocks_symbols = map(first, syntax_elements.stocks)
-    stock_dunits = map(last, syntax_elements.stocks)
-    params_units = [param => Symbol(unit) for (param, unit) in syntax_elements.params]
-    stocks = assemble_stock_definitions(
+    stocks_symbols = Vector{Symbol}([stock.val for stock in syntax_elements.stocks])
+
+    stocks_dunits = Vector{Union{Symbol, Expr}}([stock.unit for stock in syntax_elements.stocks])
+
+    params_symbols = Vector{Symbol}([param.val for param in syntax_elements.params])
+
+    params_dunits = Vector{Union{Symbol, Expr}}([param.unit for param in syntax_elements.params])
+
+    # [stock => (inputs, outputs, sums), ...]
+    assembled_stocks = assemble_stock_definitions(
         stocks_symbols,
         syntax_elements.flows,
         syntax_elements.sums,
     )
-    stocks = [(stock => Symbol(dunit)) => vals for ((stock, vals), dunit) in zip(stocks, stock_dunits)]
-    params = params_units
+
+    
+    # [(stock => dunit) => (inputs, outputs, sums), ...]
+    stocks = [(stock => Symbol(dunit)) => vals for ((stock, vals), dunit) in zip(assembled_stocks, stocks_dunits)]
+
+    params = Vector{Pair{Symbol, Symbol}}(Pair.(params_symbols, Symbol.(params_dunits)))
+
+
     dyvars = dyvar_exprs_to_symbolic_repr(syntax_elements.dyvars)
     dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
+
     (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
+
     sums = sum_variables(syntax_elements.sums)
 
     dunits = Vector{Pair{Symbol, Vector{Pair{Symbol, Float64}}}}()
+
     units = Vector{Symbol}()
 
     dunit_set = Set{Union{Expr, Symbol}}()
     unit_set = Set{Symbol}()
-    for (object, dunit) in vcat(syntax_elements.stocks, syntax_elements.params)
+    for (object, dunit) in zip(vcat(stocks_symbols, params_symbols), vcat(stocks_dunits, params_dunits))
+        
+        # vcat(syntax_elements.stocks, syntax_elements.params)
         if dunit ∉ dunit_set
             push!(dunit_set, dunit)
             if dunit == :NONE
