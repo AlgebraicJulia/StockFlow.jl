@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, infer_links, @causal_loop
+export @stock_and_flow, @foot, @feet, infer_links, @causal_loop, @cl
 
 using ..StockFlow
 using MLStyle
@@ -1281,10 +1281,67 @@ Used so we can maintain equality when making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
 
+function match_cl_format(statement, nodes, edges, polarities)
+    @match statement begin
+            :($A => !$B) => begin
+            # :($A => Expr(:quote, :(! $B))) => begin
+              push!(nodes, A, B)
+              push!(edges, A => B)
+              push!(polarities, POL_ZERO)
+            end
+            :($A => - $B) => begin
+              push!(nodes, A, B)
+              push!(edges, A => B)
+              push!(polarities, POL_BALANCING)
+            end
+            :($A => + $B) => begin
+              push!(nodes, A, B)
+
+              push!(edges, A => B)
+              push!(polarities, POL_REINFORCING)
+            end
+            :($A => ~ $B) => begin
+            push!(nodes, A, B)
+
+              push!(edges, A => B)
+              push!(polarities, POL_UNKNOWN)
+            end
+            :($A => ± $B) => begin
+            push!(nodes, A, B)
+
+              push!(edges, A => B)
+              push!(polarities, POL_NOT_WELL_DEFINED)
+            end
+            :($A) => begin
+            push!(nodes, A)
+        end
+    end
+end
 
 
 
+function cl_macro(block)
 
+    if block isa Symbol
+        return CausalLoopF(Vector{Symbol}([block]), Vector{Int}([]), Vector{Polarity}([]))
+    end
+
+    edges = Vector{Pair{Symbol, Symbol}}()
+    nodes = Vector{Symbol}()
+    polarities = Vector{Polarity}()
+
+    @match block.head begin
+        :tuple => begin
+            for statement in block.args
+                match_cl_format(statement, nodes, edges, polarities)
+            end
+        end
+        :call => match_cl_format(block, nodes, edges, polarities)
+    end
+        
+    return CausalLoopF(unique(nodes), edges, polarities)
+
+end
 
 
 function causal_loop_macro(block)
@@ -1302,23 +1359,23 @@ function causal_loop_macro(block)
       QuoteNode(:edges) => begin
         current_phase = e -> begin
           @match e begin
-            :($A -> ! $B) => begin
+            :($A => ! $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_ZERO)
             end
-            :($A -> - $B) => begin
+            :($A => - $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_BALANCING)
             end
-            :($A -> + $B) => begin
+            :($A => + $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_REINFORCING)
             end
-            :($A -> ~ $B) => begin
+            :($A => ~ $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_UNKNOWN)
             end
-            :($A -> ± $B) => begin
+            :($A => ± $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_NOT_WELL_DEFINED)
             end
@@ -1345,6 +1402,10 @@ macro causal_loop(block)
   end
 end
 
+macro cl(block)
+    Base.remove_linenums!(block)
+    return cl_macro(block)
+end
 
 
 
