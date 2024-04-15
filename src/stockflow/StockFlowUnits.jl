@@ -275,7 +275,7 @@ StockAndFlowU(s,p,v,f,sv,du,u) = begin
   s_idx = state_dict(sname)
   f_idx = state_dict(fname)
   v_idx = state_dict(vname)
-  p_idx = state_dict(p)
+  p_idx = state_dict(pname)
   sv_idx = state_dict(sv)
   du_idx = state_dict(duname)
   u_idx = state_dict(u)
@@ -295,6 +295,8 @@ StockAndFlowU(s,p,v,f,sv,du,u) = begin
 
 
   add_UDUlinks!(sf, length(ludu), luu, ludu ; exp=exp)
+
+  # @show sf length(p) pname [du_idx[derived_unit] for derived_unit in map(last,  p)]
 
   add_parameters!(sf,length(p),pname=pname, pdu=[du_idx[derived_unit] for derived_unit in map(last, p)])
   add_svariables!(sf, length(sv), svname=sv)
@@ -331,11 +333,12 @@ StockAndFlowU(s,p,v,f,sv,du,u) = begin
 #    @assert op in Operators[length(args)]
 
     for (i,arg) in enumerate(args)
+
       if arg in sname
         add_Vlink!(sf, s_idx[arg], v_idx[vn], lvsposition=i)
       elseif arg in vname
         add_VVlink!(sf, v_idx[arg], v_idx[vn], lvsrcposition=i)
-      elseif arg in p
+      elseif arg in pname
         add_Plink!(sf, p_idx[arg], v_idx[vn], lpvpposition=i)
       elseif arg in sv
         add_SVlink!(sf, sv_idx[arg], v_idx[vn], lsvsvposition=i)
