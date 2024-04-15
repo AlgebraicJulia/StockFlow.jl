@@ -159,8 +159,10 @@ macro stock_and_flow(block)
     end
 end
 
-abstract type StockArgT end
-abstract type ParamArgT end
+abstract type UnitArgT end
+
+abstract type StockArgT <: UnitArgT end
+abstract type ParamArgT <: UnitArgT end
 
 # struct StockArgUnitless <: StockArgT
 #     val::Symbol
@@ -201,6 +203,8 @@ end
 # convert(::Type{StockArgT}, p::Symbol, u::Symbol) = ParamArgUnitSymbol(p, u)
 # convert(::Type{StockArgT}, p::Symbol, u::Expr) = ParamArgUnitExpr(p, u)
 
+abstract type AbstractStockAndFlowBlock end
+
 """
     StockAndFlowBlock
 
@@ -216,12 +220,24 @@ Contains the elements that make up the Stock and Flow block syntax.
 - `sums`   -- Each sum is defined by a valid Julia assignment statement of the form
               `sum_name = [a, b, c, ...]`
 """
-struct StockAndFlowBlock
+struct StockAndFlowBlock <: AbstractStockAndFlowBlock
     stocks::Vector{StockArgT}
     params::Vector{ParamArgT}
     dyvars::Vector{Tuple{Symbol,Expr}}
     flows::Vector{Tuple{Symbol,Expr,Symbol}}
     sums::Vector{Tuple{Symbol,Vector{Symbol}}}
+end
+
+struct StockAndFlowUBlock <: AbstractStockAndFlowBlock
+
+    stocks::Vector{StockArgT}
+    params::Vector{ParamArgT}
+    dyvars::Vector{Tuple{Symbol,Expr}}
+    flows::Vector{Tuple{Symbol,Expr,Symbol}}
+    sums::Vector{Tuple{Symbol,Vector{Symbol}}}
+
+    units::Vector{Symbol}
+    dunits::Vector{Union{Expr, Symbol}}
 end
  
 
@@ -243,6 +259,7 @@ struct Ref <: DyvarExprT
 end
 get(r::Ref) = r.ref
 get(b::Binop) = b.binop
+
 struct StockAndFlowArguments
     stocks::Vector{
         Pair{
@@ -295,12 +312,16 @@ defined for Stock and Flow diagrams.
 A StockAndFlowSyntax data type which contains the syntax pieces required to define
 a Stock and Flow model: stocks, parameters, dynamic variables, flows, and sums.
 """
-function parse_stock_and_flow_syntax(statements::Vector{Any})
+function parse_stock_and_flow_syntax(statements::Vector{Any})::StockAndFlowUBlock
     stocks::Vector{StockArgT} = []
     params::Vector{ParamArgT} = []
     dyvars::Vector{Tuple{Symbol,Expr}} = []
     flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
     sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
+
+    units::Vector{Symbol} = []
+    dunits::Vector{Union{Symbol, Expr}} = []
+
     current_phase = (_, _) -> ()
     for statement in statements
         @match statement begin
@@ -319,13 +340,19 @@ function parse_stock_and_flow_syntax(statements::Vector{Any})
             QuoteNode(:sums) => begin
                 current_phase = s -> parse_sum!(sums, s)
             end
+            QuoteNode(:units) => begin
+                current_phase = u -> parse_units!(units, u)
+            end
+            QuoteNode(:derived_units) => begin
+                current_phase = du -> parse_dunits!(dunits, du)
+            end
             QuoteNode(kw) =>
                 error("Unknown block type for Stock and Flow syntax: " * String(kw))
             _ => current_phase(statement)
         end
     end
 
-    s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
+    s = StockAndFlowUBlock(stocks, params, dyvars, flows, sums)
     return s
 end
 
