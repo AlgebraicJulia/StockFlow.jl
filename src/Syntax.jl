@@ -104,7 +104,7 @@ end
 """
 module Syntax
 export @stock_and_flow, @foot, @feet, infer_links, @stock_and_flow_U, @foot_U,
-@causal_loop
+@causal_loop,StockArgUnitSymbol, ParamArgUnitSymbol, StockArgUnitExpr, ParamArgUnitExpr
 
 using ..StockFlow
 using MLStyle
@@ -1331,8 +1331,8 @@ Could be different from the initial definition, since this creates flows of form
 Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
 """
 function sf_to_block(sf::AbstractStockAndFlowF)
-    stocks = Vector{StockArgT}(map(x -> StockArgUnitSymbol(x, :NONE), snames(sf)))
-    params = Vector{ParamArgT}(map(x -> StockArgUnitSymbol(x, :NONE), pnames(sf)))
+    stocks = Vector{StockArgUnitSymbol}(map(x -> StockArgUnitSymbol(x, :NONE), snames(sf)))
+    params = Vector{ParamArgUnitSymbol}(map(x -> ParamArgUnitSymbol(x, :NONE), pnames(sf)))
     sums = Vector{Tuple{Symbol, Vector{Symbol}}}([(svname, collect(map(x -> sname(sf, x), stockssv(sf, i)))) for (i, svname) ∈ enumerate(svnames(sf))])
     dyvars = Vector{Tuple{Symbol, Expr}}([(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))])
     flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]

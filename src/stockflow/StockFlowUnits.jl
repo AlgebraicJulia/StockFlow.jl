@@ -3,7 +3,7 @@ using MLStyle
 
 export add_unit!, add_units!, add_dunit!, add_dunits!, add_UDUlink!, add_UDUlinks!,
 uname, unames, duname, dunames, set_unames!, set_exps!, convert, StockAndFlowU, set_sdu!, set_pdu!,
-FtoU, StockAndFlow0U, footU, Open, get_sdu, get_pdu, extract_exponents
+FtoU, StockAndFlow0U, footU, Open, get_sdu, get_pdu, get_sdus, get_pdus, get_exps, extract_exponents, lunames
 
 
 @present TheoryStockAndFlow0U <: TheoryStockAndFlow0 begin
@@ -177,12 +177,17 @@ dunames(p::Union{StockAndFlowU, StockAndFlow0U}) = subpart(p,:duname)
 set_unames!(p::StockAndFlowU, names) = set_subpart!(p, :uname, names)
 set_dunames!(p::StockAndFlowU, names) = set_subpart!(p, :duname, names)
 set_exps!(p::StockAndFlowU, exps) = set_subpart!(p, :exp, exps)
+get_exps(p::StockAndFlowU) = subpart(p, :exp)
 
 
 set_sdu!(p::StockAndFlowU, du) = set_subpart!(p, :sdu, du)
 set_pdu!(p::StockAndFlowU, du) = set_subpart!(p, :pdu, du)
 
+
+get_sdus(p::Union{StockAndFlowU, StockAndFlow0U}) = subpart(p, :sdu)
 get_sdu(p::Union{StockAndFlowU, StockAndFlow0U}, s) = subpart(p, :sdu)[s]
+
+get_pdus(p::StockAndFlowU) = subpart(p, :pdu)
 get_pdu(p::StockAndFlowU, param) = subpart(p, :pdu)[param]
 
 # get_sdu(p::StockAndFlowU, du) = subpart(p, :pdu, )
@@ -296,7 +301,6 @@ StockAndFlowU(s,p,v,f,sv,du,u) = begin
 
   add_UDUlinks!(sf, length(ludu), luu, ludu ; exp=exp)
 
-  # @show sf length(p) pname [du_idx[derived_unit] for derived_unit in map(last,  p)]
 
   add_parameters!(sf,length(p),pname=pname, pdu=[du_idx[derived_unit] for derived_unit in map(last, p)])
   add_svariables!(sf, length(sv), svname=sv)

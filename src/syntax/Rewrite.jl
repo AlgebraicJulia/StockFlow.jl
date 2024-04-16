@@ -300,7 +300,6 @@ function swap_from_dyvars!(src, tgt, sf_block, L_block, L_set, R_block, R_dict, 
             object_type = name_dict[particular_object][1]
             object_index = name_dict[particular_object][2]
             object_definition = get_from_correct_vector(sf_block, object_index, object_type)
-
             push!(L_set, particular_object)
             add_to_correct_vector!(L_block, object_definition, object_type)
           end
@@ -432,12 +431,12 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
               definition = deepcopy(sf_block.flows[index])
               stock1 = definition[1]
               if stock1 != :F_NONE && stock1 ∉ L_set && stock1 ∈ keys(name_dict)
-                push!(L_block.stocks, stock1)
+                push!(L_block.stocks, StockArgUnitSymbol(stock1, :NONE))
                 push!(L_set, stock1)
               end
               stock2 = definition[3]
               if stock2 != :F_NONE && stock2 ∉ L_set && stock2 ∈ keys(name_dict)
-                push!(L_block.stocks, stock2)
+                push!(L_block.stocks, StockArgUnitSymbol(stock2, :NONE))
                 push!(L_set, stock2)
               end
               flow_var = definition[2].args[2]
@@ -614,7 +613,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     for stock ∈ sum[2]
       if stock ∉ L_set
         push!(L_set, stock)
-        push!(L_block.stocks, stock)
+        push!(L_block.stocks, StockArgUnitSymbol(stock, :NONE))
       end
     end
   end
@@ -630,11 +629,11 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       push!(L_set, flow[2].args[1])
       if stock1 ∉ L_set
         push!(L_set, stock1)
-        push!(L_block.stocks, stock1)
+        push!(L_block.stocks, StockArgUnitSymbol(stock1, :NONE))
       end
       if stock2 ∉ L_set
         push!(L_set, stock2)
-        push!(L_block.stocks, stock2)
+        push!(L_block.stocks, StockArgUnitSymbol(stock2, :NONE))
       end
       if flow[2].args[2] ∉ L_set
         push!(L_set, flow[2].args[2])
@@ -646,13 +645,13 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   end
         
 
-
   
   I_block = deepcopy(L_block)
+  
 
 
-  filter!(∉(removed_set), I_block.stocks)
-  filter!(∉(removed_set), I_block.params)
+  filter!(s -> s.val ∉ removed_set, I_block.stocks)
+  filter!(p -> p.val ∉ removed_set, I_block.params)
   filter!(x -> x[1] ∉ removed_set, I_block.sums)
   filter!(x -> x[1] ∉ removed_set, I_block.dyvars)
   filter!(x -> x[2].args[1] ∉ removed_set, I_block.flows)
@@ -680,7 +679,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
   end
 
-
   for (i, flow) ∈ enumerate(I_block.flows)
     if flow[2].args[1] in keys(modified_dict)
       I_block.flows[i] = modified_dict[flow[2].args[1]]
@@ -697,16 +695,15 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
   end
 
-
   for s in I_block.stocks
-    if s ∉ keys(R_dict)
-      push!(R_dict, s => (s, ))
+    if s.val ∉ keys(R_dict)
+      push!(R_dict, s.val => s)
       push!(R_block.stocks, s)
     end
   end
   for p in I_block.params
-    if p ∉ keys(R_dict)
-      push!(R_dict, p => (p, ))
+    if p.val ∉ keys(R_dict)
+      push!(R_dict, p.val => (p, ))
       push!(R_block.params, p)
     end
   end
@@ -745,7 +742,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     for stock ∈ sum[2]
       if stock ∉ keys(R_dict)
         push!(R_dict, stock => (stock,))
-        push!(R_block.stocks, stock)
+        push!(R_block.stocks, StockArgUnitSymbol(stock, :NONE))
       end
     end
   end
@@ -758,13 +755,11 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   mv_array = [max_val,max_val]
 
 
-  sort!(R_block.stocks, by = x-> get(name_dict, x, mv_array)[2])
-  sort!(R_block.params, by = x-> get(name_dict, x, mv_array)[2])
+  sort!(R_block.stocks, by = x-> get(name_dict, x.val, mv_array)[2])
+  sort!(R_block.params, by = x-> get(name_dict, x.val, mv_array)[2])
   sort!(R_block.dyvars, by = x-> get(name_dict, x[1], mv_array)[2])
   sort!(R_block.sums, by = x-> get(name_dict, x[1], mv_array)[2])
   sort!(R_block.flows, by = x-> get(name_dict, x[2].args[1], mv_array)[2])
-
-
   
   L_args = stock_and_flow_syntax_to_arguments(L_block)
 

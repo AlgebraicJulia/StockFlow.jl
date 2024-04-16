@@ -5,6 +5,10 @@ using StockFlow
     include("Syntax.jl")
 end
 
+@testset "StockFlow Units" begin
+    include("stockflow/StockFlowUnits.jl")
+end
+
 @testset "Attribute names prefixes and suffixes" begin
     include("SystemStructure.jl")
 end
