@@ -360,7 +360,631 @@ function recursively_add_dyvars_R!(current_dyvar, sf_block, new_block, new_dict,
   end
   
 end
+
+struct SFPointer
+  type::Symbol
+  index::Int
+end
+
+
+
+function remove_from_sums2!(stock_name, sf_block, L, L_set, name_dict)
+  for sum ∈ sf_block.sums
+    sum_name = sum[1]
+    sum_stocks = sum[2]
+    # for loop because it's technically possible for a stock
+    # to be linked to a sum twice.
+    for sum_stock in sum_stocks
+      if sum_stock == stock_name
+        stock_index = name_dict[stock_name].index
+        if sum_name ∉ L_set
+          add_part!(L, :SV ; svname = sum_name)
+          # add_part!(L, :LS ; lvs = stock_index, lvv = nsv(L))
+          sum_index = nsv(L)
+        else
+          sum_index = findfirst(==(sum_name), svnames(L))
+        end
+        add_part!(L, :LS ; lvs = stock_index, lvv = sum_index)
+      end
+    end
+  end
+end
+
+function remove_from_dyvars2!(object_name, sf_block, L, L_set, name_dict)
+  for dyvar ∈ sf_block.dyvars
+    dyvar_name = dyvar[1]
+    dyvar_expression = dyvar[2].args
+    dyvar_op = dyvar_expression[1]
+    for (operand_index, operand) in enumerate(dyvar_expression[2:end])
+      if operand == object_name
+
+        object_type = name_dict[object_name].type
+      
+
+        if dyvar_name ∉ L_set
+          add_part!(L, :V ; vname = dyvar_name, vop = dyvar_op)
+          push!(L_set, dyvar_name)
+          dyvar_index = nvb(L)
+        else
+          dyvar_index = findfirst(==(dyvar_name), vnames(L))
+        end
+
+        if object_type == :S
+          stock_index = findfirst(==(object_name), snames(L))
+          add_part!(L, :LV ; lvv = dyvar_index, lvs = stock_index, lvsposition = operand_index)
+
+        elseif object_type == :P
+          param_index = findfirst(==(object_name), pnames(L))
+          add_part!(L, :LPV ; lpvv = dyvar_index, lpvp = param_index, lpvpposition = operand_index)
+
+        elseif object_type == :V
+          dyvar2_index = findfirst(==(object_name), vnames(L))
+          add_part!(L, :LVV ; lvtgt = dyvar_index, lvsrc = dyvar2_index, lvsrcposition = operand_index)
         
+        elseif object_type == :SV
+          sum_index = findfirst(==(object_name), svnames(L))
+          add_part!(L, :LSV ; lsvv = dyvar_index, lsvsv = sum_index, lsvsvposition = operand_index)
+        
+        # could have a check if it's a F as well...
+
+        end #if/elseif
+      end # if
+    end # for oper
+  end # for dyvar
+end #func
+
+# TODO
+function remove_from_flow!(object_name, sf_block, L, L_set, name_dict) end
+
+function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
+
+  Base.remove_linenums!(block)
+  name_vector = [snames(sf) ; svnames(sf) ; vnames(sf) ; fnames(sf) ; pnames(sf)]
+  @assert allunique(name_vector) "Not all names are unique!  $(filter(x -> count(y -> y == x, name_vector) >= 2, name_vector))"
+
+  # Unfortunately, this makes it un-extendable to general schemas...it'll only work for StockAndFlowF...
+  sf_block::StockAndFlowBlock = sf_to_block(sf)
+
+  L = StockAndFlowF()
+
+  name_dict = Dict{Symbol, SFPointer}([
+    [s => SFPointer(:S, i) for (i, s) ∈ enumerate(snames(sf))] ;
+    [sv => SFPointer(:SV, i) for (i, sv) ∈ enumerate(svnames(sf))] ;
+    [v => SFPointer(:V, i) for (i, v) ∈ enumerate(vnames(sf))] ;
+    [f => SFPointer(:F, i) for (i, f) ∈ enumerate(fnames(sf))] ;
+    [p => SFPointer(:P, i) for (i, p) ∈ enumerate(pnames(sf))]
+  ])
+
+  # symbols added to L
+  L_set = Set{Symbol}()
+
+  L_redef_queue = Vector{Expr}()
+
+  # used to construct I.  Take L_set - removed_set
+  removed_set = Set{Symbol}()
+
+  R_stock_queue = Vector{Symbol}()
+  R_param_queue = Vector{Symbol}()
+  R_sum_queue = Vector{Expr}()
+  R_dyvar_queue = Vector{Expr}()
+  R_flow_queue = Vector{Expr}()
+
+  # R_name_dict = Dict{Symbol, SFPointer}()
+
+  current_phase = (_, _) -> ()
+  for statement in block.args
+    @match statement begin
+      QuoteNode(:removes) => begin
+        current_phase = removed -> begin
+          push!(removed_set, removed)
+          if (removed in L_set)
+            return
+          end
+
+          push!(L_set, removed)
+
+          object_pointer = name_dict[removed]
+          object_type = object_pointer.type
+          if object_type == :S
+            object_definition = sf_block.stocks[object_pointer.index]
+            add_part!(L, :S ; sname = object_definition.val)
+            remove_from_sums2!(object_definition.val, sf_block, L, L_set, name_dict)
+            remove_from_dyvars2!(object_definition.val, sf_block, L, L_set, name_dict)
+          elseif object_type == :P
+            object_definition = sf_block.params[object_pointer.index]
+            add_part!(L, :P ; pname = object_definition.val)
+            remove_from_dyvars2!(object_definition.val, sf_block, L, L_set, name_dict)
+          elseif object_type == :V
+            object_definition = sf_block.dyvars[object_pointer.index]
+            dyvar_op = object_definition[2].args[1]
+            vname = object_definition[1]
+            add_part!(L, :V ; vname = vname, vop = dyvar_op)
+            remove_from_dyvars2!(vname, sf_block, L, L_set, name_dict)
+          elseif object_type == :SV
+            object_definition = sf_block.sums[object_pointer.index]
+            svname = object_definition[1]
+            add_part!(L, :SV ; svname = svname)
+            remove_from_dyvars2!(svname, sf_block, L, L_set, name_dict)
+          elseif object_type == :F
+            object_definition = sf_block.flows[object_pointer.index]
+            #TODO: need to add dyvar before adding flow.
+            # fname = object_definition.args[3].args[2].args[1]
+            # remove_from_flow!(object_name, sf_block, L, L_set, name_dict)
+          end
+        end
+      end
+
+      QuoteNode(:remove_links) => begin
+        current_phase = l -> begin
+          src = nothing
+          tgt = nothing
+          pos = 0
+          @match l begin
+            
+            :($(srca::Symbol) => $(tgta::Symbol)) => begin
+              src = srca
+              tgt = tgta
+            end
+
+            :($(srca::Symbol) => $(tgta::Symbol), $(position::Int)) => begin
+              src = srca
+              tgt = tgta
+              pos = position
+            end
+
+            # TODO: error case
+
+          end
+
+
+          src_pointer = name_dict[src]
+          tgt_pointer = name_dict[tgt]
+
+          src_type = src_pointer.type
+          tgt_type = tgt_pointer.type
+          # @show L_set
+          # @show L
+          if tgt_type == :V
+            # @show tgt
+            if !(tgt in L_set)
+              push!(L_set, tgt)
+              dyvar_op = sf_block.dyvars[tgt_pointer.index][2].args[1]
+              add_variable!(L ; vname = tgt, vop = dyvar_op)
+
+            end
+
+            tgt_index = findfirst(==(tgt), vnames(L))
+            original_tgt_index = tgt_pointer.index
+
+
+            if pos == 0
+              pos_matches = findall(==(src), sf_block.dyvars[original_tgt_index][2].args[2:end])
+            else
+              pos_matches = [pos]
+            end
+
+
+            if src_type == :S
+              if !(src in L_set)
+                push!(L_set, src)
+                add_stock!(L ; sname = src)
+
+              end
+              
+              src_L_index = findfirst(==(src), snames(L))
+
+              for p in pos_matches
+                add_part!(L, :LV ; lvs = src_L_index, lvv = tgt_index, lvsposition = p)
+              end
+
+
+            elseif src_type == :P
+
+              if !(src in L_set)
+                push!(L_set, src)
+                add_parameter!(L ; pname = src)
+              end
+
+              src_L_index = findfirst(==(src), pnames(L))
+
+              for p in pos_matches
+                add_part!(L, :LPV ; lpvp = src_L_index, lpvv = tgt_index, lpvpposition = p)
+              end
+            elseif src_type == :SV
+              if !(src in L_set)
+                push!(L_set, src)
+                add_svariable!(L ; svname = src)
+              end
+
+              src_L_index = findfirst(==(src), svnames(L))
+
+              for p in pos_matches
+                add_part!(L, :LSV ; lsvsv = src_L_index, lsvv = tgt_index, lsvsvposition = p)
+              end
+            elseif src_type == :V
+              if !(src in L_set)
+                push!(L_set, src)
+                add_variable!(L ; vname = src, vop = sf_block.dyvars[src_pointer.index][2].args[1])
+              end
+              src_L_index = findfirst(==(src), vnames(L))
+
+              for p in pos_matches
+                add_part!(L, :LVV ; lvsrc = src_L_index, lvtgt = tgt_index, lvsrcposition = p)
+              end
+            #TODO: check for flows?
+            end # if src_type
+
+          elseif tgt_type == :SV
+            # src must be stock
+            tgt_index = findfirst(==(tgt), svnames(L))
+            src_L_index = findfirst(==(src), snames(L))
+
+
+            if !(tgt in L_set)
+              push!(L_set, tgt)
+              add_variable!(L ; svname = tgt)
+            end
+
+            # number of links
+            if pos == 0
+              link_num = 1
+            else
+              link_num = pos
+            end
+
+            if !(src in L_set)
+              push!(L_set, src)
+              add_stock!(L ; sname = src)
+            end
+
+            # for most sane implementations, link_num should be 1
+            add_parts!(L, :LS, link_num ; lss = repeat([src_L_index], link_num), lssv = repeat([tgt_index], link_num))
+          
+          elseif tgt_type == :F
+            tgt_index = findfirst(==(tgt), fnames(L))
+            src_L_index = findfirst(==(src), snames(L))
+
+            if !(tgt in L_set)
+              push!(L_set, tgt)
+              flow_dyvar = sf_block.flows[tgt_pointer.index][2].args[2]
+              if !(flow_dyvar in L_set)
+                flow_dyvar_op = sf_block.dyvars[name_dict[flow_dyvar].index][2].args[1]
+                push!(L_set, flow_dyvar)
+                add_variable!(L ; vname = flow_dyvar, vop = flow_dyvar_op)
+              end
+              flow_dyvar_index = findfirst(==(flow_dyvar), vnames(L))
+
+              add_flow!(L ; fname = tgt, vop = flow_dyvar_index)
+            end
+
+            if !(src in L_set)
+              push!(L_set, src)
+              add_stock!(L ; sname = src)
+            end
+
+            if pos == 1
+              add_part!(L, :I ; is = src_L_index, ifn = tgt_index)
+            elseif pos == 2
+              add_part!(L, :O ; os = src_L_index, ofn = tgt_index)
+            end
+
+          end # if tgt_type
+          
+        end # current_phase
+      end # quote node
+
+      QuoteNode(:redefs) => begin # only allow vars and sums
+        current_phase = r -> push!(L_redef_queue, r)
+      end
+      
+      QuoteNode(:stocks) => begin
+        current_phase = s -> push!(R_stock_queue, s)
+      end
+      QuoteNode(:parameters) => begin
+        current_phase = p -> push!(R_param_queue, p)
+      end
+      QuoteNode(:dynamic_variables) => begin
+        current_phase = d -> push!(R_dyvar_queue, d)
+      end
+      QuoteNode(:flows) => begin
+        current_phase = f -> push!(R_flow_queue, f)
+      end
+      QuoteNode(:sums) => begin
+        current_phase = s -> push!(R_sum_queue, s)
+      end
+      QuoteNode(kw) =>
+        error("Unknown block type for rewrite syntax: " * String(kw))
+      _ => current_phase(statement)
+
+    end # match
+  end # for
+
+
+
+  for object in L_redef_queue
+    object_name = object.args[1]
+    object_pointer = name_dict[object_name]
+    object_type = object_pointer.type
+    object_index = object_pointer.index
+
+    if object_type == :V
+      @show L_set
+
+      dyvar_operands = object.args[2].args
+      dyvar_op = dyvar_operands[1]
+      push!(R_dyvar_queue, object)
+      if !(object_name in L_set) 
+        add_variable!(L ; vname = object_name, vop = dyvar_op)
+        # dyvar_index = nvb(L)
+      end
+      dyvar_index = findfirst(==(object_name), vnames(L))
+
+
+      for (operand_index, operand) in enumerate(dyvar_operands[2:end])
+
+        if operand in keys(name_dict)
+          # need to add all links to L
+          operand_pointer = name_dict[operand]
+          operand_type = operand_pointer.type
+          operand_original_index = operand_pointer.index
+
+
+          if !(operand in L_set)
+            # note, IT IS NOT REMOVED!
+            # It could be removed separately, but as is, this should
+            # place it in I
+
+            # TODO: User's responsibility to add the values in the redef under
+            # the correct header.  If we have a redef N = [S, I],
+            # user needs to add S and I under a :stocks
+            # Is this reasonable?
+
+            push!(L_set, operand)
+            if operand_type == :S
+              operand_definition = sf_block.stocks[operand_original_index]
+              add_part!(L, :S ; sname = operand_definition.val)
+            elseif operand_type == :P
+              operand_definition = sf_block.params[operand_original_index]
+              add_part!(L, :P ; pname = operand_definition.val)
+            
+            elseif operand_type == :V
+              operand_definition = sf_block.dyvars[operand_original_index]
+              dyvar_op = operand_definition[2].args[1]
+              vname = object_definition[1]
+              add_part!(L, :V ; vname = vname, vop = dyvar_op)
+            elseif operand_type == :SV
+              operand_definition = sf_block.sums[operand_original_index]
+              svname = operand_definition[1]
+              add_part!(L, :SV ; svname = svname)
+            end
+          end # if !operand
+
+          # only want to add link if there was one in that position originally,
+          # hence the continue.
+
+          original_def = sf_block.dyvars[findfirst(x -> x[1] == object_name, sf_block.dyvars)]
+          if original_def[2].args[operand_index + 1] != operand
+            continue
+          end
+
+
+          if operand_type == :S
+            stock_index = findfirst(==(operand), snames(L))
+            add_part!(L, :LV ; lvs = stock_index, lvv = dyvar_index, lvsposition = operand_index)
+          elseif operand_type == :P
+            param_index = findfirst(==(operand), pnames(L))
+
+            add_part!(L, :LPV ; lpvp = param_index, lvv = dyvar_index, lpvpposition = operand_index)
+          elseif operand_type == :V
+            dyvar2_index = findfirst(==(operand), vnames(L))
+            add_part!(L, :LVV ; lvsrc = dyvar2_index, lvtgt = dyvar_index, lvsrcposition = operand_index)
+          elseif operand_type == :SV
+            sum_index = findfirst(==(operand), svnames(L))
+            add_part!(L, :LSV ; lsvsv = sum_index, lsvv = dyvar_index, lsvsvposition = operand_index)
+          end
+        end # if operand in namedict
+      end # for each operand (except operator)
+
+    elseif object_type == :SV
+      if !(object_name in L_set)
+        push!(R_sum_queue, object)
+        add_svariable!(L ; svname = object_name)
+      end
+      sum_index = findfirst(==(object_name), svnames(L))
+      for operand in object.args[2].args
+        if operand in keys(name_dict)
+          if !(operand in L_set)
+            push!(L_set, operand)
+            add_stock!(L ; sname = operand)
+          end
+          
+          stock_index = findfirst(==(operand), snames(L))
+          add_part!(L, :LS ; lss = stock_index, lssv = sum_index)
+        end
+    end
+
+
+    end 
+
+
+  end
+
+
+  I_set = setdiff(L_set, removed_set)
+  I = StockAndFlowF()
+  
+  # TODO: This isn't preserving any links.  Verify if I need to...
+  # probably need to preserve inflows and outflows, at least...
+  for object in I_set
+    object_pointer = name_dict[object]
+    object_type = object_pointer.type
+    object_index = object_pointer.index
+
+    if object_type == :S
+      add_stock!(I ; sname = object)
+    elseif object_type == :P
+      add_parameter!(I ; pname = object)
+    elseif object_type == :V
+      dyvar_op = sf_block.dyvars[object_index][2].args[1]
+      add_variable!(I ; vname = object, vop = dyvar_op)
+    elseif object_type == :SV
+      add_svariable!(I ; svname = object)
+    #TODO: deal with flows.  They need their variable to be added by this point.
+    # elseif object_type == :F
+    #   flow_var = sf_block.flows[object_index][2].args[1]
+      
+    #   add_flow!(I, flow_var ; )
+    end
+
+  end
+
+  R = deepcopy(I)
+  R_name_dict = Dict{Symbol, SFPointer}([
+    [s => SFPointer(:S, i) for (i, s) ∈ enumerate(snames(R))] ;
+    [sv => SFPointer(:SV, i) for (i, sv) ∈ enumerate(svnames(R))] ;
+    [v => SFPointer(:V, i) for (i, v) ∈ enumerate(vnames(R))] ;
+    [f => SFPointer(:F, i) for (i, f) ∈ enumerate(fnames(R))] ;
+    [p => SFPointer(:P, i) for (i, p) ∈ enumerate(pnames(R))]
+  ])
+
+  not_yet_added_stocks = collect(filter(x -> !(x in snames(R)), R_stock_queue))
+  not_yet_added_params = collect(filter(x -> !(x in pnames(R)), R_param_queue))
+
+  
+
+  type_index_counter = ns(R) + 1
+  (x -> (push!(R_name_dict, x => SFPointer(:S, type_index_counter)); type_index_counter+=1)).(not_yet_added_stocks)
+
+  type_index_counter = np(R) + 1
+  (x -> (push!(R_name_dict, x => SFPointer(:P, type_index_counter)); type_index_counter+=1)).(not_yet_added_params)
+
+  add_stocks!(R, length(not_yet_added_stocks) ; sname = not_yet_added_stocks)
+  add_parameters!(R, length(not_yet_added_params) ; pname = not_yet_added_params)
+
+
+
+  if (length(R_sum_queue) > 0)
+    sum_names, sum_lists = parse_sum.(collect(filter(x -> !(x.args[1] in svnames(R)), R_sum_queue)))
+  else
+    sum_names = Vector{Symbol}()
+    sum_lists = Vector{Expr}()
+  end
+
+  if (length(R_dyvar_queue) > 0)
+    dyvars = parse_dyvar.(collect(filter(x -> !(x.args[1] in vnames(R)), R_dyvar_queue)))
+    dyvar_names = map(x -> getindex(x, 1), dyvars)
+    dyvar_definitions = map(x -> getindex(x, 2), dyvars)
+    dyvar_ops = (x -> x.args[1]).(dyvar_definitions)
+  else
+    dyvar_names = Vector{Symbol}()
+    dyvar_definitions = Vector{Expr}()
+    dyvar_ops = Vector{Symbol}()
+  end
+
+  if (length(R_sum_queue) > 0)
+    flow_stocks_in, flows, flow_stocks_out = parse_flow.(collect(filter(x -> !(x.args[2].args[1] in fnames), R_flow_queue)))
+    flow_names, flow_variables = (x -> (x.args[1], x.args[2])).(flows)
+  else
+    flow_stocks_in = Vector{Symbol}()
+    flow_stocks_out = Vector{Symbol}()
+    flows = Vector{Expr}()
+    flow_names = Vector{Symbol}()
+    flow_variables = Vector{Symbol}()
+  end
+
+
+  # add dyvars and sums to R_name_dict, so we know their index when we need to
+  # link them to a dyvar
+  type_index_counter = nvb(R) + 1
+  (x -> (push!(R_name_dict, x => (SFPointer(:V, type_index_counter))); type_index_counter+=1)).(dyvar_names)
+
+  type_index_counter = nsv(R) + 1
+  (x -> (push!(R_name_dict, x => (SFPointer(:SV, type_index_counter))); type_index_counter+=1)).(sum_names)
+  # (x -> push!(R_name_dict, x -> SFPointer(:F, nf(R)))).flow_names
+
+
+
+  add_svariables!(R, length(sum_names), svname = sum_names)
+  add_variables!(R, length(dyvar_names), vname = dyvar_names, vop = dyvar_ops)
+  add_flows!(R, flow_variables, length(flow_names), fnames = flow_names)
+
+
+
+
+
+  for sum_index in eachindex(R_sum_queue)
+    for stock in sum_list.args[1]
+      stock_index = findfirst(==(stock), snames(R))
+      add_part!(R, :LS ; lss = stock_index, lssv = sum_index)
+    end
+  end
+
+  # @show R_dyvar_queue
+
+  for dyvar_index in eachindex(R_dyvar_queue)
+    dyvar_definition = R_dyvar_queue[dyvar_index].args[2]
+    for (operand_index, operand) in enumerate(dyvar_definition.args[2:end])
+      object_pointer = R_name_dict[operand]
+      object_type = object_pointer.type
+      object_index = object_pointer.index
+      if object_type == :S
+        add_part!(R, :LV ; lvs = object_index, lvv = dyvar_index, lvsposition = operand_index)
+      elseif object_type == :P
+        add_part!(R, :LPV ; lpvp = object_index, lpvv = dyvar_index, lpvpposition = operand_index)
+      elseif object_type == :V
+        add_part!(R, :LVV ; lvsrc = object_index, lvtgt = dyvar_index, lvsrcposition = operand_index)
+      elseif object_type == :SV
+        add_part!(R, :LSV ; lsvsv = object_index, lsvv = dyvar_index, lsvsvposition = operand_index)
+      end # could check for flow as well :P
+    end
+  end
+
+  for flow_index in eachindex(R_flow_queue)
+    stock_in = flow_stocks_in[flow_index]
+    if stock_in != :F_NONE
+      stock_in_index = R_name_dict[stock_in].index
+      add_part!(R, :I ; is = stock_in_index, ifn = flow_index)
+    end
+
+    stock_out = flow_stocks_out[flow_index]
+    if stock_out != :F_NONE
+      stock_in_index = R_name_dict[stock_out].index
+      add_part!(R, :O ; os = stock_out_index, ofn = flow_index)
+    end 
+  end
+
+
+  @show L
+  @show I
+  @show R
+
+  hom1 = homomorphism(I,L)
+  hom2 = homomorphism(I,R)
+
+
+  rule = Rule(hom1, hom2)
+
+
+  sf_rewritten = rewrite(rule, sf)
+
+
+  if isnothing(sf_rewritten)
+    println(L)
+    println(I)
+    println(R)
+    return error("Failed to apply rule!")
+  end
+  return sf_rewritten
+
+
+  
+
+
+
+end
+
+
+
         
 """
 Function call to create a new stockflow,
@@ -585,7 +1209,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       QuoteNode(:sums) => begin
         current_phase = sv -> begin 
           @match sv begin
-            Expr(:(=), tgt::Symbol, Expr(:block, def)) => begin
+            Expr(:(=), tgt::Symbol, def) => begin
               object_definition = parse_sum(Expr(:(=), tgt, def))
               # You're adding it, so it's gonna be added.  No checking if it's already there.
               push!(R_dict, object_definition[1] => object_definition)
@@ -604,8 +1228,38 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-
+  # add all that is in dyvar's definition to L
   for current_dyvar ∈ L_block.dyvars
+
+    # dyvar_name = current_dyvar[1]
+    # dyvar_copy = deepcopy(current_dyvar)
+    # dyvar_definition = dyvar_copy[2]
+      
+    # if dyvar_name ∉ new_set
+    #   push!(new_block.dyvars, dyvar_copy)
+    #   push!(L_set, dyvar_name => dyvar_copy)
+    # end
+
+    # for object ∈ filter(∉(L_set), dyvar_definition.args[2:end])
+    #   object_type = name_dict[object][1]
+    #   object_index = name_dict[object][2]
+    #   object_definition = get_from_correct_vector(sf_block, object_index, object_type)
+    #   if object_type == :SV
+    #     sum_name = object_definition.args[1]
+    #     sum_definition = :(sum_name = [])
+    #     push(L_set, sum_name => object_definition)
+    #     push!(L_block.sums, )
+    #   elseif object_type == :V
+    #     v_name = object_definition.args[1]
+    #     v_op = object_definition.args[2].args[1]
+
+    #   end
+
+    #   # push!(new_set, object)
+    #   add_to_correct_vector!(new_block, object_definition, object_type)
+  
+
+
     recursively_add_dyvars_L!(current_dyvar, sf_block, L_block, L_set, name_dict)
   end
   
@@ -805,7 +1459,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     return error("Failed to apply rule!")
 
   end
-
   return sf_rewritten
     
 end
@@ -860,7 +1513,7 @@ macro rewrite(sf, block)
   escaped_block = Expr(:quote, block)
   sf = esc(sf)
   quote
-    sfrewrite($sf, $escaped_block)
+    sfrewrite2($sf, $escaped_block)
   end
 end
   
