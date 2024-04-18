@@ -42,6 +42,7 @@ end
 
 
 function add_operand_link!(sf, operand, operand_type, dyvar_index, operand_index)
+  # @show sf, operand, operand_type, dyvar_index, operand_index
   if operand_type == :S
     stock_index = findfirst(==(operand), snames(sf))
     add_part!(sf, :LV ; lvs = stock_index, lvv = dyvar_index, lvsposition = operand_index)
@@ -121,9 +122,9 @@ function dyvar_link_name_from_object_type(object_type)
 end
 
 function add_links_from_dict!(sf, connect_dict)
-  @show connect_dict
+  # @show connect_dict
   for ((lvs, lvv, lvsposition)) in connect_dict[:LV]
-
+    # @show sf
     lvs = findfirst(==(lvs), snames(sf))
     lvv = findfirst(==(lvv), vnames(sf))
 
@@ -205,7 +206,7 @@ end #func
 
 
 
-function add_redefintions!(L, L_redef_queue, R_dyvar_queue, name_dict, L_set, sf_block)
+function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block)
   for object in L_redef_queue
     object_name = object.args[1]
     object_pointer = name_dict[object_name]
@@ -213,7 +214,7 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, name_dict, L_set, sf
     object_index = object_pointer.index
 
     if object_type == :V
-      @show L_set
+      # @show L_set
 
       dyvar_operands = object.args[2].args
       dyvar_op = dyvar_operands[1]
@@ -350,6 +351,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   R_flow_queue = Vector{Expr}()
 
   # R_name_dict = Dict{Symbol, SFPointer}()
+
+  R_link_vector = Vector{Tuple}()
 
   current_phase = (_, _) -> ()
   for statement in block.args
@@ -505,6 +508,9 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         end # current_phase
       end # quotenode
 
+      QuoteNode(:add_links) => begin
+        current_phase = l -> push!(R_link_vector, (l.args[1].args[2] => l.args[1].args[3], length(l.args) == 2 ? l.args[2] : 0))
+      end
 
       QuoteNode(:redefs) => begin # only allow vars and sums
         current_phase = r -> push!(L_redef_queue, r)
@@ -534,7 +540,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-  add_redefintions!(L, L_redef_queue, R_dyvar_queue, name_dict, L_set, sf_block)
+  add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block)
 
   add_links_from_dict!(L, L_connect_dict)
 
@@ -663,6 +669,41 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       stock_in_index = R_name_dict[stock_out].index
       add_part!(R, :O ; os = stock_out_index, ofn = flow_index)
     end 
+  end
+
+  R_name_dict = Dict{Symbol, SFPointer}([
+    [s => SFPointer(:S, i) for (i, s) ∈ enumerate(snames(sf))] ;
+    [sv => SFPointer(:SV, i) for (i, sv) ∈ enumerate(svnames(sf))] ;
+    [v => SFPointer(:V, i) for (i, v) ∈ enumerate(vnames(sf))] ;
+    [f => SFPointer(:F, i) for (i, f) ∈ enumerate(fnames(sf))] ;
+    [p => SFPointer(:P, i) for (i, p) ∈ enumerate(pnames(sf))]
+  ])
+
+  for link in R_link_vector
+    src = link[1][1]
+    tgt = link[1][2]
+    src_pointer = R_name_dict[src]
+    tgt_pointer = R_name_dict[tgt]
+
+    src_index = src_pointer.index
+    tgt_index = tgt_pointer.index
+
+    tgt_type = tgt_pointer.type
+
+    if tgt_type == :SV
+      add_part!(R, :LS ; lss = src_index, lssv = tgt_index)
+    elseif tgt_type == :F
+      position = link[2]
+      if position == 1
+        add_part!(R, :I ; is = src_index, ifn = tgt_index)
+      elseif position == 2
+        add_part!(R, :O ; os = src_index, ofn = tgt_index)
+      end
+    elseif tgt_type == :V
+      add_operand_link!(R, src, src_pointer.type, tgt_index, link[2])
+    end
+
+
   end
 
 
