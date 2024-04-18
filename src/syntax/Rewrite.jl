@@ -44,6 +44,7 @@ end
 function add_operand_link!(sf, operand, operand_type, dyvar_index, operand_index)
   # @show sf, operand, operand_type, dyvar_index, operand_index
   if operand_type == :S
+    @show sf, operand
     stock_index = findfirst(==(operand), snames(sf))
     add_part!(sf, :LV ; lvs = stock_index, lvv = dyvar_index, lvsposition = operand_index)
   elseif operand_type == :P
@@ -100,9 +101,9 @@ function remove_from_sums2!(stock_name, sf_block, L, L_set, name_dict, L_connect
         if !(link in L_connect_dict[:LS])
           push!(L_connect_dict[:LS], link)
         end
-        # if !(link in remove_connect_dict[:LS])
-        #   push!(remove_connect_dict[:LS], link)
-        # end
+        if !(link in remove_connect_dict[:LS])
+          push!(remove_connect_dict[:LS], link)
+        end
       end
     end
   end
@@ -194,9 +195,9 @@ function remove_from_dyvars2!(object_name, sf_block, L, L_set, name_dict, L_conn
           push!(L_connect_dict[link_name], link)
         end
 
-        # if !(link in remove_connect_dict[link_name])
-        #   push!(remove_connect_dict[link_name], link)
-        # end
+        if !(link in remove_connect_dict[link_name])
+          push!(remove_connect_dict[link_name], link)
+        end
 
 
       end # if
@@ -295,7 +296,50 @@ end
 
 
 # TODO
-function remove_from_flow!(object_name, sf_block, L, L_set, name_dict) end
+function remove_from_flows!(object_name, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
+  for flow in sf_block.flows
+    inflow_stock = flow[1]
+    outflow_stock = flow[3]
+    flow_name = flow[2].args[2].args[1]
+    flow_dyvar = flow[2].args[2].args[2]
+
+    link = (object_name, flow_name)
+
+
+    if (inflow_stock == object_name) || (outflow_stock == object_name)
+      if !(flow_name in L_set)
+        push!(L_set, flow_name)
+        if !(flow_dyvar in L_set)
+          dyvar_op = sf_block.dyvars[name_dict[flow_dyvar].index].args[1]
+          push!(L_set, flow_dyvar)
+          add_variable!(L ; vname = flow_dyvar, vop = dyvar_op)
+        end
+        add_flow!(L ; fname = flow_name, fv = findfirst(==(flow_dyvar), vnames(L)))
+      end
+    end
+
+    if (inflow_stock == object_name)
+      if !(link in L_connect_dict[:I])
+        push!(L_connect_dict[:I], link)
+      end
+      if !(link in remove_connect_dict[:I])
+        push!(remove_connect_dict[:I], link)
+      end
+    end
+
+    if (ouflow_stock == object_name)
+      if !(link in L_connect_dict[:O])
+        push!(L_connect_dict[:O], link)
+      end
+      if !(link in remove_connect_dict[:O])
+        push!(remove_connect_dict[:O], link)
+      end
+    end
+
+
+  end
+
+end
 
 function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
@@ -378,6 +422,9 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             # add_part!(L, :S ; sname = object_definition.val)
             remove_from_sums2!(object_definition.val, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
             remove_from_dyvars2!(object_definition.val, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
+            remove_from_flows!(removed, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
+            
+
             # TODO: remove from flows
           elseif object_type == :P
             object_definition = sf_block.params[object_pointer.index]
@@ -395,10 +442,57 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
             # add_part!(L, :SV ; svname = svname)
             remove_from_dyvars2!(svname, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
           elseif object_type == :F
-            object_definition = sf_block.flows[object_pointer.index]
-            #TODO: need to add dyvar before adding flow.
-            # fname = object_definition.args[3].args[2].args[1]
-            # remove_from_flow!(object_name, sf_block, L, L_set, name_dict)
+            flow = sf_block.flows[object_pointer.index]
+            inflow_stock = flow[1]
+            outflow_stock = flow[3]
+            flow_name = flow[2].args[2].args[1]
+            flow_dyvar = flow[2].args[2].args[2]
+
+            inflow_link = (inflow_stock, flow_name)
+            outflow_link = (outflow_stock, flow_name)
+
+            if !(flow_dyvar in L_set)
+              fv = findfirst(==(flow_dyvar), vnames(L)).args[1]
+              push!(L_set, flow_dyvar)
+              add_variable(L ; vname = flow_dyvar, fv = fv)
+            end
+
+            if !(inflow_stock in L_set)
+              push!(L_set, inflow_stock)
+              add_stock(L ; sname = inflow_stock)
+            end
+
+
+            if !(outflow_stock in L_set)
+              push!(L_set, inflow_stock)
+              add_stock(L ; sname = inflow_stock)
+            end
+
+
+            if !(inflow_link in L_connect_dict[:I])
+              push!(inflow_link, L_connect_dict[:I])
+            end
+
+
+            if !(inflow_link in remove_connect_dict[:I])
+              push!(inflow_link, remove_connect_dict[:I])
+            end
+
+            if !(outflow_link in L_connect_dict[:O])
+              push!(outflow_link, L_connect_dict[:O])
+            end
+
+            if !(outflow_link in remove_connect_dict[:O])
+              push!(outflow_link, remove_connect_dict[:O])
+            end
+
+
+            # push!(L_connect_dict)
+
+        
+            # link = (object_name, flow_name)
+            
+
           end
         end
       end
@@ -509,7 +603,28 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       end # quotenode
 
       QuoteNode(:add_links) => begin
-        current_phase = l -> push!(R_link_vector, (l.args[1].args[2] => l.args[1].args[3], length(l.args) == 2 ? l.args[2] : 0))
+        current_phase = l -> begin 
+          src = nothing
+          tgt = nothing
+          position = nothing
+          @match l begin 
+            :($(srca::Symbol) => $(tgta::Symbol), $(positiona::Int)) => begin
+              src = srca
+              tgt = tgta
+              position = positiona
+            end
+            :($(srca::Symbol) => $(tgta::Symbol)) => begin
+              src = srca
+              tgt = tgta
+              position = 0
+            end
+          end
+          if (src in keys(name_dict)) && !(src in L_set)
+            add_object_of_type!(L, src, name_dict[src].type, name_dict[src].index, sf_block)
+            push!(L_set, src)
+          end
+          push!(R_link_vector, (src => tgt, position))      
+        end 
       end
 
       QuoteNode(:redefs) => begin # only allow vars and sums
@@ -544,7 +659,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   add_links_from_dict!(L, L_connect_dict)
 
-
+  @show L
   # L should now be complete
 
 
@@ -565,7 +680,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   end
   add_links_from_dict!(I, I_connect_dict)
 
-
+  @show I
 
   R = deepcopy(I)
   R_name_dict = Dict{Symbol, SFPointer}([
@@ -706,10 +821,11 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   end
 
-
-  @show L
-  @show I
   @show R
+
+  # @show L
+  # @show I
+  # @show R
 
   hom1 = homomorphism(I,L)
   hom2 = homomorphism(I,R)
@@ -795,4 +911,4 @@ end
   
 
 
-end
+end 
