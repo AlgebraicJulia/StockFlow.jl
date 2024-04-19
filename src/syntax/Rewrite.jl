@@ -19,6 +19,7 @@ using AlgebraicRewriting: rewrite
 
 
 using MLStyle
+using MLStyle.Modules.AST
 
 """
 Convert a stockflow block to a stockflow
@@ -44,7 +45,7 @@ end
 function add_operand_link!(sf, operand, operand_type, dyvar_index, operand_index)
   # @show sf, operand, operand_type, dyvar_index, operand_index
   if operand_type == :S
-    @show sf, operand
+    # @show sf, operand
     stock_index = findfirst(==(operand), snames(sf))
     add_part!(sf, :LV ; lvs = stock_index, lvv = dyvar_index, lvsposition = operand_index)
   elseif operand_type == :P
@@ -627,6 +628,62 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         end 
       end
 
+      QuoteNode(:dyvar_swaps) => begin
+        current_phase = dw -> begin
+          capture_dict = @capture $old => $new dw
+          new = capture_dict[:new]
+          old = capture_dict[:old]
+
+          if !(old in L_set)
+            push!(L_set, old)
+            add_object_of_type!(L, old, name_dict[old].type, name_dict[old].index, sf_block)
+          end
+
+          for ((dyvar_name, dyvar_expr)) in sf_block.dyvars
+            dyvar_op = dyvar_expr.args[1]
+            dyvar_operands = dyvar_expr.args[2:end]
+            matching_indices = findall(==(old), dyvar_operands)
+            if !(isempty(matching_indices))
+              if !(dyvar_name in L_set)
+                push!(L_set, dyvar_name)
+                add_variable!(L ; vname = dyvar_name, vop = dyvar_op)
+              end
+
+              for index in matching_indices
+                old_link = (old, dyvar_name, index)
+                # new_link = (new, dyvar_name, index)
+
+                old_link_type = dyvar_link_name_from_object_type(name_dict[old].type)
+                if !(old_link in L_connect_dict[old_link_type])
+                  push!(L_connect_dict[old_link_type], old_link)
+                end
+                if !(old_link in remove_connect_dict[old_link_type])
+                  push!(remove_connect_dict[old_link_type], old_link)
+                end
+
+
+                
+                if (new in keys(name_dict)) && !(new in L_set)
+                  push!(L_set, new)
+                  add_object_of_type!(L, new, name_dict[new].type, name_dict[new].index, sf_block)
+                end
+
+                push!(R_link_vector, (new => dyvar_name, index))
+
+              end
+
+              
+
+
+            end
+            # if src in dyvar_expr.args[2:end]
+
+          end
+
+
+        end
+      end
+
       QuoteNode(:redefs) => begin # only allow vars and sums
         current_phase = r -> push!(L_redef_queue, r)
       end
@@ -659,7 +716,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   add_links_from_dict!(L, L_connect_dict)
 
-  @show L
+  # @show L
   # L should now be complete
 
 
@@ -680,7 +737,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   end
   add_links_from_dict!(I, I_connect_dict)
 
-  @show I
+  # @show I
 
   R = deepcopy(I)
   R_name_dict = Dict{Symbol, SFPointer}([
@@ -794,6 +851,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     [p => SFPointer(:P, i) for (i, p) ∈ enumerate(pnames(sf))]
   ])
 
+  # @show R_link_vector
   for link in R_link_vector
     src = link[1][1]
     tgt = link[1][2]
@@ -821,7 +879,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   end
 
-  @show R
+  # @show R
 
   # @show L
   # @show I
