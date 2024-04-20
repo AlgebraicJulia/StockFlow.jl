@@ -620,6 +620,10 @@ function add_links_block!(l, L_set, name_dict, L, sf_block, R_link_vector)
     add_object_of_type!(L, src, name_dict[src].type, name_dict[src].index, sf_block)
     push!(L_set, src)
   end
+  if (tgt in keys(name_dict)) && !(tgt in L_set)
+    add_object_of_type!(L, tgt, name_dict[tgt].type, name_dict[tgt].index, sf_block)
+    push!(L_set, tgt)
+  end
   push!(R_link_vector, (src => tgt, position))      
 end 
 
