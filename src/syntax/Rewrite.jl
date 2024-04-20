@@ -90,6 +90,7 @@ function remove_from_sums2!(stock_name, sf_block, L, L_set, name_dict, L_connect
         stock_index = name_dict[stock_name].index
         if sum_name ∉ L_set
           add_part!(L, :SV ; svname = sum_name)
+          push!(L_set, sum_name)
           # add_part!(L, :LS ; lvs = stock_index, lvv = nsv(L))
           sum_index = nsv(L)
         else
@@ -97,7 +98,8 @@ function remove_from_sums2!(stock_name, sf_block, L, L_set, name_dict, L_connect
         end
         # add_part!(L, :LS ; lvs = stock_index, lvv = sum_index)
         # ! WE'RE ASSUMING THERE IS AT MAX ONE LINK BETWEEN A SUM AND A STOCK
-        link = (stock_index, sum_index)
+        link = (stock_name, sum_name)
+        # link = (stock_index, sum_index)
         if !(link in L_connect_dict[:LS])
           push!(L_connect_dict[:LS], link)
         end
@@ -152,6 +154,8 @@ function add_links_from_dict!(sf, connect_dict)
     add_part!(sf, :LVV; lvsrc = lvsrc, lvtgt = lvtgt, lvsrcposition = lvsrcposition)
   end
   for ((lss, lssv)) in connect_dict[:LS]
+    # @show sf
+    # @show lss, lssv
     lss = findfirst(==(lss), snames(sf))
     lssv = findfirst(==(lssv), svnames(sf))
 
@@ -791,7 +795,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   I_set = setdiff(L_set, removed_set)
   I_connect_dict = Dict(key => [value for value in filter(v -> !(v in remove_connect_dict[key]), L_connect_dict[key])] for key in keys(L_connect_dict))
-  @show I_connect_dict L_connect_dict remove_connect_dict
+  # @show I_connect_dict L_connect_dict remove_connect_dict
   # I_connect_dict = Dict(key => collect(filter(!isnothing, indexin(L_connect_dict[key], remove_connect_dict[key]))) for key in keys(L_connect_dict))
   I = StockAndFlowF()
   
