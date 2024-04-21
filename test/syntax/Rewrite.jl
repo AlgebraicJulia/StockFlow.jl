@@ -755,6 +755,65 @@ end
     v1 = v2 + N
 end) ≅ MySF2
 
+  MySF3 = @stock_and_flow begin 
+    :stocks
+     A
+     B
+     C
+ 
+ 
+ 
+     :sums
+     N = [A,B]
+ 
+     :dynamic_variables
+     v1 = +(A)
+     v2 = v1 + N
+     v3 = v1 * v2
+ 
+     :flows
+     CLOUD => f(v3) => C
+ 
+  end
+
+  @test MySF3 = @stock_and_flow begin 
+ :stocks
+    A
+    B
+    C
+
+
+
+    :sums
+    N = [A,B]
+
+    :dynamic_variables
+    v1 = +(A)
+    v2 = v1 + N
+    v3 = v1 * v2
+
+    :flows
+    CLOUD => f(v3) => C
+
+end
+
+@test (@rewrite MySF begin
+  :stocks
+  C
+
+  :removes
+  p
+  NI
+  
+  :dynamic_variables
+  v3 = v1 * v2
+
+  :redefs
+  CLOUD => f(v3) => C
+end) ≅ MySF3
+
+
+
 
 end
 

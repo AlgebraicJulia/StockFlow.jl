@@ -9,7 +9,7 @@ using ...StockFlow
 using ..Syntax
 import ..Syntax: parse_dyvar, parse_flow, parse_sum, parse_stock, 
 parse_param, sf_to_block, StockAndFlowBlock, stock_and_flow_syntax_to_arguments,
-StockArgT, ParamArgT
+StockArgT, ParamArgT, create_flow_definitions, Binop, Ref, get
 
 
 using Catlab.ACSets.ACSetInterface
@@ -942,6 +942,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       end
     end
   end
+
+
   for sum in R_sum_queue
     for stock_sum in sum.args[2].args
       if !(stock_sum in L_set) && stock_sum in keys(name_dict)
@@ -953,7 +955,35 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   for flow in R_flow_queue
     outflow = flow.args[2]
     inflow = flow.args[3].args[3]
-    dyvar = flow.args[3].args[2].args[1]
+    dyvar = flow.args[3].args[2].args[2]
+    # @show dyvar
+    if dyvar isa Expr
+      stack = [dyvar]
+      completed = Vector{Symbol}()
+      while !(isempty(stack))
+        dyvar_it = stack[1]
+        for val in dyvar_it.args[2:end]
+          if val isa Symbol
+            push!(completed, val)
+          elseif val isa Expr
+            
+            push!(stack, val)
+          end
+          # @show stack
+        end
+        popfirst!(stack)
+
+      end
+      # @show completed
+
+      for e_value in completed
+        # @show e_value
+        if !(e_value in L_set) && e_value in keys(name_dict)
+          push!(L_set, e_value)
+          add_object_of_type!(L, e_value, name_dict[e_value].type, name_dict[e_value].index, sf_block)
+        end
+      end
+    end
     for value in [outflow, inflow, dyvar]
       if !(value in L_set) && value in keys(name_dict)
         push!(L_set, value)
@@ -1052,17 +1082,41 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     dyvar_ops = Vector{Symbol}()
   end
 
+  # flow_definitions = map(x -> (x.args[2], x.args[3].args[2], x.args[3].args[3]), R_flow_queue)
+  # flow
+  
+
   # x = collect(filter(x -> (x.args[3].args[1] in fnames(R)), R_flow_queue ) )
   # @show x
 
   if (length(R_flow_queue) > 0)
     parsed_flows = parse_flow.(R_flow_queue)
     # @show parsed_flows
+    updated_flows_and_dyvars = create_flow_definitions(parsed_flows, vcat(dyvar_names, vnames(I)))
+    updated_flows = updated_flows_and_dyvars[1]
+    new_dyvars = updated_flows_and_dyvars[2]
+    append!(dyvar_names, map(x -> getindex(x, 1), new_dyvars))
+    new_dyvar_names = map(x -> getindex(x, 1), new_dyvars)
+    new_dyvar_definitions = map(x -> getindex(x, 2), new_dyvars)
+    new_dyvar_unwrapped = collect(zip(new_dyvar_names, map(Syntax.get, new_dyvar_definitions)))
+    # @show new_dyvar_unwrapped
+    # @show new_dyvar_unwrapped[1][1]
+    # @show new_dyvar_unwrapped[1][2]
+    new_dyvar_definitions = map(kv -> kv[2][1] isa Tuple ? Expr(:(=), kv[1], Expr(:call, kv[2][2], kv[2][1][1], (kv[2][1][2]))) : :Expr(:(=), kv[1], Expr(:call, kv[2][2], (kv[2][1]))),  new_dyvar_unwrapped)
+
+    # new_dyvar_expressions = map(kv -> kv[1] isa Tuple ? Expr(:call, last(kv), kv[1][1], kv[1][2]) : Expr(:call, last(kv), kv[1]), new_dyvar_unwrapped)
+
+    append!(dyvar_definitions, new_dyvar_definitions)
+    append!(dyvar_ops, (x -> x.args[2].args[1]).(new_dyvar_definitions))
+    append!(R_dyvar_queue, new_dyvar_definitions)
+
+    # @show updated_flows
     flow_stocks_out = map(x -> x[1], parsed_flows)
     flows = map(x -> x[2], parsed_flows)
     flow_stocks_in = map(x -> x[3], parsed_flows)
     flow_names = (x -> (x.args[1])).(flows)
-    flow_variables = (x -> (x.args[2])).(flows)
+    flow_variables = last.(updated_flows)
+    # flow_variables = (x -> (x.args[2])).(flows)
   else
     flow_stocks_out = Vector{Symbol}()
     flow_stocks_in = Vector{Symbol}()
@@ -1084,7 +1138,10 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   # filtered_dyvars = collect(filter(x -> !(x.args[1] in vnames(R)), R_dyvar_queue))
   filtered_dyvars = collect(filter(x -> !(x.args[1] in vnames(R)), R_dyvar_queue))
+  
   filtered_dyvar_names = map(x -> first(x.args), filtered_dyvars)
+
+  # @show filtered_dyvar_names
   filtered_dyvar_ops = map(x -> x.args[2].args[1], filtered_dyvars)
 
   #TODO filter svariables
@@ -1094,12 +1151,17 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   add_svariables!(R, length(filtered_sum_names), svname = filtered_sum_names)
   add_variables!(R, length(filtered_dyvar_names), vname = filtered_dyvar_names, vop = filtered_dyvar_ops)
 
-  filtered_flows = map(x -> x.args[3].args[2].args[1], collect(filter(x -> !(x.args[3].args[2].args[1] in fnames(R)) ,R_flow_queue)))
-  flow_variable_indices = map(x -> findfirst(==(x), vnames(R)), flow_variables)
+
+  filtered_flows = filter(x -> !(x.args[1] in fnames(R)), flows)
+  # @show updated_flows
+  flow_variables_indices = map(x -> findfirst(==(x), vnames(R)), map(x -> x[2], updated_flows))
+  filtered_flow_names = map(x -> x.args[1], filtered_flows)
+  # filtered_flows = map(x -> x.args[3].args[2].args[1], collect(filter(x -> !(x.args[3].args[2].args[1] in fnames(R)) ,R_flow_queue)))
+  # flow_variable_indices = map(x -> findfirst(==(x), vnames(R)), flow_variables)
   # @show flow_variables, filtered_flows
   # @show vnames(R)
   # @show flow_variable_indices
-  add_flows!(R, flow_variable_indices, length(filtered_flows), fname = filtered_flows)
+  add_flows!(R, flow_variables_indices, length(filtered_flow_names), fname = filtered_flow_names)
 
   # @show R
 
@@ -1121,6 +1183,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   for dyvar_index in eachindex(R_dyvar_queue)
     real_dyvar_index = findfirst(==(R_dyvar_queue[dyvar_index].args[1]), vnames(R))
     dyvar_definition = R_dyvar_queue[dyvar_index].args[2]
+    # @show dyvar_definition
     for (operand_index, operand) in enumerate(dyvar_definition.args[2:end])
       link = (operand, R_dyvar_queue[dyvar_index].args[1], operand_index)
       if !(link in I_connect_dict[dyvar_link_name_from_object_type(R_name_dict[operand].type)])
