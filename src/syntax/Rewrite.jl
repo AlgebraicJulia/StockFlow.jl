@@ -485,6 +485,15 @@ end
 
 
 function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
+
+  if removed isa Expr && removed.args[1] == :~
+    for k in keys(name_dict)
+      if  occursin(String(removed.args[2]), String(k))
+        remove_block!(k, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
+      end
+    end
+    return
+  end
   
   object_pointer = name_dict[removed]
   object_type = object_pointer.type
@@ -574,18 +583,18 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
     if !(flow_dyvar in L_set)
       fv = findfirst(==(flow_dyvar), vnames(L)).args[1]
       push!(L_set, flow_dyvar)
-      add_variable(L ; vname = flow_dyvar, fv = fv)
+      add_variable!(L ; vname = flow_dyvar, fv = fv)
     end
 
     if !(inflow_stock in L_set)
       push!(L_set, inflow_stock)
-      add_stock(L ; sname = inflow_stock)
+      add_stock!(L ; sname = inflow_stock)
     end
 
 
     if !(outflow_stock in L_set)
       push!(L_set, inflow_stock)
-      add_stock(L ; sname = inflow_stock)
+      add_stock!(L ; sname = inflow_stock)
     end
 
 
@@ -920,7 +929,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   # @show "OK"
   # @show L
-
+  @show L
   add_links_from_dict!(L, L_connect_dict)
   # @show L
 
@@ -1123,6 +1132,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     flows = Vector{Expr}()
     flow_names = Vector{Symbol}()
     flow_variables = Vector{Symbol}()
+    updated_flows = Vector{Pair{Symbol, Symbol}}()
+
   end
 
 
