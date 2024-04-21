@@ -586,32 +586,32 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
       add_variable!(L ; vname = flow_dyvar, fv = fv)
     end
 
-    if !(inflow_stock in L_set)
+    if !(inflow_stock in L_set) && !(inflow_stock == :F_NONE)
       push!(L_set, inflow_stock)
       add_stock!(L ; sname = inflow_stock)
     end
 
 
-    if !(outflow_stock in L_set)
-      push!(L_set, inflow_stock)
-      add_stock!(L ; sname = inflow_stock)
+    if !(outflow_stock in L_set) && !(outflow_stock == :F_NONE)
+      push!(L_set, outflow_stock)
+      add_stock!(L ; sname = outflow_stock)
     end
 
 
-    if !(inflow_link in L_connect_dict[:I])
+    if !(inflow_link in L_connect_dict[:I]) && !(inflow_stock == :F_NONE)
       push!(L_connect_dict[:I], inflow_link)
     end
 
 
-    if !(inflow_link in remove_connect_dict[:I])
+    if !(inflow_link in remove_connect_dict[:I]) && !(inflow_stock == :F_NONE)
       push!(remove_connect_dict[:I], inflow_link)
     end
 
-    if !(outflow_link in L_connect_dict[:O])
+    if !(outflow_link in L_connect_dict[:O]) && !(outflow_stock == :F_NONE)
       push!(L_connect_dict[:O], outflow_link)
     end
 
-    if !(outflow_link in remove_connect_dict[:O])
+    if !(outflow_link in remove_connect_dict[:O]) && !(outflow_stock == :F_NONE)
       push!(remove_connect_dict[:O], outflow_link)
     end
 
@@ -929,7 +929,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   # @show "OK"
   # @show L
-  @show L
+  # @show L
+  # @show L_connect_dict
   add_links_from_dict!(L, L_connect_dict)
   # @show L
 
