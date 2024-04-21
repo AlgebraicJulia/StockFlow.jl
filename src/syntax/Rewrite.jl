@@ -39,6 +39,14 @@ struct SFPointer
 end
 
 
+get_dyvar_args(dv) = (@capture ($v = $f($(args...))) dv)
+
+function add_link_if_not_already!(connect_dict, link, link_object)
+  if !(link in connect_dict[link_object])
+    push!(connect_dict[link_object], link)
+  end
+end
+
 
 
 
@@ -96,12 +104,8 @@ function remove_from_sums2!(stock_name, sf_block, L, L_set, name_dict, L_connect
         end
         # ! WE'RE ASSUMING THERE IS AT MAX ONE LINK BETWEEN A SUM AND A STOCK
         link = (stock_name, sum_name)
-        if !(link in L_connect_dict[:LS])
-          push!(L_connect_dict[:LS], link)
-        end
-        if !(link in remove_connect_dict[:LS])
-          push!(remove_connect_dict[:LS], link)
-        end
+        add_link_if_not_already!(L_connect_dict, link, :LS)
+        add_link_if_not_already!(remove_connect_dict, link, :LS)
       end
     end
   end
@@ -186,15 +190,8 @@ function remove_from_dyvars2!(object_name, sf_block, L, L_set, name_dict, L_conn
 
         link_name = dyvar_link_name_from_object_type(object_type)
         link = (object_name, dyvar_name, operand_index)
-        if !(link in L_connect_dict[link_name])
-          push!(L_connect_dict[link_name], link)
-        end
-
-        if !(link in remove_connect_dict[link_name])
-          push!(remove_connect_dict[link_name], link)
-        end
-
-
+        add_link_if_not_already!(L_connect_dict, link, link_name)
+        add_link_if_not_already!(remove_connect_dict, link, link_name)
       end # if
     end # for oper
   end # for dyvar
@@ -261,15 +258,12 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
 
           link = (operand, object_name, operand_index)
 
-          if !(link in L_connect_dict[dyvar_link_type])
-            push!(L_connect_dict[dyvar_link_type], link)
-          end
+          add_link_if_not_already!(L_connect_dict, link, dyvar_link_type)
           # we want to remove all links such that they aren't in the redefinition
           # operand is in old, we want to check if it's in the new
 
-          # TODO: wrong
-          if (!(link in remove_connect_dict[dyvar_link_type])) && (length(object.args[2].args[2:end]) < operand_index || object.args[2].args[operand_index + 1] != operand )
-            push!(remove_connect_dict[dyvar_link_type], link)
+          if (length(object.args[2].args[2:end]) < operand_index || object.args[2].args[operand_index + 1] != operand )
+            add_link_if_not_already!(remove_connect_dict, link, dyvar_link_type)
           end
           # END NEW
 
@@ -293,14 +287,14 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           
           stock_index = findfirst(==(operand), snames(L))
           link = (operand, object_name)
-          if !(link in L_connect_dict[:LS])
-            push!(L_connect_dict[:LS], link)
-          end
+
+          add_link_if_not_already!(L_connect_dict, link, :LS)
+
           # Don't remove link if it's retained
           original_links = sf_block.sums[name_dict[object_name].index][2]
 
-          if !(link in remove_connect_dict[:LS]) && !(operand in original_links)
-            push!(remove_connect_dict[:LS], link)
+          if !(operand in original_links)
+            add_link_if_not_already!(remove_connect_dict, link, :LS)
           end          
         end
       end
@@ -332,12 +326,8 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           add_stock!(L ; sname = original_inflow)
         end
         link = (original_inflow, object_name)
-        if !(link in L_connect_dict[:I])
-          push!(L_connect_dict[:I], link)
-        end
-        if !(link in remove_connect_dict[:I])
-          push!(remove_connect_dict[:I], link)
-        end         
+        add_link_if_not_already!(L_connect_dict, link, :I)
+        add_link_if_not_already!(remove_connect_dict, link, :I)
       end 
 
       if (original_outflow != :F_NONE)
@@ -346,12 +336,8 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           add_stock!(L ; sname = original_outflow)
         end
         link = (original_outflow, object_name)
-        if !(link in L_connect_dict[:O])
-          push!(L_connect_dict[:O], link)
-        end
-        if !(link in remove_connect_dict[:O])
-          push!(remove_connect_dict[:O], link)
-        end         
+        add_link_if_not_already!(L_connect_dict, link, :O)
+        add_link_if_not_already!(remove_connect_dict, link, :O)
       end 
 
       # different dynamic variables
@@ -361,21 +347,13 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
 
         if (original_inflow != :F_NONE)
           link = (original_inflow, object_name)
-          if !(link in L_connect_dict[:I])
-            push!(L_connect_dict[:I], link)
-          end
-          if !(link in remove_connect_dict[:I])
-            push!(remove_connect_dict[:I], link)
-          end
+          add_link_if_not_already!(L_connect_dict, link, :I)
+          add_link_if_not_already!(remove_connect_dict, link, :I)
         end
         if (original_outflow != :F_NONE)
           link = (original_outflow, object_name)
-          if !(link in L_connect_dict[:O])
-            push!(L_connect_dict[:O], link)
-          end
-          if !(link in remove_connect_dict[:O])
-            push!(remove_connect_dict[:O], link)
-          end
+          add_link_if_not_already!(L_connect_dict, link, :O)
+          add_link_if_not_already!(remove_connect_dict, link, :O)
         end
       end
 
@@ -416,21 +394,13 @@ function remove_from_flows!(object_name, sf_block, L, L_set, name_dict, L_connec
     end
 
     if (inflow_stock == object_name)
-      if !(link in L_connect_dict[:I])
-        push!(L_connect_dict[:I], link)
-      end
-      if !(link in remove_connect_dict[:I])
-        push!(remove_connect_dict[:I], link)
-      end
+      add_link_if_not_already!(L_connect_dict, link, :I)
+      add_link_if_not_already!(remove_connect_dict, link, :I)
     end
 
     if (outflow_stock == object_name)
-      if !(link in L_connect_dict[:O])
-        push!(L_connect_dict[:O], link)
-      end
-      if !(link in remove_connect_dict[:O])
-        push!(remove_connect_dict[:O], link)
-      end
+      add_link_if_not_already!(L_connect_dict, link, :O)
+      add_link_if_not_already!(remove_connect_dict, link, :O)
     end
 
 
@@ -487,12 +457,8 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
       end
       operand_link_type = dyvar_link_name_from_object_type(name_dict[operand].type)
       link = (operand, removed, operand_index)
-      if !(link in L_connect_dict[operand_link_type])
-        push!(L_connect_dict[operand_link_type], link)
-      end
-      if !(link in remove_connect_dict[operand_link_type])
-        push!(remove_connect_dict[operand_link_type], link)
-      end
+      add_link_if_not_already!(L_connect_dict, link, operand_link_type)
+      add_link_if_not_already!(remove_connect_dict, link, operand_link_type)
     end
 
     remove_from_dyvars2!(vname, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
@@ -506,12 +472,8 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
         add_stock!(L ; sname = sum_stock)
       end
       link = (sum_stock, removed)
-      if !(link in L_connect_dict[:LS])
-        push!(L_connect_dict[:LS], link)
-      end
-      if !(link in remove_connect_dict[:LS])
-        push!(remove_connect_dict[:LS], link)
-      end
+      add_link_if_not_already!(L_connect_dict, link, :LS)
+      add_link_if_not_already!(remove_connect_dict, link, :LS)
     end
 
     remove_from_dyvars2!(svname, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
@@ -543,21 +505,16 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
     end
 
 
-    if !(inflow_link in L_connect_dict[:I]) && !(inflow_stock == :F_NONE)
-      push!(L_connect_dict[:I], inflow_link)
+    if !(inflow_stock == :F_NONE)
+      add_link_if_not_already!(L_connect_dict, inflow_link, :I)
+      add_link_if_not_already!(remove_connect_dict, inflow_link, :I)
     end
 
 
-    if !(inflow_link in remove_connect_dict[:I]) && !(inflow_stock == :F_NONE)
-      push!(remove_connect_dict[:I], inflow_link)
-    end
 
-    if !(outflow_link in L_connect_dict[:O]) && !(outflow_stock == :F_NONE)
-      push!(L_connect_dict[:O], outflow_link)
-    end
-
-    if !(outflow_link in remove_connect_dict[:O]) && !(outflow_stock == :F_NONE)
-      push!(remove_connect_dict[:O], outflow_link)
+    if !(outflow_stock == :F_NONE)
+      add_link_if_not_already!(L_connect_dict, outflow_link, :O)
+      add_link_if_not_already!(remove_connect_dict, outflow_link, :O)
     end
     
 
@@ -582,18 +539,18 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
       end
 
       if tgt_type == :SV
-        if !((src, tgt) in L_connect_dict[:LS])
-          push(L_connect_dict[:LS], (src, tgt))
-        end
-        push!(remove_connect_dict[:LS], (src, tgt))
+        link = (src, tgt)
+        add_link_if_not_already!(L_connect_dict, link, :LS)
+        add_link_if_not_already!(remove_connect_dict,  link, :LS)
       elseif tgt_type == :V # tgt must be dyvar
         positions = findall(==(src), sf_block.dyvars[name_dict[tgt].index][2].args[2:end])
         link_type = dyvar_link_name_from_object_type(name_dict[src].type)
         for pos in positions
-          if !((src, tgt, pos) in L_connect_dict[link_type])
-            push!(L_connect_dict[link_type], (src, tgt, pos))
-          end
-          push!(remove_connect_dict[link_type], (src, tgt, pos))
+          link = (src, tgt, pos)
+          add_link_if_not_already!(L_connect_dict, link, link_type)
+          # TODO: note, in previous version, remove_connect_dict didn't have a check that it wasn't already in
+          # I don't think it matters that much either way, really.
+          add_link_if_not_already!(remove_connect_dict, link, link_type)
         end
       elseif tgt_type == :F
         tgt_pointer = name_dict[tgt]
@@ -605,16 +562,15 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
           add_variable!(L ; vname = flow_dyvar, vop = flow_dyvar_op)
         end
         if flow_definintion[3] == src
-          if !((src, tgt) in L_connect_dict[:I])
-            push!(L_connect_dict[:I], (src, tgt))
-          end
-          push!(remove_connect_dict[:I], (src, tgt))
+          link = (src, tgt)
+          add_link_if_not_already!(L_connect_dict, link, :I)
+          # also didn't have the check for this one...
+          add_link_if_not_already!(remove_connect_dict, link, :I)
         end
         if flow_definintion[1] == src
-          if !((src, tgt) in L_connect_dict[:O])
-            push!(L_connect_dict[:O], (src, tgt))
-          end
-          push!(remove_connect_dict[:O], (src, tgt))
+          add_link_if_not_already!(L_connect_dict, link, :O)
+          # ...or this one
+          add_link_if_not_already!(remove_connect_dict, link, :O)
         end
       end # if tgt_type == 
     end # :($(src:: ... => begin
@@ -632,28 +588,23 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
       end
 
       if tgt_type == :SV
-        if !((src, tgt) in L_connect_dict[:LS])
-          push(L_connect_dict[:LS], (src, tgt))
-        end
-        push(remove_connect_dict[:LS], (src, tgt))
+        link = (src, tgt)
+        add_link_if_not_already!(L_connect_dict, link, :LS)
+        add_link_if_not_already!(remove_connect_dict, link, :LS)
       
       elseif tgt_type == :V
-        if !((src, tgt, position) in L_connect_dict[link_type])
-          push!(L_connect_dict[link_type], (src, tgt, position))
-        end
-        push!(remove_connect_dict[link_type], (src, tgt, position))
+        link_type = dyvar_link_name_from_object_type(name_dict[src].type)
+        link = (src, tgt, position)
+        add_link_if_not_already!(L_connect_dict, link, link_type)
+        add_link_if_not_already!(remove_connect_dict, link, link_type)
       elseif tgt_type == :F
+        link = (src, tgt)
         if position == 2
-          if !((src, tgt) in L_connect_dict[:I])
-            push!(L_connect_dict[:I], (src, tgt))
-          end
-          push!(remove_connect_dict[:I], (src, tgt))
-
+          add_link_if_not_already!(L_connect_dict, link, :I)
+          add_link_if_not_already!(remove_connect_dict, link, :I)
         elseif position == 1
-          if !((src, tgt) in L_connect_dict[:O])
-            push!(L_connect_dict[:O], (src, tgt))
-          end
-          push!(remove_connect_dict[:O], (src, tgt))
+          add_link_if_not_already!(L_connect_dict, link, :O)
+          add_link_if_not_already!(remove_connect_dict, link, :O)
         end
       end #if tgt_type              
 
@@ -694,7 +645,7 @@ end
 
 
 function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict, R_link_vector)
-  capture_dict = @capture $old > $new dw
+  capture_dict = (@capture $old > $new dw)
   new = capture_dict[:new]
   old = capture_dict[:old]
 
@@ -717,12 +668,8 @@ function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_co
         old_link = (old, dyvar_name, index)
 
         old_link_type = dyvar_link_name_from_object_type(name_dict[old].type)
-        if !(old_link in L_connect_dict[old_link_type])
-          push!(L_connect_dict[old_link_type], old_link)
-        end
-        if !(old_link in remove_connect_dict[old_link_type])
-          push!(remove_connect_dict[old_link_type], old_link)
-        end
+        add_link_if_not_already!(L_connect_dict, old_link, old_link_type)
+        add_link_if_not_already!(remove_connect_dict, old_link, old_link_type)
 
 
         
