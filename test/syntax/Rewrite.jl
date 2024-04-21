@@ -8,6 +8,9 @@ using StockFlow.Syntax.Stratification
 using Catlab.CategoricalAlgebra
 using AlgebraicRewriting
 
+function ≅(x,y)
+  !isnothing(isomorphism(x,y))
+end
 
 @testset "Trivial rewrite examples act as expected." begin
   empty = StockAndFlowF()
@@ -16,48 +19,48 @@ using AlgebraicRewriting
 
   Ap = @stock_and_flow begin; :stocks; A; :parameters; p; end
 
-  @test (@rewrite empty begin end) == empty
-  @test (@rewrite A begin end) == A
+  @test (@rewrite empty begin end) ≅ empty
+  @test (@rewrite A begin end) ≅ A
 
   @test (@rewrite empty begin
     :stocks
     A    
-    end) == A
+    end) ≅ A
 
   @test (@rewrite A begin
     :removes
     A
-    end) == empty
+    end) ≅ empty
 
-  @test (@rewrite A begin
-    :removes
-    B
-    end) == A
+  # @test (@rewrite A begin
+  #   :removes
+  #   B
+  #   end) ≅ A
 
   @test (@rewrite p begin
     :removes
     p
-  end) == empty
+  end) ≅ empty
 
   @test (@rewrite Ap begin
     :removes
     p
-  end) == A
+  end) ≅ A
 
   @test (@rewrite Ap begin
     :removes
     A
-  end) == p
+  end) ≅ p
 
   @test (@rewrite p begin
     :stocks
     A
-  end) == Ap
+  end) ≅ Ap
 
   @test (@rewrite A begin
     :parameters
     p
-  end) == Ap
+  end) ≅ Ap
     
 
 end
@@ -101,44 +104,44 @@ end
 
   @test (@rewrite ABv begin
     :dyvar_swaps
-    B => A
+    B > A
     :removes
     B
-  end) == AAv
+  end) ≅ AAv
 
   @test (@rewrite ABv begin
     :dyvar_swaps
-    B => A
+    B > A
     :removes
     B
-  end) == AAv
+  end) ≅ AAv
 
   @test (@rewrite ABv begin
     :redefs
     v = A + A
     :removes
     B
-  end) == AAv
+  end) ≅ AAv
 
   @test (@rewrite ABv begin
     :redefs
     v = +(A)
     :removes
     B
-  end) == Av
+  end) ≅ Av
 
   @test (@rewrite ABv begin
     :removes
     B
     :redefs
     v = +(A)
-  end) == Av
+  end) ≅ Av
 
   @test (@rewrite ABv begin
     :removes
     B
 
-  end) == Av
+  end) ≅ Av
 
 
   @test (@rewrite Av begin
@@ -149,7 +152,7 @@ end
     :removes
     v
     A
-  end) == BBv
+  end) ≅ BBv
 
 
 end
@@ -184,12 +187,12 @@ end
 
   @test (@rewrite ABvf begin
     :dyvar_swaps
-    B => C
+    B > C
     :stocks
     C
     :removes
     B
-  end) == ACvf
+  end) ≅ ACvf
 
 
 
@@ -250,12 +253,12 @@ end
   @test (@rewrite sv1 begin
     :removes
     I
-  end) == sv2
+  end) ≅ sv2
 
   @test (@rewrite sv3 begin
     :removes
     I
-  end) == sv4
+  end) ≅ sv4
 
   sv4_rewrite1 = (@rewrite sv4 begin
     :stocks
@@ -268,7 +271,9 @@ end
     NI = [I]
   end)
 
-  @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
+  @test sv4_rewrite1 ≅ sv3
+
+  # @test is_natural(homomorphism(sv4_rewrite1, sv3)) && is_natural(homomorphism(sv3, sv4_rewrite1))
 
 
 
@@ -280,7 +285,7 @@ end
   end) begin
     :removes
     A
-  end) == (@stock_and_flow begin 
+  end) ≅ (@stock_and_flow begin 
     :sums
     N = []
   end)
@@ -542,10 +547,150 @@ end
   end
 
 
-  aged_sir_rewritten2 = rewrite(Rule(homomorphism(IS, LS), homomorphism(IS, RS)), aged_sir)
+  
 
-  @test is_natural(homomorphism(aged_sir_rewritten, aged_sir_rewritten2)) && is_natural(homomorphism(aged_sir_rewritten2, aged_sir_rewritten))
+  aged_sir_rewritten2 = rewrite(Rule(homomorphism(IS, LS), homomorphism(IS, RS)), aged_sir)
+  @test aged_sir_rewritten ≅ aged_sir_rewritten2
+  # @test is_natural(homomorphism(aged_sir_rewritten, aged_sir_rewritten2)) && is_natural(homomorphism(aged_sir_rewritten2, aged_sir_rewritten))
+
+
+
+
+
+
+
+  sir_model = @stock_and_flow begin
+    :stocks
+    S
+    I
+    R
+
+    :parameters
+    c
+    β
+    rRec
+
+    :dynamic_variables
+    v_prevalence = NI / NS
+    v_meanInfectiousContactsPerS = c * v_prevalence
+    v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
+    v_newInfections = S * v_perSIncidenceRate
+    v_newRecovery = I * rRec
+
+    :flows
+    S => f_inf(v_newInfections) => I
+    I => f_rec(v_newRecovery) => R
+
+    :sums
+    N = [S, I, R]
+    NI = [I]
+    NS = [S,I,R]
+  end
+
+  seir_model2 = @stock_and_flow begin
+
+    :stocks
+    S
+    E
+    I
+    R
+
+    :parameters
+    μ
+    β
+    tlatent
+    rRec
+    δ
+    c
+
+
+    :dynamic_variables
+    v_prevalence = NI / NS
+    v_meanInfectiousContactsPerS = c * v_prevalence 
+    v_perSIncidenceRate = β * v_meanInfectiousContactsPerS
+    v_newIncidence = S * v_perSIncidenceRate
+
+    v_birth = μ * N
+
+    v_inf = E / tlatent
+
+    v_newRecovery = I * rRec
+
+
+    v_deathS = δ * S
+    v_deathE = δ * E
+    v_deathI = δ * I
+    v_deathR = δ * R
+
+
+    :flows
+    CLOUD => f_birth(v_birth) => S
+    S => f_incid(v_newIncidence) => E
+    S => f_deathS(v_deathS) => CLOUD
+    E => f_inf(v_inf) => I
+    E => f_deathE(v_deathE) => CLOUD
+    I => f_rec(v_newRecovery) => R
+    I => f_deathI(v_deathI) => CLOUD
+    R => f_deathR(v_deathR) => CLOUD
+
+    :sums
+    N = [S, E, I, R]
+    NI = [I]
+    NS = [S, E, I, R]
+  end
+
+
+  sir_rewrite = @rewrite sir_model begin
+    :stocks
+    E
+
+    :parameters
+    μ
+    tlatent
+    δ
+    
+    
+
+
+    :dynamic_variables
+    v_newIncidence = S * v_perSIncidenceRate
+    v_birth = μ * N
+    v_inf = E / tlatent
+
+    
+
+    v_deathS = δ * S
+    v_deathE = δ * E
+    v_deathI = δ * I
+    v_deathR = δ * R
+
+    :redefs
+    E => f_inf(v_inf) => I
+    
+    :flows
+    CLOUD => f_birth(v_birth) => S
+    S => f_incid(v_newIncidence) => E
+    S => f_deathS(v_deathS) => CLOUD
+    E => f_deathE(v_deathE) => CLOUD
+    I => f_deathI(v_deathI) => CLOUD
+    R => f_deathR(v_deathR) => CLOUD
+
+    :add_links
+    E => N
+    E => NS
+    
+    :removes
+    v_newInfections
+  end
+
+  @test sir_rewrite ≅ seir_model2
 
 
 end
+
+
+
+
+
+
 

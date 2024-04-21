@@ -294,7 +294,11 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
             # @show "HDASDASDSA"
             push!(L_connect_dict[dyvar_link_type], link)
           end
-          if object.args[2].args[operand_index + 1] != operand && !(link in remove_connect_dict[dyvar_link_type])
+          # we want to remove all links such that they aren't in the redefinition
+          # operand is in old, we want to check if it's in the new
+
+          # TODO: wrong
+          if (!(link in remove_connect_dict[dyvar_link_type])) && (length(object.args[2].args[2:end]) < operand_index || object.args[2].args[operand_index + 1] != operand )
             push!(remove_connect_dict[dyvar_link_type], link)
           end
           # @show L_connect_dict, remove_connect_dict
@@ -915,7 +919,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   add_links_from_dict!(L, L_connect_dict)
 
   # @show allunique(L_connect_dict[:LPV]), L_connect_dict[:LPV]
-  @show remove_connect_dict[:LPV]
+  # @show remove_connect_dict[:LPV]
   # @show removed_set
   # @show L
 
@@ -932,7 +936,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
   end
   for sum in R_sum_queue
-    for stock_sum in sum.args[2]
+    for stock_sum in sum.args[2].args
       if !(stock_sum in L_set) && stock_sum in keys(name_dict)
         push!(L_set, stock_sum)
         add_object_of_type!(L, stock_sum, name_dict[stock_sum].type, name_dict[stock_sum].index, sf_block)
@@ -986,7 +990,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   
   add_links_from_dict!(I, I_connect_dict)
 
-  @show I
+  # @show I
 
   R = deepcopy(I)
   R_name_dict = Dict{Symbol, SFPointer}([
@@ -1018,7 +1022,9 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
   if (length(R_sum_queue) > 0)
-    sum_names, sum_lists = parse_sum.( R_sum_queue)
+    sums = parse_sum.( R_sum_queue)
+    sum_names = map(first, sums)
+    sum_lists = map(last, sums)
   else
     sum_names = Vector{Symbol}()
     sum_lists = Vector{Expr}()
@@ -1088,11 +1094,11 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   # @show R
 
-  @show I_connect_dict[:LPV]
+  # @show I_connect_dict[:LPV]
 
   for sum_index in eachindex(R_sum_queue)
     real_sum_index = findfirst(==(R_sum_queue[sum_index].args[1]), svnames(R))
-    for stock in sum_list.args[1]
+    for stock in sum_lists[sum_index]
       stock_index = findfirst(==(stock), snames(R))
       link = (stock, R_sum_queue[sum_index].args[1])
       if !(link in I_connect_dict[:LS])
@@ -1109,7 +1115,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     for (operand_index, operand) in enumerate(dyvar_definition.args[2:end])
       link = (operand, R_dyvar_queue[dyvar_index].args[1], operand_index)
       if !(link in I_connect_dict[dyvar_link_name_from_object_type(R_name_dict[operand].type)])
-        @show "triggered!"
+        # @show "triggered!"
         add_operand_link!(R, operand, R_name_dict[operand].type, real_dyvar_index, operand_index)
       end
     end
@@ -1128,7 +1134,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     stock_out = flow_stocks_out[flow_index]
     if (stock_out != :F_NONE)
       stock_out_index = R_name_dict[stock_out].index
-      if !(stock_out, R_flow_queue[flow_index].args[3].args[2].args[1]) in I_connect_dict[:O]
+      link = (stock_out, R_flow_queue[flow_index].args[3].args[2].args[1])
+      if !(link in I_connect_dict[:O])
         add_part!(R, :O ; os = stock_out_index, ofn = flow_index)
       end
     end 
