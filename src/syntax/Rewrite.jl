@@ -559,8 +559,8 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
     flow = sf_block.flows[object_pointer.index]
     inflow_stock = flow[3]
     outflow_stock = flow[1]
-    flow_name = flow[2].args[2].args[1]
-    flow_dyvar = flow[2].args[2].args[2]
+    flow_name = flow[2].args[1]
+    flow_dyvar = flow[2].args[2]
 
     inflow_link = (inflow_stock, flow_name)
     outflow_link = (outflow_stock, flow_name)

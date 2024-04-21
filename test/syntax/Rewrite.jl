@@ -62,6 +62,7 @@ end
     p
   end) ≅ Ap
     
+  
 
 end
 
@@ -685,6 +686,25 @@ end
 
   @test sir_rewrite ≅ seir_model2
 
+  @test (@rewrite sir_model begin
+    :removes
+    S
+    I
+    R
+    c
+    β
+    rRec
+    v_prevalence 
+    v_meanInfectiousContactsPerS 
+    v_perSIncidenceRate 
+    v_newInfections 
+    v_newRecovery
+    f_inf
+    f_rec
+    N
+    NI
+    NS
+  end) == StockAndFlowF()
 
 end
 
