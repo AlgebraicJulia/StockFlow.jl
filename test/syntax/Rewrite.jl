@@ -706,6 +706,56 @@ end
     NS
   end) == StockAndFlowF()
 
+  MySF = @stock_and_flow begin
+    :stocks
+    A
+    B
+
+    :parameters
+    p
+
+    :sums
+    N = [A,B]
+    NI = [B]
+
+    :dynamic_variables
+    v1 = A + p
+    v2 = v1 + N
+
+    :flows
+    A => f(v2) => B
+  end
+
+  MySF2 = @stock_and_flow begin
+    :stocks
+    A
+    B
+
+    :parameters
+    p
+
+    :sums
+    N = [A,B]
+    NI = [B]
+
+    :dynamic_variables
+    v1 = v2 + N
+    v2 = +(NI)
+
+    :flows
+    B => f(v2) => A
+    
+  end
+
+  @test (@rewrite MySF begin
+    :redefs
+    N = [B,A]
+    B => f(v2) => A
+    v2 = +(NI)
+    v1 = v2 + N
+end) ≅ MySF2
+
+
 end
 
 

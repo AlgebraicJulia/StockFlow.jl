@@ -310,9 +310,11 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
 
     elseif object_type == :SV
       if !(object_name in L_set)
-        push!(R_sum_queue, object)
+        push!(L_set, object_name)
         add_svariable!(L ; svname = object_name)
       end
+      push!(R_sum_queue, object)
+
       sum_index = findfirst(==(object_name), svnames(L))
       for operand in object.args[2].args
         if operand in keys(name_dict)
@@ -326,7 +328,11 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           if !(link in L_connect_dict[:LS])
             push!(L_connect_dict[:LS], link)
           end
-          if !(link in remove_connect_dict[:LS])
+          # Don't remove link if it's retained
+          # all_old_links = zip(get_lss())
+          original_links = sf_block.sums[name_dict[object_name].index][2]
+
+          if !(link in remove_connect_dict[:LS]) && !(operand in original_links)
             push!(remove_connect_dict[:LS], link)
           end          
           # add_part!(L, :LS ; lss = stock_index, lssv = sum_index)
@@ -912,11 +918,12 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   #See current issue with sir -> seir
   add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block, L_connect_dict, remove_connect_dict, removed_set)
 
-
   # @show "OK"
   # @show L
 
   add_links_from_dict!(L, L_connect_dict)
+  # @show L
+
 
   # @show allunique(L_connect_dict[:LPV]), L_connect_dict[:LPV]
   # @show remove_connect_dict[:LPV]
@@ -958,6 +965,7 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   # @show L
   # L should now be complete
   
+  # @show L_set, removed_set
 
   I_set = setdiff(L_set, removed_set)
   I_connect_dict = Dict(key => [value for value in filter(v -> !(v in remove_connect_dict[key]), L_connect_dict[key])] for key in keys(L_connect_dict))
@@ -987,7 +995,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     add_object_of_type!(I, object, :F, name_dict[object].index, sf_block)
   end
 
-  
+  # @show I_connect_dict
+  # @show I
   add_links_from_dict!(I, I_connect_dict)
 
   # @show I
