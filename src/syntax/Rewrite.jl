@@ -47,6 +47,15 @@ function add_link_if_not_already!(connect_dict, link, link_object)
   end
 end
 
+function add_part_if_not_already!(check_set, sf, operand, operand_type, operand_index, sf_block)
+  if !(operand in check_set)
+    push!(check_set, operand)
+    add_object_of_type!(sf, operand, operand_type, operand_index, sf_block)
+  end
+end
+
+
+
 
 
 
@@ -95,13 +104,8 @@ function remove_from_sums2!(stock_name, sf_block, L, L_set, name_dict, L_connect
     for sum_stock in sum_stocks
       if sum_stock == stock_name
         stock_index = name_dict[stock_name].index
-        if sum_name ∉ L_set
-          add_part!(L, :SV ; svname = sum_name)
-          push!(L_set, sum_name)
-          sum_index = nsv(L)
-        else
-          sum_index = findfirst(==(sum_name), svnames(L))
-        end
+        add_part_if_not_already!(L_set, L, sum_name, :SV, stock_index, sf_block)
+        sum_index = findfirst(==(sum_name), svnames(L))
         # ! WE'RE ASSUMING THERE IS AT MAX ONE LINK BETWEEN A SUM AND A STOCK
         link = (stock_name, sum_name)
         add_link_if_not_already!(L_connect_dict, link, :LS)
@@ -179,14 +183,9 @@ function remove_from_dyvars2!(object_name, sf_block, L, L_set, name_dict, L_conn
 
         object_type = name_dict[object_name].type
       
+        add_part_if_not_already!(L_set, L, dyvar_name, :V, name_dict[dyvar_name].index, sf_block)
 
-        if dyvar_name ∉ L_set
-          add_part!(L, :V ; vname = dyvar_name, vop = dyvar_op)
-          push!(L_set, dyvar_name)
-          dyvar_index = nvb(L)
-        else
-          dyvar_index = findfirst(==(dyvar_name), vnames(L))
-        end
+        dyvar_index = findfirst(==(dyvar_name), vnames(L))
 
         link_name = dyvar_link_name_from_object_type(object_type)
         link = (object_name, dyvar_name, operand_index)
@@ -215,11 +214,9 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
       dyvar_operands = object.args[2].args
       dyvar_op = dyvar_operands[1]
       push!(R_dyvar_queue, object)
-      if !(object_name in L_set) 
-        push!(L_set, object_name)
-        original_dyvar_op = sf_block.dyvars[name_dict[object_name].index][2].args[1]
-        add_variable!(L ; vname = object_name, vop = original_dyvar_op)
-      end
+
+      add_part_if_not_already!(L_set, L, object_name, :V, object_index, sf_block)
+
       dyvar_index = findfirst(==(object_name), vnames(L))
 
       for (operand_index, operand) in enumerate(sf_block.dyvars[object_index][2].args[2:end])
@@ -230,22 +227,8 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           operand_type = operand_pointer.type
           operand_original_index = operand_pointer.index
 
-          if !(operand in L_set)
-            # note, IT IS NOT REMOVED!
-            # It could be removed separately, but as is, this should
-            # place it in I
+          add_part_if_not_already!(L_set, L, operand, operand_type, operand_original_index, sf_block)
 
-            # TODO: User's responsibility to add the values in the redef under
-            # the correct header.  If we have a redef N = [S, I],
-            # user needs to add S and I under a :stocks
-            # Is this reasonable?
-
-            push!(L_set, operand)
-
-            add_object_of_type!(L, operand, operand_type, operand_original_index, sf_block)
-
-
-          end # if !operand
 
           # only want to add link if there was one in that position originally,
           # hence the continue.
@@ -271,19 +254,14 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
       end # for each operand (except operator)
 
     elseif object_type == :SV
-      if !(object_name in L_set)
-        push!(L_set, object_name)
-        add_svariable!(L ; svname = object_name)
-      end
+      add_part_if_not_already!(L_set, L, object_name, :SV, name_dict[object_name].index, sf_block)
+
       push!(R_sum_queue, object)
 
       sum_index = findfirst(==(object_name), svnames(L))
       for operand in object.args[2].args
         if operand in keys(name_dict)
-          if !(operand in L_set)
-            push!(L_set, operand)
-            add_stock!(L ; sname = operand)
-          end
+          add_part_if_not_already!(L_set, L, operand, :S, name_dict[operand].index, sf_block)
           
           stock_index = findfirst(==(operand), snames(L))
           link = (operand, object_name)
@@ -301,16 +279,10 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
     elseif object_type == :F
       # If the dyvar has changed, need to have it in L, nothing in I, re-add new to R
       original_flow_var = sf_block.flows[name_dict[object_name].index][2].args[2]    # flow_var = object.args[3].args[2].args[2]
-      if !(original_flow_var in L_set)
-        push!(L_set, original_flow_var)
-        dyvar_op = sf_block.dyvars[name_dict[original_flow_var].index][2].args[1]
-        add_variable!(L ; vname = original_flow_var, vop = dyvar_op)
-      end
-      if !(object_name in L_set)
-        flow_var_index = findfirst(==(original_flow_var), vnames(L))
-        push!(L_set, object_name)
-        add_flow!(L, flow_var_index ; fname = object_name)
-      end
+      original_flow_index = name_dict[original_flow_var].index
+      add_part_if_not_already!(L_set, L, original_flow_var, :V, original_flow_index, sf_block)
+      add_part_if_not_already!(L_set, L, object_name, :F, name_dict[object_name].index, sf_block)
+
 
       flow_index = findfirst(==(object_name), fnames(L))
 
@@ -321,20 +293,14 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
     
 
       if (original_inflow != :F_NONE)
-        if !(original_inflow in L_set)
-          push!(L_set, original_inflow)
-          add_stock!(L ; sname = original_inflow)
-        end
+        add_part_if_not_already!(L_set, L, original_inflow, :S, name_dict[original_inflow].index, sf_block)
         link = (original_inflow, object_name)
         add_link_if_not_already!(L_connect_dict, link, :I)
         add_link_if_not_already!(remove_connect_dict, link, :I)
       end 
 
       if (original_outflow != :F_NONE)
-        if !(original_outflow in L_set)
-          push!(L_set, original_outflow)
-          add_stock!(L ; sname = original_outflow)
-        end
+        add_part_if_not_already!(L_set, L, original_outflow, :S, name_dict[original_outflow].index, sf_block)
         link = (original_outflow, object_name)
         add_link_if_not_already!(L_connect_dict, link, :O)
         add_link_if_not_already!(remove_connect_dict, link, :O)
@@ -382,15 +348,8 @@ function remove_from_flows!(object_name, sf_block, L, L_set, name_dict, L_connec
     link = (object_name, flow_name)
 
     if (inflow_stock == object_name) || (outflow_stock == object_name)
-      if !(flow_name in L_set)
-        push!(L_set, flow_name)
-        if !(flow_dyvar in L_set)
-          dyvar_op = sf_block.dyvars[name_dict[flow_dyvar].index].args[1]
-          push!(L_set, flow_dyvar)
-          add_variable!(L ; vname = flow_dyvar, vop = dyvar_op)
-        end
-        add_flow!(L, findfirst(==(flow_dyvar), vnames(L)) ; fname = flow_name, )
-      end
+      add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
+      add_part_if_not_already!(L_set, L, flow_name, :F, name_dict[flow_name].index, sf_block)
     end
 
     if (inflow_stock == object_name)
@@ -424,12 +383,7 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
   object_type = object_pointer.type
   push!(removed_set, removed)
 
-  if !(removed in L_set)
-    push!(L_set, removed)
-    add_object_of_type!(L, removed, object_type, object_pointer.index, sf_block)
-  end
-
-
+  add_part_if_not_already!(L_set, L, removed, object_type, object_pointer.index, sf_block)
 
 
 
@@ -451,10 +405,9 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
     vname = object_definition[1]
 
     for (operand_index, operand) in enumerate(object_definition[2].args[2:end])
-      if !(operand in L_set)
-        push!(L_set, operand)
-        add_object_of_type!(L, operand, name_dict[operand].type, name_dict[operand].index, sf_block)
-      end
+
+      add_part_if_not_already!(L_set, L, operand, name_dict[operand].type, name_dict[operand].index, sf_block)
+
       operand_link_type = dyvar_link_name_from_object_type(name_dict[operand].type)
       link = (operand, removed, operand_index)
       add_link_if_not_already!(L_connect_dict, link, operand_link_type)
@@ -467,10 +420,9 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
     svname = object_definition[1]
 
     for sum_stock in object_definition[2]
-      if !(sum_stock in L_set)
-        push!(L_set, sum_stock)
-        add_stock!(L ; sname = sum_stock)
-      end
+
+      add_part_if_not_already!(L_set, L, sum_stock, :S, name_dict[sum_stock].index, sf_block)
+
       link = (sum_stock, removed)
       add_link_if_not_already!(L_connect_dict, link, :LS)
       add_link_if_not_already!(remove_connect_dict, link, :LS)
@@ -487,36 +439,22 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
     inflow_link = (inflow_stock, flow_name)
     outflow_link = (outflow_stock, flow_name)
 
-    if !(flow_dyvar in L_set)
-      fv = findfirst(==(flow_dyvar), vnames(L)).args[1]
-      push!(L_set, flow_dyvar)
-      add_variable!(L ; vname = flow_dyvar, fv = fv)
-    end
+    add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
 
-    if !(inflow_stock in L_set) && !(inflow_stock == :F_NONE)
-      push!(L_set, inflow_stock)
-      add_stock!(L ; sname = inflow_stock)
-    end
-
-
-    if !(outflow_stock in L_set) && !(outflow_stock == :F_NONE)
-      push!(L_set, outflow_stock)
-      add_stock!(L ; sname = outflow_stock)
-    end
-
+   
 
     if !(inflow_stock == :F_NONE)
+      add_part_if_not_already!(L_set, L, inflow_stock, :S, name_dict[inflow_stock].index, sf_block)
       add_link_if_not_already!(L_connect_dict, inflow_link, :I)
       add_link_if_not_already!(remove_connect_dict, inflow_link, :I)
     end
 
 
-
-    if !(outflow_stock == :F_NONE)
+    if !(inflow_stock == :F_NONE)
+      add_part_if_not_already!(L_set, L, outflow_stock, :S, name_dict[outflow_stock].index, sf_block)
       add_link_if_not_already!(L_connect_dict, outflow_link, :O)
       add_link_if_not_already!(remove_connect_dict, outflow_link, :O)
     end
-    
 
   end
 end
@@ -529,14 +467,9 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
     :($(src::Symbol) => $(tgt::Symbol)) => begin
       tgt_type = name_dict[tgt].type
 
-      if !(tgt in L_set)
-        push!(L_set, tgt)
-        add_object_of_type!(L, tgt, tgt_type, name_dict[tgt].index, sf_block)
-      end
-      if !(src in L_set)
-        push!(L_set, src)
-        add_object_of_type!(L, src, name_dict[src].type, name_dict[src].index, sf_block)
-      end
+      add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+      add_part_if_not_already!(L_set, L, src, name_dict[src].type, name_dict[src].index, sf_block)
+      
 
       if tgt_type == :SV
         link = (src, tgt)
@@ -556,11 +489,16 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
         tgt_pointer = name_dict[tgt]
         flow_definintion = sf_block.flows[tgt_pointer.index]
         flow_dyvar = flow_definintion[2].args[2]
-        if !(flow_dyvar in L_set)
-          flow_dyvar_op = sf_block.dyvars[name_dict[flow_dyvar].index][2].args[1]
-          push!(L_set, flow_dyvar)
-          add_variable!(L ; vname = flow_dyvar, vop = flow_dyvar_op)
-        end
+
+
+        add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
+
+
+        # if !(flow_dyvar in L_set)
+        #   flow_dyvar_op = sf_block.dyvars[name_dict[flow_dyvar].index][2].args[1]
+        #   push!(L_set, flow_dyvar)
+        #   add_variable!(L ; vname = flow_dyvar, vop = flow_dyvar_op)
+        # end
         if flow_definintion[3] == src
           link = (src, tgt)
           add_link_if_not_already!(L_connect_dict, link, :I)
@@ -578,14 +516,9 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
     :($(src::Symbol) => $(tgt::Symbol), $(position::Int)) => begin
       tgt_type = name_dict[tgt].type
 
-      if !(tgt in L_set)
-        push!(L_set, tgt)
-        add_object_of_type!(L, tgt, tgt_type, name_dict[tgt].index, sf_block)
-      end
-      if !(src in L_set)
-        push!(L_set, src)
-        add_object_of_type!(L, src, name_dict[src].type, name_dict[src].index, sf_block)
-      end
+
+      add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+      add_part_if_not_already!(L_set, L, src, name_dict[src].type, name_dict[src].index, sf_block)
 
       if tgt_type == :SV
         link = (src, tgt)
@@ -632,13 +565,11 @@ function add_links_block!(l, L_set, name_dict, L, sf_block, R_link_vector)
       position = 0
     end
   end
-  if (src in keys(name_dict)) && !(src in L_set)
-    add_object_of_type!(L, src, name_dict[src].type, name_dict[src].index, sf_block)
-    push!(L_set, src)
+  if src in keys(name_dict)
+    add_part_if_not_already!(L_set, L, src, name_dict[src].type, name_dict[src].index, sf_block)
   end
-  if (tgt in keys(name_dict)) && !(tgt in L_set)
-    add_object_of_type!(L, tgt, name_dict[tgt].type, name_dict[tgt].index, sf_block)
-    push!(L_set, tgt)
+  if tgt in keys(name_dict)
+    add_part_if_not_already!(L_set, L, tgt, name_dict[tgt].type, name_dict[tgt].index, sf_block)
   end
   push!(R_link_vector, (src => tgt, position))      
 end 
@@ -649,20 +580,16 @@ function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_co
   new = capture_dict[:new]
   old = capture_dict[:old]
 
-  if !(old in L_set)
-    push!(L_set, old)
-    add_object_of_type!(L, old, name_dict[old].type, name_dict[old].index, sf_block)
-  end
+
+  add_part_if_not_already!(L_set, L, old, name_dict[old].type, name_dict[old].index, sf_block)
+  
 
   for ((dyvar_name, dyvar_expr)) in sf_block.dyvars
     dyvar_op = dyvar_expr.args[1]
     dyvar_operands = dyvar_expr.args[2:end]
     matching_indices = findall(==(old), dyvar_operands)
     if !(isempty(matching_indices))
-      if !(dyvar_name in L_set)
-        push!(L_set, dyvar_name)
-        add_variable!(L ; vname = dyvar_name, vop = dyvar_op)
-      end
+      add_part_if_not_already!(L_set, L, dyvar_name, :V, name_dict[dyvar_name].index, sf_block)
 
       for index in matching_indices
         old_link = (old, dyvar_name, index)
@@ -673,9 +600,8 @@ function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_co
 
 
         
-        if (new in keys(name_dict)) && !(new in L_set)
-          push!(L_set, new)
-          add_object_of_type!(L, new, name_dict[new].type, name_dict[new].index, sf_block)
+        if new in keys(name_dict)
+          add_part_if_not_already!(L_set, L, new, name_dict[new].type, name_dict[new].index, sf_block)
         end
 
         push!(R_link_vector, (new => dyvar_name, index))
@@ -808,9 +734,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   for dyvar in R_dyvar_queue
     for operand in dyvar.args[2].args[2:end]
-      if !(operand in L_set) && operand in keys(name_dict)
-        push!(L_set, operand)
-        add_object_of_type!(L, operand, name_dict[operand].type, name_dict[operand].index, sf_block)
+      if operand in keys(name_dict)
+        add_part_if_not_already!(L_set, L, operand, name_dict[operand].type, name_dict[operand].index, sf_block)
       end
     end
   end
@@ -818,9 +743,8 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   for sum in R_sum_queue
     for stock_sum in sum.args[2].args
-      if !(stock_sum in L_set) && stock_sum in keys(name_dict)
-        push!(L_set, stock_sum)
-        add_object_of_type!(L, stock_sum, name_dict[stock_sum].type, name_dict[stock_sum].index, sf_block)
+      if stock_sum in keys(name_dict)
+        add_part_if_not_already!(L_set, L, stock_sum, name_dict[stock_sum].type, name_dict[stock_sum].index, sf_block)
       end
     end
   end
@@ -846,16 +770,15 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       end
 
       for e_value in completed
-        if !(e_value in L_set) && e_value in keys(name_dict)
-          push!(L_set, e_value)
-          add_object_of_type!(L, e_value, name_dict[e_value].type, name_dict[e_value].index, sf_block)
+        if e_value in keys(name_dict)
+          add_part_if_not_already!(L_set, L, e_value, name_dict[e_value].type, name_dict[e_value].index, sf_block)
         end
       end
     end
+    
     for value in [outflow, inflow, dyvar]
-      if !(value in L_set) && value in keys(name_dict)
-        push!(L_set, value)
-        add_object_of_type!(L, value, name_dict[value].type, name_dict[value].index, sf_block)
+      if value in keys(name_dict)
+        add_part_if_not_already!(L_set, L, value, name_dict[value].type, name_dict[value].index, sf_block)
       end
     end
   end
