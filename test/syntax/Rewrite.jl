@@ -792,6 +792,56 @@ end) ≅ MySF2
   CLOUD => f(v3) => C
 end) ≅ MySF3
 
+  YourSF = @stock_and_flow begin
+    :stocks
+    α
+    β
+    γ
+
+    :flows
+    α => ϕ(α * β) => ☁
+    ☁ => ψ(γ + α * β) => α
+  end
+
+  YourSF2 = @stock_and_flow begin
+    :stocks
+    α
+    β
+    γ
+    δ
+
+    :flows
+    CLOUD => ϕ(α * β) => δ
+    γ => ψ(γ + α * β) => CLOUD
+
+    :sums
+    N = [α, β, γ, δ]
+  end
+
+
+  YourSF2′ = @rewrite YourSF begin
+    :stocks
+    δ
+
+    :sums
+    N = [α, β, γ, δ]
+
+    :remove_links
+    α => ϕ
+    α => ψ
+
+    :add_links
+    δ => ϕ, 2
+    γ => ψ, 1
+
+
+  end
+  set_vnames!(YourSF2, [:A, :A, :A])
+
+  set_vnames!(YourSF2′, [:A, :A, :A])
+  # We don't care about the actual names.
+
+  @test YourSF2′ ≅ YourSF2
 
 
 

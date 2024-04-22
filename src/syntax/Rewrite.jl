@@ -88,7 +88,7 @@ function add_object_of_type!(sf, object, object_type, object_index, sf_block)
   elseif object_type == :F
     flow_dyvar = sf_block.flows[object_index][2].args[2]
     flow_dyvar_index = findfirst(==(flow_dyvar), vnames(sf))
-    @assert !(isnothing(flow_dyvar_index)) "Tried adding a flow before its dyvar!"
+    @assert !(isnothing(flow_dyvar_index)) "Tried adding a flow '$object' before its dyvar '$flow_dyvar'!"
     add_flow!(sf, flow_dyvar_index ; fname = object)
   end
 end
@@ -461,15 +461,18 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
     :($(src::Symbol) => $(tgt::Symbol)) => begin
       tgt_type = name_dict[tgt].type
 
-      add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
       add_part_if_not_already!(L_set, L, src, name_dict[src].type, name_dict[src].index, sf_block)
       
 
       if tgt_type == :SV
+        add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+
         link = (src, tgt)
         add_link_if_not_already!(L_connect_dict, link, :LS)
         add_link_if_not_already!(remove_connect_dict,  link, :LS)
       elseif tgt_type == :V # tgt must be dyvar
+        add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+
         positions = findall(==(src), sf_block.dyvars[name_dict[tgt].index][2].args[2:end])
         link_type = dyvar_link_name_from_object_type(name_dict[src].type)
         for pos in positions
@@ -486,9 +489,11 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
 
 
         add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
+        add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+
+        link = (src, tgt)
 
         if flow_definintion[3] == src
-          link = (src, tgt)
           add_link_if_not_already!(L_connect_dict, link, :I)
           # also didn't have the check for this one...
           add_link_if_not_already!(remove_connect_dict, link, :I)
@@ -505,20 +510,27 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
       tgt_type = name_dict[tgt].type
 
 
-      add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
       add_part_if_not_already!(L_set, L, src, name_dict[src].type, name_dict[src].index, sf_block)
 
       if tgt_type == :SV
+        add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+
         link = (src, tgt)
         add_link_if_not_already!(L_connect_dict, link, :LS)
         add_link_if_not_already!(remove_connect_dict, link, :LS)
       
       elseif tgt_type == :V
+        add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+
         link_type = dyvar_link_name_from_object_type(name_dict[src].type)
         link = (src, tgt, position)
         add_link_if_not_already!(L_connect_dict, link, link_type)
         add_link_if_not_already!(remove_connect_dict, link, link_type)
       elseif tgt_type == :F
+        flow_dyvar = name_dict[tgt].args[3].args[2].args[2]
+        add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
+        add_part_if_not_already!(L_set, L, tgt, tgt_type, name_dict[tgt].index, sf_block)
+
         link = (src, tgt)
         if position == 2
           add_link_if_not_already!(L_connect_dict, link, :I)
@@ -716,6 +728,29 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   add_links_from_dict!(L, L_connect_dict)
   
 
+
+
+  parsed_flows = Vector{Tuple{Symbol, Expr, Symbol}}(parse_flow.(R_flow_queue))
+  updated_flows, new_dyvars = create_flow_definitions(parsed_flows, vcat(map(x -> first(x.args), R_dyvar_queue), vnames(L)))
+  new_dyvar_names, new_dyvar_parsedform = zip(new_dyvars...)
+  new_dyvar_unwrapped = collect(zip(new_dyvar_names, map(Syntax.get, new_dyvar_parsedform)))
+    # ! TODO: Make this not suck!!!
+  # unparse to make it in the same format as all the other dyvars
+  new_dyvar_definitions = map(kv -> kv[2][1] isa Tuple ? Expr(:(=), kv[1], Expr(:call, kv[2][2], kv[2][1][1], (kv[2][1][2]))) : :Expr(:(=), kv[1], Expr(:call, kv[2][2], (kv[2][1]))),  new_dyvar_unwrapped)
+
+
+  for (i, flow) in enumerate(R_flow_queue)
+    flow.args[3].args[2].args = [updated_flows[i][1], updated_flows[i][2]]
+  end
+
+
+
+  append!(R_dyvar_queue, new_dyvar_definitions)
+  
+
+  flow_stocks_out, _, flow_stocks_in = zip(parsed_flows...)
+
+
   for dyvar in R_dyvar_queue
     for operand in dyvar.args[2].args[2:end]
       if operand in keys(name_dict)
@@ -736,29 +771,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     outflow = flow.args[2]
     inflow = flow.args[3].args[3]
     dyvar = flow.args[3].args[2].args[2]
-    if dyvar isa Expr
-      stack = [dyvar]
-      completed = Vector{Symbol}()
-      while !(isempty(stack))
-        dyvar_it = stack[1]
-        for val in dyvar_it.args[2:end]
-          if val isa Symbol
-            push!(completed, val)
-          elseif val isa Expr
-            
-            push!(stack, val)
-          end
-        end
-        popfirst!(stack)
 
-      end
-
-      for e_value in completed
-        if e_value in keys(name_dict)
-          add_part_if_not_already!(L_set, L, e_value, name_dict[e_value].type, name_dict[e_value].index, sf_block)
-        end
-      end
-    end
     
     for value in [outflow, inflow, dyvar]
       if value in keys(name_dict)
@@ -778,8 +791,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   I_set_flows = filter(x -> name_dict[x].type == :F, I_set)
 
 
-  # TODO: This isn't preserving any links.  Verify if I need to...
-  # probably need to preserve inflows and outflows, at least...
   for object in I_set
     if object in I_set_flows
       continue
@@ -800,24 +811,10 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   add_links_from_dict!(I, I_connect_dict)
 
   R = deepcopy(I)
-  R_name_dict = Dict{Symbol, SFPointer}([
-    [s => SFPointer(:S, i) for (i, s) ∈ enumerate(snames(R))] ;
-    [sv => SFPointer(:SV, i) for (i, sv) ∈ enumerate(svnames(R))] ;
-    [v => SFPointer(:V, i) for (i, v) ∈ enumerate(vnames(R))] ;
-    [f => SFPointer(:F, i) for (i, f) ∈ enumerate(fnames(R))] ;
-    [p => SFPointer(:P, i) for (i, p) ∈ enumerate(pnames(R))]
-  ])
+  
 
   not_yet_added_stocks = collect(filter(x -> !(x in snames(R)), R_stock_queue))
   not_yet_added_params = collect(filter(x -> !(x in pnames(R)), R_param_queue))
-
-  
-
-  type_index_counter = ns(R) + 1
-  (x -> (push!(R_name_dict, x => SFPointer(:S, type_index_counter)); type_index_counter+=1)).(not_yet_added_stocks)
-
-  type_index_counter = np(R) + 1
-  (x -> (push!(R_name_dict, x => SFPointer(:P, type_index_counter)); type_index_counter+=1)).(not_yet_added_params)
 
 
 
@@ -828,45 +825,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   sum_names, sum_lists = zip(parse_sum.( R_sum_queue)...)
   
-  dyvar_names, dyvar_definitions = zip(parse_dyvar.(R_dyvar_queue)...)
-  dyvar_definitions = collect(dyvar_definitions)
-  dyvar_names = collect(dyvar_names)
-  dyvar_ops = collect((x -> x.args[1]).(dyvar_definitions))
-
-
-
-
-
-
-
-
-
-  parsed_flows = Vector{Tuple{Symbol, Expr, Symbol}}(parse_flow.(R_flow_queue))
-  updated_flows, new_dyvars = create_flow_definitions(parsed_flows, vcat(dyvar_names, vnames(I)))
-  new_dyvar_names, new_dyvar_parsedform = zip(new_dyvars...)
-
-  append!(dyvar_names, new_dyvars)
-  
-
-
-  new_dyvar_unwrapped = collect(zip(new_dyvar_names, map(Syntax.get, new_dyvar_parsedform)))
-    # ! TODO: Make this not suck!!!
-  new_dyvar_exprs = map(kv -> kv[2][1] isa Tuple ? Expr(:call, kv[2][2], kv[2][1][1], kv[2][1][2]) : Expr(:call, kv[2][2], (kv[2][1])),  new_dyvar_unwrapped)
-
-  append!(R_dyvar_queue, new_dyvar_exprs)
-  
-
-  flow_stocks_out, _, flow_stocks_in = zip(parsed_flows...)
-
-
-
-  # add dyvars and sums to R_name_dict, so we know their index when we need to
-  # link them to a dyvar
-  type_index_counter = nvb(R) + 1
-  (x -> (push!(R_name_dict, x => (SFPointer(:V, type_index_counter))); type_index_counter+=1)).(dyvar_names)
-
-  type_index_counter = nsv(R) + 1
-  (x -> (push!(R_name_dict, x => (SFPointer(:SV, type_index_counter))); type_index_counter+=1)).(sum_names)
 
 
   filtered_dyvars = collect(filter(x -> !(x.args[1] in vnames(R)), R_dyvar_queue))
@@ -887,7 +845,13 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   add_flows!(R, flow_variables_indices, length(filtered_flow_names), fname = filtered_flow_names)
 
- 
+  R_name_dict = Dict{Symbol, SFPointer}([
+    [s => SFPointer(:S, i) for (i, s) ∈ enumerate(snames(R))] ;
+    [sv => SFPointer(:SV, i) for (i, sv) ∈ enumerate(svnames(R))] ;
+    [v => SFPointer(:V, i) for (i, v) ∈ enumerate(vnames(R))] ;
+    [f => SFPointer(:F, i) for (i, f) ∈ enumerate(fnames(R))] ;
+    [p => SFPointer(:P, i) for (i, p) ∈ enumerate(pnames(R))]
+  ])
 
   for sum_index in eachindex(R_sum_queue)
     real_sum_index = findfirst(==(R_sum_queue[sum_index].args[1]), svnames(R))
@@ -901,20 +865,22 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   end
 
 
-  for dyvar_index in eachindex(R_dyvar_queue)
-    real_dyvar_index = findfirst(==(R_dyvar_queue[dyvar_index].args[1]), vnames(R))
-    dyvar_definition = R_dyvar_queue[dyvar_index].args[2]
+  for (i, dyvar) in enumerate(R_dyvar_queue)
+    dyvar_name = dyvar.args[1]
+    real_dyvar_index = R_name_dict[dyvar_name].index
+    dyvar_definition = R_dyvar_queue[i].args[2]
     for (operand_index, operand) in enumerate(dyvar_definition.args[2:end])
-      link = (operand, R_dyvar_queue[dyvar_index].args[1], operand_index)
+      link = (operand, dyvar_name, operand_index)
       if !(link in I_connect_dict[dyvar_link_name_from_object_type(R_name_dict[operand].type)])
         add_operand_link!(R, operand, R_name_dict[operand].type, real_dyvar_index, operand_index)
       end
     end
   end
-
+  #TODO: just do cloud or f_none, not both
+  no_flow_names = Set([:F_NONE, :CLOUD, :☁])
   for flow_index in eachindex(R_flow_queue)
     stock_in = flow_stocks_in[flow_index]
-    if (stock_in != :F_NONE)
+    if !(stock_in in no_flow_names)
       stock_in_index = R_name_dict[stock_in].index
       link = (stock_in, R_flow_queue[flow_index].args[3].args[2].args[1])
       if !(link in I_connect_dict[:I])
@@ -923,7 +889,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
 
     stock_out = flow_stocks_out[flow_index]
-    if (stock_out != :F_NONE)
+    if !(stock_out in no_flow_names)
       stock_out_index = R_name_dict[stock_out].index
       link = (stock_out, R_flow_queue[flow_index].args[3].args[2].args[1])
       if !(link in I_connect_dict[:O])
@@ -943,15 +909,14 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     tgt_index = tgt_pointer.index
 
     tgt_type = tgt_pointer.type
-
     if tgt_type == :SV
       add_part!(R, :LS ; lss = src_index, lssv = tgt_index)
     elseif tgt_type == :F
       position = link[2]
       if position == 1
-        add_part!(R, :O ; is = src_index, ifn = tgt_index)
+        add_part!(R, :O ; os = src_index, ofn = tgt_index)
       elseif position == 2
-        add_part!(R, :I ; os = src_index, ofn = tgt_index)
+        add_part!(R, :I ; is = src_index, ifn = tgt_index)
       end
     elseif tgt_type == :V
       add_operand_link!(R, src, src_pointer.type, tgt_index, link[2])
