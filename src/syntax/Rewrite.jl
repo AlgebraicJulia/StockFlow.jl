@@ -230,13 +230,10 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           add_part_if_not_already!(L_set, L, operand, operand_type, operand_original_index, sf_block)
 
 
-          # only want to add link if there was one in that position originally,
-          # hence the continue.
 
           original_def = sf_block.dyvars[name_dict[object_name].index]
 
-          # NEW
-          # we dont want to add a duplicate if the link is already going to be added from the connect dict
+          
           dyvar_link_type = dyvar_link_name_from_object_type(operand_type)
 
           link = (operand, object_name, operand_index)
@@ -248,7 +245,6 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
           if (length(object.args[2].args[2:end]) < operand_index || object.args[2].args[operand_index + 1] != operand )
             add_link_if_not_already!(remove_connect_dict, link, dyvar_link_type)
           end
-          # END NEW
 
         end # if operand in namedict
       end # for each operand (except operator)
@@ -278,7 +274,7 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
       end
     elseif object_type == :F
       # If the dyvar has changed, need to have it in L, nothing in I, re-add new to R
-      original_flow_var = sf_block.flows[name_dict[object_name].index][2].args[2]    # flow_var = object.args[3].args[2].args[2]
+      original_flow_var = sf_block.flows[name_dict[object_name].index][2].args[2]    
       original_flow_index = name_dict[original_flow_var].index
       add_part_if_not_already!(L_set, L, original_flow_var, :V, original_flow_index, sf_block)
       add_part_if_not_already!(L_set, L, object_name, :F, name_dict[object_name].index, sf_block)
@@ -337,7 +333,6 @@ end
 
 
 
-# TODO
 function remove_from_flows!(object_name, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
   for flow in sf_block.flows
     inflow_stock = flow[3]
@@ -492,12 +487,6 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
 
         add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
 
-
-        # if !(flow_dyvar in L_set)
-        #   flow_dyvar_op = sf_block.dyvars[name_dict[flow_dyvar].index][2].args[1]
-        #   push!(L_set, flow_dyvar)
-        #   add_variable!(L ; vname = flow_dyvar, vop = flow_dyvar_op)
-        # end
         if flow_definintion[3] == src
           link = (src, tgt)
           add_link_if_not_already!(L_connect_dict, link, :I)
@@ -606,10 +595,6 @@ function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_co
         push!(R_link_vector, (new => dyvar_name, index))
 
       end
-
-      
-
-
     end
 
   end
@@ -619,7 +604,7 @@ end
 
 
 
-function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
+function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   Base.remove_linenums!(block)
   name_vector = [snames(sf) ; svnames(sf) ; vnames(sf) ; fnames(sf) ; pnames(sf)]
@@ -846,7 +831,6 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   dyvar_names, dyvar_definitions = zip(parse_dyvar.(R_dyvar_queue)...)
   dyvar_definitions = collect(dyvar_definitions)
   dyvar_names = collect(dyvar_names)
-  # dyvar_definitions = collect(dyvar_definitions)
   dyvar_ops = collect((x -> x.args[1]).(dyvar_definitions))
 
 
@@ -900,7 +884,6 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   filtered_flow_names = filter(x -> !(x in fnames(R)), first.(updated_flows))
   flow_variables_indices = map(x -> findfirst(==(x), vnames(R)), map(x -> x[2], updated_flows))
-  # filtered_flow_names = map(x -> x.args[1], filtered_flows)
 
   add_flows!(R, flow_variables_indices, length(filtered_flow_names), fname = filtered_flow_names)
 
@@ -1002,11 +985,6 @@ function sfrewrite2(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   end
   return sf_rewritten
 
-
-
-
-
-
 end
 
 
@@ -1062,7 +1040,7 @@ macro rewrite(sf, block)
   escaped_block = Expr(:quote, block)
   sf = esc(sf)
   quote
-    sfrewrite2($sf, $escaped_block)
+    sfrewrite($sf, $escaped_block)
   end
 end
   

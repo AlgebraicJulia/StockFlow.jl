@@ -776,26 +776,6 @@ end) ≅ MySF2
  
   end
 
-  @test MySF3 = @stock_and_flow begin 
- :stocks
-    A
-    B
-    C
-
-
-
-    :sums
-    N = [A,B]
-
-    :dynamic_variables
-    v1 = +(A)
-    v2 = v1 + N
-    v3 = v1 * v2
-
-    :flows
-    CLOUD => f(v3) => C
-
-end
 
 @test (@rewrite MySF begin
   :stocks
