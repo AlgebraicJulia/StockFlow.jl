@@ -716,6 +716,31 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
   add_links_from_dict!(L, L_connect_dict)
   
 
+
+
+  parsed_flows = Vector{Tuple{Symbol, Expr, Symbol}}(parse_flow.(R_flow_queue))
+  updated_flows, new_dyvars = create_flow_definitions(parsed_flows, vcat(map(x -> first(x.args), R_dyvar_queue), vnames(L)))
+  new_dyvar_names, new_dyvar_parsedform = zip(new_dyvars...)
+  new_dyvar_unwrapped = collect(zip(new_dyvar_names, map(Syntax.get, new_dyvar_parsedform)))
+    # ! TODO: Make this not suck!!!
+
+  new_dyvar_definitions = map(kv -> kv[2][1] isa Tuple ? Expr(:(=), kv[1], Expr(:call, kv[2][2], kv[2][1][1], (kv[2][1][2]))) : :Expr(:(=), kv[1], Expr(:call, kv[2][2], (kv[2][1]))),  new_dyvar_unwrapped)
+
+
+  for (i, flow) in enumerate(R_flow_queue)
+    flow.args[3].args[2].args = [updated_flows[i][1], updated_flows[i][2]]
+  end
+
+
+
+ 
+
+  append!(R_dyvar_queue, new_dyvar_definitions)
+  
+
+  flow_stocks_out, _, flow_stocks_in = zip(parsed_flows...)
+
+
   for dyvar in R_dyvar_queue
     for operand in dyvar.args[2].args[2:end]
       if operand in keys(name_dict)
@@ -736,29 +761,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     outflow = flow.args[2]
     inflow = flow.args[3].args[3]
     dyvar = flow.args[3].args[2].args[2]
-    if dyvar isa Expr
-      stack = [dyvar]
-      completed = Vector{Symbol}()
-      while !(isempty(stack))
-        dyvar_it = stack[1]
-        for val in dyvar_it.args[2:end]
-          if val isa Symbol
-            push!(completed, val)
-          elseif val isa Expr
-            
-            push!(stack, val)
-          end
-        end
-        popfirst!(stack)
-
-      end
-
-      for e_value in completed
-        if e_value in keys(name_dict)
-          add_part_if_not_already!(L_set, L, e_value, name_dict[e_value].type, name_dict[e_value].index, sf_block)
-        end
-      end
-    end
+   
     
     for value in [outflow, inflow, dyvar]
       if value in keys(name_dict)
@@ -841,22 +844,6 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
 
 
-  parsed_flows = Vector{Tuple{Symbol, Expr, Symbol}}(parse_flow.(R_flow_queue))
-  updated_flows, new_dyvars = create_flow_definitions(parsed_flows, vcat(dyvar_names, vnames(I)))
-  new_dyvar_names, new_dyvar_parsedform = zip(new_dyvars...)
-
-  append!(dyvar_names, new_dyvars)
-  
-
-
-  new_dyvar_unwrapped = collect(zip(new_dyvar_names, map(Syntax.get, new_dyvar_parsedform)))
-    # ! TODO: Make this not suck!!!
-  new_dyvar_exprs = map(kv -> kv[2][1] isa Tuple ? Expr(:call, kv[2][2], kv[2][1][1], kv[2][1][2]) : Expr(:call, kv[2][2], (kv[2][1])),  new_dyvar_unwrapped)
-
-  append!(R_dyvar_queue, new_dyvar_exprs)
-  
-
-  flow_stocks_out, _, flow_stocks_in = zip(parsed_flows...)
 
 
 
@@ -912,9 +899,10 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
   end
 
+  no_flow_names = Set([:CLOUD, :☁])
   for flow_index in eachindex(R_flow_queue)
     stock_in = flow_stocks_in[flow_index]
-    if (stock_in != :F_NONE)
+    if !(stock_in in no_flow_names)
       stock_in_index = R_name_dict[stock_in].index
       link = (stock_in, R_flow_queue[flow_index].args[3].args[2].args[1])
       if !(link in I_connect_dict[:I])
@@ -923,7 +911,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
 
     stock_out = flow_stocks_out[flow_index]
-    if (stock_out != :F_NONE)
+    if !(stock_out in no_flow_names)
       stock_out_index = R_name_dict[stock_out].index
       link = (stock_out, R_flow_queue[flow_index].args[3].args[2].args[1])
       if !(link in I_connect_dict[:O])
