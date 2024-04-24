@@ -2,8 +2,6 @@ module Rewrite
 
 export sfrewrite, @rewrite
 
-# regex to search for uncommented print:  [^#]\s*@show
-
 using ...StockFlow
 
 using ..Syntax
@@ -39,7 +37,7 @@ struct SFPointer
 end
 
 
-get_dyvar_args(dv) = (@capture ($v = $f($(args...))) dv)
+# get_dyvar_args(dv) = (@capture ($v = $f($(args...))) dv)
 
 function add_link_if_not_already!(connect_dict, link, link_object)
   if !(link in connect_dict[link_object])
@@ -75,6 +73,7 @@ function add_operand_link!(sf, operand, operand_type, dyvar_index, operand_index
   end
 end
 
+#TODO: no need to have object_index, can just run findfirst on the block
 function add_object_of_type!(sf, object, object_type, object_index, sf_block)
   if object_type == :S
     add_stock!(sf ; sname = object)
@@ -569,20 +568,26 @@ function add_links_block!(l, L_set, name_dict, L, sf_block, R_link_vector)
     add_part_if_not_already!(L_set, L, src, name_dict[src].type, name_dict[src].index, sf_block)
   end
   if tgt in keys(name_dict)
+    if name_dict[tgt].type == :F
+      flow_dyvar = sf_block.flows[name_dict[tgt].index][2].args[2]
+      add_part_if_not_already!(L_set, L, flow_dyvar, :V, name_dict[flow_dyvar].index, sf_block)
+    end
     add_part_if_not_already!(L_set, L, tgt, name_dict[tgt].type, name_dict[tgt].index, sf_block)
   end
   push!(R_link_vector, (src => tgt, position))      
 end 
 
 
-function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict, R_link_vector)
+function dyvar_swaps_block!(dw, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict, R_link_vector)
   capture_dict = (@capture $old > $new dw)
   new = capture_dict[:new]
   old = capture_dict[:old]
 
 
   add_part_if_not_already!(L_set, L, old, name_dict[old].type, name_dict[old].index, sf_block)
-  
+  if new in keys(name_dict)
+    add_part_if_not_already!(L_set, L, new, name_dict[new].type, name_dict[new].index, sf_block)
+  end
 
   for ((dyvar_name, dyvar_expr)) in sf_block.dyvars
     dyvar_op = dyvar_expr.args[1]
@@ -597,13 +602,7 @@ function dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_co
         old_link_type = dyvar_link_name_from_object_type(name_dict[old].type)
         add_link_if_not_already!(L_connect_dict, old_link, old_link_type)
         add_link_if_not_already!(remove_connect_dict, old_link, old_link_type)
-
-
         
-        if new in keys(name_dict)
-          add_part_if_not_already!(L_set, L, new, name_dict[new].type, name_dict[new].index, sf_block)
-        end
-
         push!(R_link_vector, (new => dyvar_name, index))
 
       end
@@ -689,7 +688,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         current_phase = l -> add_links_block!(l, L_set, name_dict, L, sf_block, R_link_vector)
       end
       QuoteNode(:dyvar_swaps) => begin
-        current_phase = dw -> dyvar_swaps_block!(dw, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict, R_link_vector)
+        current_phase = dw -> dyvar_swaps_block!(dw, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict, R_link_vector)
       end
 
 

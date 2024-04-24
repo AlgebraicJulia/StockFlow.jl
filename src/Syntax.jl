@@ -104,7 +104,7 @@ end
 """
 module Syntax
 export @stock_and_flow, @foot, @feet, infer_links, @stock_and_flow_U, @foot_U,
-@causal_loop,StockArgUnitSymbol, ParamArgUnitSymbol, StockArgUnitExpr, ParamArgUnitExpr
+@causal_loop
 
 using ..StockFlow
 using MLStyle
@@ -166,6 +166,11 @@ abstract type ParamArgT end
 #     val::Symbol
 # end
 
+==(a::StockArgT, b::StockArgT) = a.val == b.val && a.unit == b.unit
+==(a::ParamArgT, b::ParamArgT) = a.val == b.val && a.unit == b.unit
+
+
+
 struct StockArgUnitSymbol <: StockArgT
     val::Symbol
     unit::Symbol
@@ -197,6 +202,7 @@ struct ParamArgUnitExpr <: ParamArgT
     unit::Expr
 end
 
+
 # convert(::Type{StockArgT}, p::Symbol) = ParamArgUnitSymbol(p, :NONE)
 # convert(::Type{StockArgT}, p::Symbol, u::Symbol) = ParamArgUnitSymbol(p, u)
 # convert(::Type{StockArgT}, p::Symbol, u::Expr) = ParamArgUnitExpr(p, u)
@@ -223,6 +229,15 @@ struct StockAndFlowBlock
     flows::Vector{Tuple{Symbol,Expr,Symbol}}
     sums::Vector{Tuple{Symbol,Vector{Symbol}}}
 end
+
+==(b1::StockAndFlowBlock, b2::StockAndFlowBlock) = begin
+    b1.stocks == b2.stocks &&
+    b1.params == b2.params &&
+    b1.dyvars == b2.dyvars &&
+    b1.flows == b2.flows &&
+    b1.sums == b2.sums
+end
+
  
 
 """
