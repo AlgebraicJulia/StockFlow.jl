@@ -1064,8 +1064,10 @@ Create a foot with S => N syntax, where S is stock, N is sum variable.
 ```
 """
 macro foot(block::Expr)
-    Base.remove_linenums!(block)
-    return create_foot(block)
+    escaped_block = Expr(:quote, block)
+    quote 
+        create_foot($(escaped_block))
+    end
 end
 
 
@@ -1089,14 +1091,23 @@ end
 """
 macro feet(block::Expr)
     Base.remove_linenums!(block)
-    @match block begin
-        quote
-          $((block...))
-        end => map(create_foot, block) # also matches empty
-        Expr(e, _...) => [create_foot(block)] # this also matches the above, so it's necessary this comes second.
+    escaped_block = Expr(:quote, block)
+    quote
+        inner_block = $escaped_block
+        @match inner_block begin
+            quote
+              $((inner_block...))
+            end => map(create_foot, inner_block) # also matches empty
+            Expr(e, _...) => [create_foot(inner_block)] # this also matches the above, so it's necessary this comes second.
+        end
     end
 end
 
+macro feet()
+    quote
+        Vector{StockAndFlow0}()
+    end
+end
 
 """
     create_foot(block :: Expr)
@@ -1117,10 +1128,9 @@ multiple_links = @foot A => B, A => B # will have two links from A to B.
 """
 function create_foot(block::Expr)
     @match block.head begin
-
         :tuple => begin
             if isempty(block.args) # case for create_foot(:())
-                error("Cannot create foot with no arguments.")
+                error("Cannot create foot with zero arguments.")
             end
             foot_s = Vector{Symbol}()
             foot_sv = Vector{Symbol}()
