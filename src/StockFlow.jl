@@ -1044,9 +1044,10 @@ vectorfield(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
   return f
 end
 
+include("CausalLoop.jl")
+
 include("Syntax.jl")
 
-include("CausalLoop.jl")
 include("SystemStructure.jl")
 
 include("visualization.jl")
