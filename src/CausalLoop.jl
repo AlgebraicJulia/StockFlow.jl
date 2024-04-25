@@ -126,7 +126,7 @@ epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
 
 epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
 
-ename(c::AbstractCausalLoop, e) = (sedge(c, e), tedge(c, e), epol(c,e))
+ename(c::AbstractCausalLoop, e) = (nname(c, sedge(c, e)), nname(c, tedge(c, e)), epol(c,e))
 enames(c::AbstractCausalLoop) = [ename(c,e) for e in 1:ne(c)]
 
 outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
