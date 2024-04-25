@@ -2,6 +2,11 @@ using StockFlow
 using StockFlow.Syntax
 using StockFlow.Syntax.Composition
 import StockFlow.Syntax.Composition: interpret_composition_notation
+using Catlab.CategoricalAlgebra
+
+function ≅(x,y)
+  !isnothing(isomorphism(x,y))
+end
 
 @testset "Composition creates expected stock flows" begin
     empty_sf = StockAndFlowF()
@@ -126,4 +131,45 @@ end
         sf1 ^ A => ()
         sf2 ^ A => ()
     end, StockAndFlowF, StockAndFlow0, create_foot) # not allowed to map to the same foot twice
+end
+
+@testset "Causal Loop composition" begin
+    CL1 = @cl B => +A, B => ~C, C => ~A, G;
+    CL2 = @cl B => +A, A => +D, D => -E;       
+    CL3 = @cl B => ~C, C => -F, F => !E, E => ± B, G;
+
+    BigCL = @causal_loop begin
+        :nodes
+        A; B; C; D; E; F; G;
+
+        :edges
+        A => +D;
+        B => +A; B => ~C;
+        C => ~A; C => -F;
+        D => -E;
+        E => ±B;
+        F => !E;
+    end
+
+    @test (@compose CL1 CL2 CL3 begin
+        (CL1, CL2, CL3)
+        (CL1, CL2) ^ B => +A
+        (CL1, CL2, CL3) ^ B
+        (CL2, CL3) ^ E
+        (CL1, CL3) ^ B => ~C, G
+      end) ≅ BigCL
+
+    AB = @cl A => +B;
+    BC = @cl B => -C;
+    CA = @cl C => ±A;
+
+    ABC = @cl A => +B, B => -C, C => ±A;
+
+    @test (@compose AB BC CA begin
+        (AB, BC, CA)
+        (AB, BC) ^ B
+        (BC, CA) ^ C
+        (CA, AB) ^ A
+    end) ≅ ABC
+
 end
