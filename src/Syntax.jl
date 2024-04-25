@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, infer_links, @causal_loop, @cl
+export @stock_and_flow, @foot, @feet, infer_links, @causal_loop, @cl, create_foot, cl_macro
 
 using ..StockFlow
 using MLStyle
@@ -1406,8 +1406,6 @@ macro cl(block)
     Base.remove_linenums!(block)
     return cl_macro(block)
 end
-
-
 
 
 
