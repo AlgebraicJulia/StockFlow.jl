@@ -207,44 +207,15 @@ const OpenStockAndFlowUOb, OpenStockAndFlowU = OpenACSetTypes(StockAndFlowUUntyp
 
 
 leg(a::StockAndFlow0U, x::StockAndFlowU) = begin
-    if ns(a)>0 # if have stocks
-      ϕs = ntcomponent(snames(a), snames(x))
-    else
-      ϕs = Int[]
-    end
 
-    if nsv(a) > 0  # if have sum-auxiliary-variable
-      ϕsv = ntcomponent(svnames(a), svnames(x))
-    else
-      ϕsv = Int[]
-    end
+    link_s = ntcomponent(snames(a), snames(x))
+    link_sv = ntcomponent(svnames(a), svnames(x))
+    link_ls = ntcomponent(lsnames(a), lsnames(x))
+    link_u = ntcomponent(unames(a), unames(x))
+    link_du = ntcomponent(dunames(a), dunames(x))
+    link_lu = ntcomponent(lunames(a), lunames(x))
 
-    if nls(a)>0 # if have links between stocks and sum-auxiliary-variables
-      ϕls = ntcomponent(lsnames(a), lsnames(x))
-    else
-      ϕls = Int[]
-    end
-
-    if nu(a)>0 # if have links between stocks and sum-auxiliary-variables
-        ϕu = ntcomponent(unames(a), unames(x))
-    else
-      ϕu = Int[]
-    end
-
-    if ndu(a)>0 # if have links between stocks and sum-auxiliary-variables
-      ϕdu = ntcomponent(dunames(a), dunames(x))
-    else
-      ϕdu = Int[]
-    end
-
-    if nlu(a)>0 # if have links between stocks and sum-auxiliary-variables        
-      ϕlu = ntcomponent(lunames(a), lunames(x))
-    else
-      ϕlu = Int[]
-    end
-
-
-    result = OpenACSetLeg(a, S=ϕs, LS=ϕls, SV=ϕsv, U=ϕu, DU=ϕdu, LU=ϕlu)
+    result = OpenACSetLeg(a, S=link_s, LS=link_ls, SV=link_sv, U=link_u, DU=link_du, LU=link_lu)
 
     result
 end

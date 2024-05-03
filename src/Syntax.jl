@@ -159,32 +159,20 @@ macro stock_and_flow(block)
     end
 end
 
-abstract type StockArgT end
-abstract type ParamArgT end
+abstract type ArgT end
 
-# struct StockArgUnitless <: StockArgT
-#     val::Symbol
-# end
+abstract type StockArgT <: ArgT end
+abstract type ParamArgT <: ArgT end
 
 struct StockArgUnitSymbol <: StockArgT
     val::Symbol
     unit::Symbol
 end
 
-
 struct StockArgUnitExpr <: StockArgT
     val::Symbol
     unit::Expr
 end
-
-# convert(::Type{StockArgT}, s::Symbol) = StockArgUnitSymbol(s, :NONE)
-# convert(::Type{StockArgT}, s::Symbol, u::Symbol) = StockArgUnitSymbol(s, u)
-# convert(::Type{StockArgT}, s::Symbol, u::Expr) = StockArgUnitExpr(s, u)
-
-
-# struct ParamArgUnitless <: ParamArgT
-#     val::Symbol
-# end
 
 struct ParamArgUnitSymbol <: ParamArgT
     val::Symbol
@@ -197,18 +185,16 @@ struct ParamArgUnitExpr <: ParamArgT
     unit::Expr
 end
 
-# convert(::Type{StockArgT}, p::Symbol) = ParamArgUnitSymbol(p, :NONE)
-# convert(::Type{StockArgT}, p::Symbol, u::Symbol) = ParamArgUnitSymbol(p, u)
-# convert(::Type{StockArgT}, p::Symbol, u::Expr) = ParamArgUnitExpr(p, u)
-
 """
     StockAndFlowBlock
 
 Contains the elements that make up the Stock and Flow block syntax.
 
 ### Fields
-- `stocks` -- Each stock is defined by a single valid Julia variable name on a line.
-- `params` -- Each parameter is defined by a single valid Julia variable name on a line.
+- `stocks` -- Each stock is defined by a single valid Julia variable name on a line, 
+              or a variable name, colon, and another variable name
+- `params` -- Each parameter is defined by a single valid Julia variable name on a line,
+              or a variable name, colon, and another variable name
 - `dyvars` -- Each dynamic variable is defined by a valid Julia assignment statement of the
               form `dyvar = expr`
 - `flows`  -- Each flow is defined by a valid Julia pair expression of the form
