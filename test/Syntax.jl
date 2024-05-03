@@ -572,7 +572,7 @@ end
 @testset "Causal Loop F DSL" begin
     @test (@causal_loop begin end) == CausalLoopF()
     @test (@causal_loop begin; :nodes; A; end) == CausalLoopF([:A], [],[])
-    @test (@causal_loop begin; :nodes; A; :edges; A = A; end) == CausalLoopF([:A], [:A => :A], [POL_ZERO])
+    @test (@causal_loop begin; :nodes; A; :edges; A => !A; end) == CausalLoopF([:A], [:A => :A], [POL_ZERO])
     
     @test (@causal_loop begin
         :nodes
