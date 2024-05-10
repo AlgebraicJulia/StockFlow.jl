@@ -212,6 +212,42 @@ end
 @acset_type StockAndFlowFUntyped(TheoryStockAndFlowF, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp,:lpvv]) <: AbstractStockAndFlowF
 const StockAndFlowF = StockAndFlowFUntyped{Symbol,Symbol,Int8}
 
+
+
+@present TheoryStockAndFlowStructureC <: TheoryStockAndFlowStructureF begin
+    C::Ob
+    LC::Ob
+
+    lcc::Hom(LC, C)
+    lcv::Hom(LC, V)
+    cname::Attr(C, Name)
+end
+
+@abstract_acset_type AbstractStockAndFlowStructureC <: AbstractStockAndFlowStructureF
+@acset_type StockAndFlowStructureCUntyped(TheoryStockAndFlowStructureC, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp,:lpvv, :lvv, :lcv]) <: AbstractStockAndFlowStructureC
+const StockAndFlowStructureC = StockAndFlowStructureCUntyped{Symbol}
+
+@present TheoryStockAndFlowC <: TheoryStockAndFlowStructureC begin
+
+# Attributes:
+  Op::AttrType # arithmetic operators
+  Position::AttrType # argument's position of expressions
+  Constant::AttrType
+
+  vop::Attr(V, Op)
+
+  lvsposition::Attr(LV, Position)
+  lsvsvposition::Attr(LSV, Position)
+  lvsrcposition::Attr(LVV, Position)
+  lpvpposition::Attr(LPV, Position)
+  con::Attr(C, Constant)
+end
+
+@abstract_acset_type AbstractStockAndFlowC <: AbstractStockAndFlow
+@acset_type StockAndFlowCUntyped(TheoryStockAndFlowC, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv,:lvsrc,:lvtgt,:lpvp,:lpvv, :lvv, :lcv]) <: AbstractStockAndFlowC
+const StockAndFlowC = StockAndFlowCUntyped{Symbol, Symbol, Int8, Float64}
+
+
 # functions of adding components of the model schema
 add_flow!(p::AbstractStockAndFlowStructure,v;kw...) = add_part!(p,:F;fv=v,kw...)
 add_flows!(p::AbstractStockAndFlowStructure,v,n;kw...) = add_parts!(p,:F,n;fv=v,kw...)
