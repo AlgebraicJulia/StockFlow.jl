@@ -3,7 +3,7 @@ nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
-outgoing_edges, incoming_edges, extract_loops
+outgoing_edges, incoming_edges, extract_loops, TheoryCausalLoopF
 
 
 using MLStyle
@@ -34,7 +34,8 @@ end
   POL_UNKNOWN
   POL_NOT_WELL_DEFINED
 end
-  
+
+
 
 @present TheoryCausalLoopF <: TheoryCausalLoop begin
   Polarity::AttrType
@@ -257,3 +258,63 @@ function discard_zero_pol(c)
   cl
 end
 
+
+
+
+# +: v = X + Y, v always increases as X and Y increase.
+# 
+# -: v = X - Y: v increases as X increases, decreases as Y increases
+#
+# *: v = X * Y: increases as X and Y increases if X and Y are positive, else decreases
+#
+# /: v = X / Y: increases as X increases and Y decreases if X and Y are positive.
+#
+#
+
+# For binops
+function determine_pols(var1, var2, op ; nonneg = true)
+    if op == :+
+        return (POL_REINFORCING, POL_REINFORCING)
+    elseif op == :-
+        return (POL_REINFORCING, POL_BALANCING)
+    elseif op == :*
+        if nonneg
+            return (POL_REINFORCING, POL_BALANCING)
+        else
+            return (POL_NOT_WELL_DEFINED, POL_NOT_WELL_DEFINED)
+        end
+    elseif op == :/
+        if nonneg
+            return (POL_REINFORCING, POL_BALANCING)
+        else
+            return (POL_NOT_WELL_DEFINED, POL_NOT_WELL_DEFINED)
+        end
+    elseif op == :^
+        return (POL_REINFORCING, POL_REINFORCING)
+    elseif op == :log
+        return (POL_BALANCING, POL_REINFORCING)
+    else
+        return (POL_NOT_WELL_DEFINED, POL_NOT_WELL_DEFINED)
+    end
+end
+
+# For unops
+function determine_pols(var, op ; nonneg = true)
+    if op == :log 
+        return POL_REINFORCING
+    elseif op == :exp
+        return POL_REINFORCING
+    elseif op == :sqrt
+        return POL_REINFORCING
+    elseif op == :+
+        return POL_REINFORCING
+    elseif op == :-
+        return POL_BALANCING
+    else
+        return POL_NOT_WELL_DEFINED
+    end
+end
+
+function migrate_sf(sf) begin
+  
+end
