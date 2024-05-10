@@ -859,11 +859,10 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
       end
     end
   end
-  #TODO: just do cloud or f_none, not both
-  no_flow_names = Set([:F_NONE, :CLOUD, :☁])
+
   for flow_index in eachindex(R_flow_queue)
     stock_in = flow_stocks_in[flow_index]
-    if !(stock_in in no_flow_names)
+    if stock_in != :F_NONE
       stock_in_index = R_name_dict[stock_in].index
       link = (stock_in, R_flow_queue[flow_index].args[3].args[2].args[1])
       if !(link in I_connect_dict[:I])
@@ -872,7 +871,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
     end
 
     stock_out = flow_stocks_out[flow_index]
-    if !(stock_out in no_flow_names)
+    if stock_out != :F_NONE
       stock_out_index = R_name_dict[stock_out].index
       link = (stock_out, R_flow_queue[flow_index].args[3].args[2].args[1])
       if !(link in I_connect_dict[:O])
