@@ -192,7 +192,7 @@ end #func
 
 
 
-function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block, L_connect_dict, remove_connect_dict, removed_set)
+function add_redefinitions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block, L_connect_dict, remove_connect_dict, removed_set)
   for object in L_redef_queue
     if length(object.args) == 2
       object_name = object.args[1]
@@ -205,8 +205,6 @@ function add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_
 
     if object_type == :V
 
-      dyvar_operands = object.args[2].args
-      dyvar_op = dyvar_operands[1]
       push!(R_dyvar_queue, object)
 
       add_part_if_not_already!(L_set, L, object_name, :V, sf_block)
@@ -703,7 +701,7 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
 
   # extract links from redefinitions
 
-  add_redefintions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block, L_connect_dict, remove_connect_dict, removed_set)
+  add_redefinitions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow_queue, name_dict, L_set, sf_block, L_connect_dict, remove_connect_dict, removed_set)
 
   add_links_from_dict!(L, L_connect_dict)
   
