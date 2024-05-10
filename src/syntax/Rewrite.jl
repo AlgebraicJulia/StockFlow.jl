@@ -73,7 +73,6 @@ function add_operand_link!(sf, operand, operand_type, dyvar_index, operand_index
   end
 end
 
-#TODO: no need to have object_index, can just run findfirst on the block
 function add_object_of_type!(sf, object, object_type, sf_block)
   if object_type == :S
     add_stock!(sf ; sname = object)
@@ -441,7 +440,7 @@ end
 
 
 
-function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
+function remove_links_block!(l, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
   @match l begin
     
     :($(src::Symbol) => $(tgt::Symbol)) => begin
@@ -523,11 +522,9 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
           add_link_if_not_already!(L_connect_dict, link, :O)
           add_link_if_not_already!(remove_connect_dict, link, :O)
         end
-      end #if tgt_type              
-
-      # TODO: error case
-
+      end #if tgt_type
     end # ... $(position::Int)) => begin
+    _ => error("Unknown format for remove_links syntax: " * String(l))              
   end # match
 end # current_phase
 
@@ -548,6 +545,7 @@ function add_links_block!(l, L_set, name_dict, L, sf_block, R_link_vector)
       tgt = tgta
       position = 0
     end
+    _ => error("Unknown format for add_links syntax: " * String(l))              
   end
   if src in keys(name_dict)
     add_part_if_not_already!(L_set, L, src, name_dict[src].type, sf_block)
@@ -575,7 +573,6 @@ function dyvar_swaps_block!(dw, L_set, name_dict, L, sf_block, L_connect_dict, r
   end
 
   for ((dyvar_name, dyvar_expr)) in sf_block.dyvars
-    dyvar_op = dyvar_expr.args[1]
     dyvar_operands = dyvar_expr.args[2:end]
     matching_indices = findall(==(old), dyvar_operands)
     if !(isempty(matching_indices))
@@ -663,10 +660,9 @@ function sfrewrite(sf::K, block::Expr) where {K <: AbstractStockAndFlowF}
         current_phase = removed -> remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
       end
 
-      # TODO: figure out if I remove links at this stage.  If I do, then remove_links needs to come after
       # all the parts which are defined in it
       QuoteNode(:remove_links) => begin
-       current_phase = l -> remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
+       current_phase = l -> remove_links_block!(l, L_set, name_dict, L, sf_block, L_connect_dict, remove_connect_dict)
       end # quotenode
 
       QuoteNode(:add_links) => begin

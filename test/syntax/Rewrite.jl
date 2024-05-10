@@ -13,9 +13,7 @@ using AlgebraicRewriting
 
 import StockFlow.Syntax: ==, StockAndFlowBlock, StockArgT, ParamArgT, StockArgUnitSymbol, ParamArgUnitSymbol
 
-function ≅(x,y)
-  !isnothing(isomorphism(x,y))
-end
+≅(x,y) = is_isomorphic(x,y)
 
 begin
   sf_seir = @stock_and_flow begin
@@ -1016,13 +1014,13 @@ end
   )
 
 
-  add_object_of_type!(empty, :A, :S, 0, nothing)
+  add_object_of_type!(empty, :A, :S, nothing)
   @test empty == A
 
-  add_object_of_type!(A, :v, :V, 1, Av_block)
+  add_object_of_type!(A, :v, :V, Av_block)
   @test A == Av
 
-  add_object_of_type!(Av, :f, :F, 1, Avf_block)
+  add_object_of_type!(Av, :f, :F, Avf_block)
   @test Av == Avf
 
 
