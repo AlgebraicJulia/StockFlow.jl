@@ -33,7 +33,6 @@ end
 
 
 function interpret_composition_notation(statement::Expr, create_foot_function)
-    # ::Tuple{Vector{Symbol}, K} where K <: Union{StockAndFlow0, CausalLoopF}
     sf_symbols = nothing
     foot_expressions = nothing
 
@@ -174,7 +173,6 @@ macro compose(args...)
         if length($sfs) == 0
             :(MethodError("Could not infer type given no arguments.  Please provide at \
             least one stockflow or causal loop diagram"))
-            # sfcompose(Vector{StockAndFlowF}(), $escaped_block, StockAndFlowF, StockAndFlow0)
         else
             local model_type = typeof($(sfs[1]))
             if !(all(x -> typeof(x) == model_type, $(sfs)))

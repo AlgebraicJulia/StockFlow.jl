@@ -28,12 +28,6 @@ import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
   nname::Attr(N, Name)
 end
 
-# POL_ZERO = :POL_ZERO
-# POL_REINFORCING = :POL_REINFORCING
-# POL_BALANCING = :POL_BALANCING
-# POL_UNKNOWN = :POL_UNKNOWN
-# POL_NOT_WELL_DEFINED = :POL_NOT_WELL_DEFINED
-
 @enum Polarity begin
   POL_ZERO
   POL_REINFORCING
@@ -41,9 +35,6 @@ end
   POL_UNKNOWN
   POL_NOT_WELL_DEFINED
 end
-
-# convert(::Type{Union{ACSets.ColumnImplementations.AttrVar, Function}}, x::Polarity) = convert(ACSets.ColumnImplementations.AttrVar, Int64(x))
-
 
 @present TheoryCausalLoopF <: TheoryCausalLoop begin
   Polarity::AttrType

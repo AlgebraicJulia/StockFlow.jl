@@ -17,15 +17,6 @@ end
     AB = @stock_and_flow begin :stocks; A; B; end; 
     BA = @stock_and_flow begin :stocks; B; A; end; 
 
-
-
-    # @test (@compose (begin # composing no stock flows returns an empty stock flow.
-    # end)) == empty_sf
-
-    # @test (@compose (begin # composing no stock flows returns an empty stock flow.
-    #     ()
-    # end)) == empty_sf
-
     @test (@compose empty_sf begin
         (sf,)
     end) == empty_sf
