@@ -371,17 +371,20 @@ Extract the dynamic variable name and defining expression from a Julia expressio
 None. This mutates the given dyvars vector.
 """
 function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
-    push!(dyvars, parse_dyvar(dyvar))
+    append!(dyvars, parse_dyvar(dyvar))
  end
  
  function parse_dyvar(dyvar::Expr)
      @match dyvar begin
-         :($dyvar_name = $dyvar_def) =>
-             if !is_recursive_dyvar(dyvar_name, dyvar_def)
-                 return (dyvar_name, dyvar_def)
+         :($dyvar_name = $dyvar_def) => begin
+            dyvars, _  = infix_expression_to_binops(dyvar_def ; gensymbase="gen_" * String(dyvar_name), finalsym=dyvar_name)
+            
+             if !any(((_, dyvar_exp),) -> dyvar_name in dyvar_exp.args, dyvars)
+                 return dyvars
              else
                  error("Recursive dyvar detected in Symbol: " * String(dyvar_name))
              end
+         end
          Expr(c, _, _) || Expr(c, _, _, _) =>
              error("Unhandled expression in dynamic variable definition " * String(c))
      end
@@ -794,7 +797,7 @@ That is, this converts the expression `a + b + c` into two expressions:
 ```
 julia> Syntax.infix_expression_to_binops( :(a + b + c)
                                         , gensymbase="generated_variable"
-                                        , lastsym=:infectionRate)
+                                        , finalsym=:infectionRate)
 ( Tuple{Symbol, Expr}[ (Symbol("##generated_variable#1045"), :(a + b))
                      , (:infectionRate, :(var"##generated_variable#1045" + c))
                      ]
