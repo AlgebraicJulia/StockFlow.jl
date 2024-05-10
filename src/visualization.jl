@@ -5,7 +5,7 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
-export Graph, display_uwd, GraphF, Graph_RB
+export GraphSF, display_uwd, GraphF, Graph_RB
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
 
@@ -73,7 +73,7 @@ def_link(s,t) = ([s, t])
 #       "SF": only include stocks and flows
 #       "SFV": only include stocks, flows, variables (include both auxiliary variables and sum auxiliary variables)
 
-function Graph(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_auxiliaryV::Function=def_auxiliaryV,
+function GraphSF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_auxiliaryV::Function=def_auxiliaryV,
                                          make_sumV::Function=def_sumV, make_cloud::Function=def_cloud,
                                          make_flow_V::Function=def_flow_V, make_flow_noneV::Function=def_flow_noneV,
                                          make_link::Function=def_link, 
@@ -224,7 +224,7 @@ function Graph(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_au
 
 end
 
-function Graph(c::CausalLoop)
+function GraphSF(c::CausalLoop)
 
   NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
 
@@ -239,7 +239,7 @@ function Graph(c::CausalLoop)
 
 end
 
-function Graph(c::CausalLoopF; schema="BASE")
+function GraphSF(c::CausalLoopF; schema="BASE")
 
   NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
 
