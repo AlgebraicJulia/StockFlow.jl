@@ -97,20 +97,17 @@ function remove_from_sums!(stock_name, sf_block, L, L_set, name_dict, L_connect_
   for sum ∈ sf_block.sums
     sum_name = sum[1]
     sum_stocks = sum[2]
-    # for loop because it's technically possible for a stock
-    # to be linked to a sum twice.
-    # TODO: lmao, replace
-    for sum_stock in sum_stocks
-      if sum_stock == stock_name
-        stock_index = name_dict[stock_name].index
-        add_part_if_not_already!(L_set, L, sum_name, :SV, stock_index, sf_block)
-        sum_index = findfirst(==(sum_name), svnames(L))
-        # ! WE'RE ASSUMING THERE IS AT MAX ONE LINK BETWEEN A SUM AND A STOCK
-        link = (stock_name, sum_name)
-        add_link_if_not_already!(L_connect_dict, link, :LS)
-        add_link_if_not_already!(remove_connect_dict, link, :LS)
-      end
+
+    # We're assuming a stock will have at most one like to a sum 
+    # Can be easily modified to deal with the other case.
+    
+    if stock_name in sum_stocks
+      add_part_if_not_already!(L_set, L, sum_name, :SV, 0, sf_block)
+      link = (stock_name, sum_name)
+      add_link_if_not_already!(L_connect_dict, link, :LS)
+      add_link_if_not_already!(remove_connect_dict, link, :LS)
     end
+
   end
 end
 
@@ -380,9 +377,6 @@ function remove_block!(removed, removed_set, L_set, name_dict, L, sf_block, L_co
   add_part_if_not_already!(L_set, L, removed, object_type, object_pointer.index, sf_block)
 
 
-
-  #TODO: factor out
-
   if object_type == :S
     object_definition = sf_block.stocks[object_pointer.index]
     remove_from_sums!(object_definition.val, sf_block, L, L_set, name_dict, L_connect_dict, remove_connect_dict)
@@ -477,8 +471,6 @@ function remove_links_block!(l, removed_set, L_set, name_dict, L, sf_block, L_co
         for pos in positions
           link = (src, tgt, pos)
           add_link_if_not_already!(L_connect_dict, link, link_type)
-          # TODO: note, in previous version, remove_connect_dict didn't have a check that it wasn't already in
-          # I don't think it matters that much either way, really.
           add_link_if_not_already!(remove_connect_dict, link, link_type)
         end
       elseif tgt_type == :F
