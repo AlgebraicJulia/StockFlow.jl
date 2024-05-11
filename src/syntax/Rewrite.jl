@@ -36,9 +36,6 @@ struct SFPointer
   index::Int
 end
 
-
-# get_dyvar_args(dv) = (@capture ($v = $f($(args...))) dv)
-
 function add_link_if_not_already!(connect_dict, link, link_object)
   if !(link in connect_dict[link_object])
     push!(connect_dict[link_object], link)
@@ -307,8 +304,6 @@ function add_redefinitions!(L, L_redef_queue, R_dyvar_queue, R_sum_queue, R_flow
 
       # needs to have dyvar added...
       push!(R_flow_queue, object)
-      # end
-
 
     end 
 
@@ -939,7 +934,7 @@ rule to apply modified homomorphisms to it.
 Define three new blocks L, I and R, such that sf ⊇ L ⊇ I and R ⊇ I.  Define
 homomorphisms I -> L and I -> R.  Apply this change to the original stockflow.
 
-Use :stocks, :flows, :sums, :dynamic_variables and :parameters to add those
+Use :stocks, :flows, :sums, :dynamic_variables, and :parameters to add those
 particular objects.  Same format as @stock_and_flow.
 
 Use :dyvar_swaps to replace all instances of an object in a dynamic variable
@@ -948,6 +943,8 @@ with another object.  Does not delete the original object.
 Use :redefs to provide a new definition for an existing sum or dyvar.
 
 Use :removes to delete objects.
+
+Use :add_links and :remove_links to add or remove a link.
 
 ```julia
 @rewrite aged_sir begin
