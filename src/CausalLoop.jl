@@ -8,6 +8,8 @@ outgoing_edges, incoming_edges, extract_loops
 
 using MLStyle
 
+# using DataMigrations
+
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 
 
@@ -170,6 +172,11 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     return CausalLoop(ns,es)
 end
 
+
+
+
+
+
 """ 
 Cycles are uniquely characterized by sets of edges, not sets of nodes
 We construct a simple graph, then for each edge, we check if there exist
@@ -181,7 +188,6 @@ This could be made more efficient, but it should be fine for now.
 function extract_loops(cl::CausalLoopF)
 
   edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
-  pair_to_edge = state_dict(edges) # Note, this is unique pairs, not all.
   # Unique are sufficient for making simple graph.
   g = SimpleDiGraph(SimpleEdge.(edges))
 
@@ -193,15 +199,8 @@ function extract_loops(cl::CausalLoopF)
     node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
     nonsimple_cycles = Vector{Vector{Int}}()
     for (p1, p2) in node_pairs
-      matching_edges = Vector{Int}()
       # grab all edges with p1 as start and p2 as end
-      # This is the bit that could be made more efficient, it loops over all edges every time
-      for cl_node in 1:ne(cl)
-        if sedge(cl, cl_node) == p1 && tedge(cl, cl_node) == p2
-          push!(matching_edges, cl_node)
-        end
-      end
-      push!(nonsimple_cycles, matching_edges)
+      push!(nonsimple_cycles, Vector{Int}(intersect(incident(cl, p1, :s), incident(cl, p2, :t))))
     end
 
     for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
@@ -256,4 +255,28 @@ function discard_zero_pol(c)
   end
   cl
 end
+
+
+
+# @present TheoryPolarities(FreeSchema) begin
+#   N::Ob
+#   Name::AttrType
+#   Polarity::AttrType
+#   nname::Attr(N, Name)
+#   epol::Attr(N, Polarity)
+# end
+
+# @abstract_acset_type AbstractPolarities
+# @acset_type PolaritiesUntyped(TheoryPolarities) <: AbstractPolarities
+# const PolaritiesSchema = PolaritiesUntyped{Symbol, Polarity} 
+
+
+# function loop_polarities(cl)
+#   M = @migration TheoryCausalLoopF begin
+#     N => @glue begin
+#       e::E, v::V
+      
+#     end
+#   end
+# end
 
