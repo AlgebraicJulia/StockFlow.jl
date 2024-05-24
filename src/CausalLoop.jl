@@ -173,7 +173,35 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
 end
 
 
+function cl_cycles(cl::K) where K <: AbstractCausalLoop
+  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+  # Unique are sufficient for making simple graph.
+  g = SimpleDiGraph(SimpleEdge.(edges))
 
+  all_cycles = Vector{Vector{Int}}()
+
+  # Edges => Polarity
+  for cycle ∈ simplecycles(g)
+    cycle_length = length(cycle)
+    # Last pair is cycle[end], cycle[1]
+    node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
+    nonsimple_cycles = Vector{Vector{Int}}()
+    for (p1, p2) in node_pairs
+      # grab all edges with p1 as start and p2 as end
+      push!(nonsimple_cycles, Vector{Int}(intersect(incident(cl, p1, :s), incident(cl, p2, :t))))
+    end
+    # generated_cycles = Vector{Vector{Int}}(Base.Iterators.product(nonsimple_cycles...))
+    # For loop instead of comprehension to get around product being multidimensional
+    for c in Base.Iterators.product(nonsimple_cycles...)
+      push!(all_cycles, collect(c))
+    end
+  end
+
+  all_cycles
+  
+
+
+end
 
 
 
@@ -187,23 +215,10 @@ This could be made more efficient, but it should be fine for now.
 """
 function extract_loops(cl::CausalLoopF)
 
-  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
-  # Unique are sufficient for making simple graph.
-  g = SimpleDiGraph(SimpleEdge.(edges))
+    cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
 
-  # Edges => Polarity
-  cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
-  for cycle ∈ simplecycles(g)
-    cycle_length = length(cycle)
-    # Last pair is cycle[end], cycle[1]
-    node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
-    nonsimple_cycles = Vector{Vector{Int}}()
-    for (p1, p2) in node_pairs
-      # grab all edges with p1 as start and p2 as end
-      push!(nonsimple_cycles, Vector{Int}(intersect(incident(cl, p1, :s), incident(cl, p2, :t))))
-    end
 
-    for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
+    for cycle_instance in cl_cycles(cl)
       balancing_count = 0
       is_unknown = false
       is_zero = false
@@ -236,7 +251,7 @@ function extract_loops(cl::CausalLoopF)
         push!(cycle_pol, collected_cycle => POL_BALANCING)
       end
     end
-  end
+  # end
 
   cycle_pol
           
