@@ -12,7 +12,7 @@ using MLStyle
 
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 
-
+import Base: +, *, -, /
 
 
 
@@ -37,6 +37,65 @@ end
   POL_NOT_WELL_DEFINED
 end
   
+function *(p1::Polarity, p2::Polarity)
+  if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
+  if (p1 == POL_UNKNOWN || p2 == POL_UNKNOWN) return POL_UNKNOWN end
+  if (p1 == POL_NOT_WELL_DEFINED || p2 == POL_NOT_WELL_DEFINED) return POL_NOT_WELL_DEFINED end
+  if ((p1 == POL_BALANCING && p2 == POL_BALANCING) || (p1 == POL_REINFORCING && p2 == POL_REINFORCING)) return POL_REINFORCING end
+  return POL_BALANCING
+end
+
+function +(p1::Polarity, p2::Polarity)
+  @match (p1, p2) begin
+    (POL_ZERO, _) => p2
+    (_, POL_ZERO) => p1
+
+    (POL_UNKNOWN, _) || (_, POL_UNKNOWN) => POL_UNKNOWN
+    
+    (POL_NOT_WELL_DEFINED, _) || (_, POL_NOT_WELL_DEFINED) => POL_NOT_WELL_DEFINED
+    (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_NOT_WELL_DEFINED
+
+    (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+    (POL_BALANCING, POL_BALANCING) => POL_BALANCING
+  end
+end
+
+function -(p::Polarity)
+  @match p begin
+    POL_ZERO => POL_ZERO
+    POL_UNKNOWN => POL_UNKNOWN
+    POL_NOT_WELL_DEFINED => POL_NOT_WELL_DEFINED
+    POL_BALANCING => POL_REINFORCING
+    POL_REINFORCING => POL_BALANCING
+  end
+end
+
+# bad
+
+function -(p1::Polarity, p2::Polarity)
+  p1 + (-p2)
+end
+
+"""p1 is a path of concatenated pols, p2 is what's being removed from the end """
+function /(p1::Polarity, p2::Polarity)
+  @match (p1, p2) begin
+    (POL_BALANCING, POL_BALANCING) || (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+    (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_BALANCING
+    (POL_ZERO, POL_ZERO) => POL_UNKNOWN # it's possible the previous value was the only zero
+    
+    (_, POL_ZERO) => DivideError()
+
+    (POL_UNKNOWN, POL_UNKNOWN) => POL_UNKNOWN
+    (_, POL_UNKNOWN) => DivideError()
+
+    
+    (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
+    (_, POL_NOT_WELL_DEFINED) => DivideError()
+  end
+end
+
+
+
 
 @present TheoryCausalLoopF <: TheoryCausalLoop begin
   Polarity::AttrType
@@ -198,8 +257,6 @@ function cl_cycles(cl::K) where K <: AbstractCausalLoop
   end
 
   all_cycles
-  
-
 
 end
 
@@ -218,40 +275,10 @@ function extract_loops(cl::CausalLoopF)
     cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
 
 
-    for cycle_instance in cl_cycles(cl)
-      balancing_count = 0
-      is_unknown = false
-      is_zero = false
-      is_not_well_defined = false
-      for node_number in cycle_instance
-        current_pol = epol(cl, node_number)
-        if current_pol == POL_BALANCING
-          balancing_count += 1
-        elseif current_pol == POL_UNKNOWN
-          is_unknown = true
-        elseif current_pol == POL_ZERO
-          is_zero = true
-          break
-        elseif current_pol == POL_NOT_WELL_DEFINED
-          is_not_well_defined = true
-        end
-      end
-
-      collected_cycle = collect(cycle_instance)
-
-      if is_zero
-        push!(cycle_pol, collected_cycle => POL_ZERO)
-      elseif is_unknown
-        push!(cycle_pol, collected_cycle => POL_UNKNOWN)
-      elseif is_not_well_defined
-        push!(cycle_pol, collected_cycle => POL_NOT_WELL_DEFINED)
-      elseif iseven(balancing_count)
-        push!(cycle_pol, collected_cycle => POL_REINFORCING)
-      else
-        push!(cycle_pol, collected_cycle => POL_BALANCING)
-      end
-    end
-  # end
+  for cycle_instance in cl_cycles(cl)
+    collected_cycle = collect(cycle_instance)
+    push!(cycle_pol, collected_cycle => foldl(*, map(x -> epol(cl, x), collected_cycle); init = POL_REINFORCING))
+  end
 
   cycle_pol
           
@@ -270,6 +297,17 @@ function discard_zero_pol(c)
   end
   cl
 end
+
+
+
+
+
+
+
+
+
+
+
 
 
 
