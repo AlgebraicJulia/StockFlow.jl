@@ -3,7 +3,7 @@ nn, ne, nname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
-outgoing_edges, incoming_edges, extract_loops
+outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles
 
 
 using MLStyle
@@ -60,20 +60,26 @@ function +(p1::Polarity, p2::Polarity)
   end
 end
 
-function -(p::Polarity)
-  @match p begin
-    POL_ZERO => POL_ZERO
-    POL_UNKNOWN => POL_UNKNOWN
-    POL_NOT_WELL_DEFINED => POL_NOT_WELL_DEFINED
-    POL_BALANCING => POL_REINFORCING
-    POL_REINFORCING => POL_BALANCING
-  end
-end
-
-# bad
+-(p::Polarity) = p == POL_ZERO ? POL_ZERO : DomainError(p)
 
 function -(p1::Polarity, p2::Polarity)
-  p1 + (-p2)
+  @match (p1, p2) begin
+    (_, POL_ZERO) => p1
+    (POL_ZERO, POL_ZERO) => POL_ZERO
+    (POL_ZERO, _) => DomainError((p1, p2))
+
+    (POL_UNKNOWN, _) => POL_UNKNOWN
+
+    (POL_NOT_WELL_DEFINED, POL_UNKNOWN) => DomainError((p1, p2))
+    (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
+
+    (POL_BALANCING, POL_BALANCING) => POL_BALANCING
+    (POL_BALANCING, _) => DomainError((p1, p2))
+
+    (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+    (POL_REINFORCING, _) => DomainError((p1, p2))
+
+  end
 end
 
 """p1 is a path of concatenated pols, p2 is what's being removed from the end """
@@ -260,7 +266,9 @@ function cl_cycles(cl::K) where K <: AbstractCausalLoop
 
 end
 
-
+function walk_polarity(cl::CausalLoopF, edges::Vector{Int})
+  foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
+end
 
 """ 
 Cycles are uniquely characterized by sets of edges, not sets of nodes
@@ -272,19 +280,25 @@ This could be made more efficient, but it should be fine for now.
 """
 function extract_loops(cl::CausalLoopF)
 
-    cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
+  cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
 
 
   for cycle_instance in cl_cycles(cl)
     collected_cycle = collect(cycle_instance)
-    push!(cycle_pol, collected_cycle => foldl(*, map(x -> epol(cl, x), collected_cycle); init = POL_REINFORCING))
+    push!(cycle_pol, collected_cycle => walk_polarity(cl, collected_cycle))
   end
 
   cycle_pol
           
 end
 
+function is_walk(cl::CausalLoopF, edges::Vector{Int})
+  all(x -> tedge(cl, edges[x]) == sedge(cl, edges[x+1]), eachindex(edges[1:end-1]))
+end
 
+function is_circuit(cl::CausalLoopF, edges::Vector{Int})
+  is_path(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
+end
 
 function discard_zero_pol(c)
   cl = CausalLoopF()
@@ -299,37 +313,4 @@ function discard_zero_pol(c)
 end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# @present TheoryPolarities(FreeSchema) begin
-#   N::Ob
-#   Name::AttrType
-#   Polarity::AttrType
-#   nname::Attr(N, Name)
-#   epol::Attr(N, Polarity)
-# end
-
-# @abstract_acset_type AbstractPolarities
-# @acset_type PolaritiesUntyped(TheoryPolarities) <: AbstractPolarities
-# const PolaritiesSchema = PolaritiesUntyped{Symbol, Polarity} 
-
-
-# function loop_polarities(cl)
-#   M = @migration TheoryCausalLoopF begin
-#     N => @glue begin
-#       e::E, v::V
-      
-#     end
-#   end
-# end
 
