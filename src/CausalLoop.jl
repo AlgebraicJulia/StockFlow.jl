@@ -15,148 +15,200 @@ import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 import Base: +, *, -, /
 
 
-
-@present TheoryCausalLoop(FreeSchema) begin
-  E::Ob
-  N::Ob
-
-  s::Hom(E,N)
-  t::Hom(E,N)
-
-  # Attributes:
+@present TheoryCausalLoopPM(FreeSchema) begin
+  
   Name::AttrType
-  
+
+  N::Ob
+  P::Ob
+  M::Ob
+
   nname::Attr(N, Name)
+
+  sp::Hom(P, N)
+  tp::Hom(P, N)
+
+  sm::Hom(M, N)
+  tm::Hom(M, N)
+
 end
 
-@enum Polarity begin
-  POL_ZERO
-  POL_REINFORCING
-  POL_BALANCING
-  POL_UNKNOWN
-  POL_NOT_WELL_DEFINED
-end
-  
-function *(p1::Polarity, p2::Polarity)
-  if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
-  if (p1 == POL_UNKNOWN || p2 == POL_UNKNOWN) return POL_UNKNOWN end
-  if (p1 == POL_NOT_WELL_DEFINED || p2 == POL_NOT_WELL_DEFINED) return POL_NOT_WELL_DEFINED end
-  if ((p1 == POL_BALANCING && p2 == POL_BALANCING) || (p1 == POL_REINFORCING && p2 == POL_REINFORCING)) return POL_REINFORCING end
-  return POL_BALANCING
+@present TheoryCausalLoopZ <: TheoryCausalLoopPM begin
+  Z::Ob
+
+  sz::Hom(Z, N)
+  tz::Hom(Z, N)
 end
 
-function +(p1::Polarity, p2::Polarity)
-  @match (p1, p2) begin
-    (POL_ZERO, _) => p2
-    (_, POL_ZERO) => p1
+@present TheoryCausalLoopFull <: TheoryCausalLoopZ begin
+  NWD::Ob
+  U::Ob
 
-    (POL_UNKNOWN, _) || (_, POL_UNKNOWN) => POL_UNKNOWN
-    
-    (POL_NOT_WELL_DEFINED, _) || (_, POL_NOT_WELL_DEFINED) => POL_NOT_WELL_DEFINED
-    (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_NOT_WELL_DEFINED
+  snwd::Hom(NWD, N)
+  tnwd::Hom(NWD, N)
 
-    (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-    (POL_BALANCING, POL_BALANCING) => POL_BALANCING
-  end
+  su::Hom(U, N)
+  tu::Hom(U, N)
 end
 
--(p::Polarity) = p == POL_ZERO ? POL_ZERO : DomainError(p)
-
-function -(p1::Polarity, p2::Polarity)
-  @match (p1, p2) begin
-    (_, POL_ZERO) => p1
-    (POL_ZERO, POL_ZERO) => POL_ZERO
-    (POL_ZERO, _) => DomainError((p1, p2))
-
-    (POL_UNKNOWN, _) => POL_UNKNOWN
-
-    (POL_NOT_WELL_DEFINED, POL_UNKNOWN) => DomainError((p1, p2))
-    (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
-
-    (POL_BALANCING, POL_BALANCING) => POL_BALANCING
-    (POL_BALANCING, _) => DomainError((p1, p2))
-
-    (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-    (POL_REINFORCING, _) => DomainError((p1, p2))
-
-  end
-end
-
-"""p1 is a path of concatenated pols, p2 is what's being removed from the end """
-function /(p1::Polarity, p2::Polarity)
-  @match (p1, p2) begin
-    (POL_BALANCING, POL_BALANCING) || (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-    (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_BALANCING
-    (POL_ZERO, POL_ZERO) => POL_UNKNOWN # it's possible the previous value was the only zero
-    
-    (_, POL_ZERO) => DivideError()
-
-    (POL_UNKNOWN, POL_UNKNOWN) => POL_UNKNOWN
-    (_, POL_UNKNOWN) => DivideError()
-
-    
-    (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
-    (_, POL_NOT_WELL_DEFINED) => DivideError()
-  end
-end
-
-
-
-
-@present TheoryCausalLoopF <: TheoryCausalLoop begin
-  Polarity::AttrType
-  epolarity::Attr(E, Polarity)
-end
 
 @abstract_acset_type AbstractCausalLoop
-@acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
-@acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
-const CausalLoop = CausalLoopUntyped{Symbol} 
-const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
+@acset_type CausalLoopPMUntyped(TheoryCausalLoopPM, index=[:sp,:tp, :sn, :tn]) <: AbstractCausalLoop
+@acset_type CausalLoopZUntyped(TheoryCausalLoopZ, index=[:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractCausalLoop
+@acset_type CausalLoopFullUntyped(TheoryCausalLoopFull, index = [:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractCausalLoop
+
+const CausalLoopPM = CausalLoopPMUntyped{Symbol}
+const CausalLoopZ = CausalLoopZUntyped{Symbol}
+const CausalLoopFull = CausalLoopFullUntyped{Symbol}
+
+
+# const CausalLoop = CausalLoopUntyped{Symbol} 
+# const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
+
+
+
+
+# @present TheoryCausalLoop(FreeSchema) begin
+#   E::Ob
+#   N::Ob
+
+#   s::Hom(E,N)
+#   t::Hom(E,N)
+
+#   # Attributes:
+#   Name::AttrType
+  
+#   nname::Attr(N, Name)
+# end
+
+# @enum Polarity begin
+#   POL_ZERO
+#   POL_REINFORCING
+#   POL_BALANCING
+#   POL_UNKNOWN
+#   POL_NOT_WELL_DEFINED
+# end
+  
+# function *(p1::Polarity, p2::Polarity)
+#   if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
+#   if (p1 == POL_UNKNOWN || p2 == POL_UNKNOWN) return POL_UNKNOWN end
+#   if (p1 == POL_NOT_WELL_DEFINED || p2 == POL_NOT_WELL_DEFINED) return POL_NOT_WELL_DEFINED end
+#   if ((p1 == POL_BALANCING && p2 == POL_BALANCING) || (p1 == POL_REINFORCING && p2 == POL_REINFORCING)) return POL_REINFORCING end
+#   return POL_BALANCING
+# end
+
+# function +(p1::Polarity, p2::Polarity)
+#   @match (p1, p2) begin
+#     (POL_ZERO, _) => p2
+#     (_, POL_ZERO) => p1
+
+#     (POL_UNKNOWN, _) || (_, POL_UNKNOWN) => POL_UNKNOWN
+    
+#     (POL_NOT_WELL_DEFINED, _) || (_, POL_NOT_WELL_DEFINED) => POL_NOT_WELL_DEFINED
+#     (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_NOT_WELL_DEFINED
+
+#     (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+#     (POL_BALANCING, POL_BALANCING) => POL_BALANCING
+#   end
+# end
+
+# -(p::Polarity) = p == POL_ZERO ? POL_ZERO : DomainError(p)
+
+# function -(p1::Polarity, p2::Polarity)
+#   @match (p1, p2) begin
+#     (_, POL_ZERO) => p1
+#     (POL_ZERO, POL_ZERO) => POL_ZERO
+#     (POL_ZERO, _) => DomainError((p1, p2))
+
+#     (POL_UNKNOWN, _) => POL_UNKNOWN
+
+#     (POL_NOT_WELL_DEFINED, POL_UNKNOWN) => DomainError((p1, p2))
+#     (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
+
+#     (POL_BALANCING, POL_BALANCING) => POL_BALANCING
+#     (POL_BALANCING, _) => DomainError((p1, p2))
+
+#     (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+#     (POL_REINFORCING, _) => DomainError((p1, p2))
+
+#   end
+# end
+
+# """p1 is a path of concatenated pols, p2 is what's being removed from the end """
+# function /(p1::Polarity, p2::Polarity)
+#   @match (p1, p2) begin
+#     (POL_BALANCING, POL_BALANCING) || (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+#     (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_BALANCING
+#     (POL_ZERO, POL_ZERO) => POL_UNKNOWN # it's possible the previous value was the only zero
+    
+#     (_, POL_ZERO) => DivideError()
+
+#     (POL_UNKNOWN, POL_UNKNOWN) => POL_UNKNOWN
+#     (_, POL_UNKNOWN) => DivideError()
+
+    
+#     (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
+#     (_, POL_NOT_WELL_DEFINED) => DivideError()
+#   end
+# end
+
+
+
+
+# @present TheoryCausalLoopF <: TheoryCausalLoop begin
+#   Polarity::AttrType
+#   epolarity::Attr(E, Polarity)
+# end
+
+# @abstract_acset_type AbstractCausalLoop
+# @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
+# @acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
+# const CausalLoop = CausalLoopUntyped{Symbol} 
+# const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
 add_node!(c::AbstractCausalLoop;kw...) = add_part!(c,:N;kw...) 
 add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)
 
-add_edge!(c::AbstractCausalLoop,s,t;kw...) = add_part!(c,:E,s=s,t=t;kw...) 
-add_edges!(c::AbstractCausalLoop,n,s,t;kw...) = add_parts!(c,:E,n,s=s,t=t;kw...)
+# add_edge!(c::AbstractCausalLoop,s,t;kw...) = add_part!(c,:E,s=s,t=t;kw...) 
+# add_edges!(c::AbstractCausalLoop,n,s,t;kw...) = add_parts!(c,:E,n,s=s,t=t;kw...)
 
 """
     CausalLoop(ns,es)
 Create causal loop diagram from collection of nodes and collection of edges.
 """
-CausalLoop(ns,es) = begin
-    c = CausalLoop()
-    ns = vectorify(ns)
-    es = vectorify(es)
+# CausalLoop(ns,es) = begin
+#     c = CausalLoop()
+#     ns = vectorify(ns)
+#     es = vectorify(es)
     
-    ns_idx=state_dict(ns)
-    add_nodes!(c, length(ns), nname=ns)
+#     ns_idx=state_dict(ns)
+#     add_nodes!(c, length(ns), nname=ns)
 
-    s=map(first,es)
-    t=map(last,es)
-    add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t))
+#     s=map(first,es)
+#     t=map(last,es)
+#     add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t))
 
-    c
-end
+#     c
+# end
 
 
-CausalLoopF(ns, es, pols) = begin
-  @assert length(pols) == length(es)
+# CausalLoopF(ns, es, pols) = begin
+#   @assert length(pols) == length(es)
 
-  c = CausalLoopF()
-  ns = vectorify(ns)
-  es = vectorify(es)
+#   c = CausalLoopF()
+#   ns = vectorify(ns)
+#   es = vectorify(es)
   
-  ns_idx=state_dict(ns)
-  add_nodes!(c, length(ns), nname=ns)
+#   ns_idx=state_dict(ns)
+#   add_nodes!(c, length(ns), nname=ns)
 
-  s=map(first,es)
-  t=map(last,es)
+#   s=map(first,es)
+#   t=map(last,es)
 
-  add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t), epolarity=pols)
+#   add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t), epolarity=pols)
 
-  c
-end
+#   c
+# end
 
 # return the count of each components
 """ return count of nodes of CLD """
@@ -237,6 +289,18 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     return CausalLoop(ns,es)
 end
 
+function from_catlab_graph(g::Catlab.Graph, p::Vector{Polarity})
+  cl = CausalLoopF()
+  add_parts!(cl, :N, Catlab.nn(g))
+  add_parts!(cl, :E, Catlab.ne(g); s = subpart(g, :src), t = subpart(g, :tgt), epolarity = p)
+  cl
+end
+
+# function from_graphs_graph(g::Graphs.Graph, p::Vector{Polarity})
+#   cl = CausalLoopF()
+#   add_parts!(cl, :N, Graphs.nn(g))
+#   add_parts!(cl, :E, Graphs.ne(g); s = subpart(g, :src), t = subpart(g, :tgt), epolarity = p)
+# end
 
 function cl_cycles(cl::K) where K <: AbstractCausalLoop
   edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
@@ -299,6 +363,72 @@ end
 function is_circuit(cl::CausalLoopF, edges::Vector{Int})
   is_path(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
 end
+
+function betweenness(cl::K) where K <: AbstractCausalLoop
+  g = to_graphs_graph(cl)
+  Graphs.betweenness_centrality(g)
+end
+
+
+function num_loops(cl::CausalLoopF, name::Symbol)
+  el = cl_cycles(cl)
+  node_num = only(incident(cl, :nname, name))
+  return count(x -> node_num ∈ x, el)
+end
+
+
+
+
+
+
+# # Graphs.betweenness_centrality
+# # ^ Use this if we don't care about polarities
+# function betweenness(cl::CausalLoopF; max_edges = typemax(Int))
+#   g = to_graphs_graph(cl)
+#   num_graph_vert = vertices(g)[end] # ensures we don't go over if the conversion deleted the end 
+#   # deleting the end can only happen if there are no edges which come from or leave the node, so the betweenness centrality value for it is 0
+
+
+#   # past a certain threshold, we start getting infinity confused with very large.
+
+#   # Though we're using typemax(Int) for this so why does this matter
+#   @assert length(edges(g)) < max_edges
+
+#   betweenness_values = zeroes(nn(cl))
+
+#   for node in nn(cl)
+#     if node > num_graph_vert
+#       break
+#     end
+
+#     dij = dijkstra_shortest_paths(g, node ; maxdist=max_edges)
+#     preds = dij.predecessors
+
+#     # cache the 
+
+
+
+
+#   end
+
+
+
+  
+# end
+
+
+function to_graphs_graph(cl::K) where K <: AbstractCausalLoop
+  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+  g = SimpleDiGraph(SimpleEdge.(edges)) # Note, this will discard the final nodes if they have no edges
+  g 
+end
+
+function to_catlab_graph(cl::K) where K <: AbstractCausalLoop
+  g = Catlab.Graph(nn(cl))
+  add_parts!(g, :E, ne(cl) ; src = subpart(cl, :s), tgt = subpart(cl, :t))
+  g
+end
+
 
 function discard_zero_pol(c)
   cl = CausalLoopF()
