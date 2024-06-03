@@ -1,7 +1,7 @@
 @testset "Causal Loop F" begin
   @testset "Graphing Empty Causal Loop F" begin
     empty = CausalLoopF()
-    empty_graph = Graph(empty)
+    empty_graph = GraphSF(empty)
     @test isempty(empty_graph.stmts)
   end
 
@@ -10,7 +10,7 @@
 
   @testset "Graphing standard Causal Loop F" begin
     ABA = CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_BALANCING, POL_REINFORCING])
-    ABA_graph = Graph(ABA)
+    ABA_graph = GraphSF(ABA)
     
     n1 = node_info(ABA_graph.stmts[1])
     n2 = node_info(ABA_graph.stmts[2])
@@ -22,7 +22,7 @@
 
 
     C = CausalLoopF([:C], [:C => :C for _ in 1:5], [POL_BALANCING, POL_REINFORCING, POL_NOT_WELL_DEFINED, POL_UNKNOWN, POL_ZERO])
-    C_graph = Graph(C)
+    C_graph = GraphSF(C)
 
     c_n1 = node_info(C_graph.stmts[1])
 
@@ -36,7 +36,7 @@
       && c_e3 == ("n1", "n1", "±") && c_e4 == ("n1", "n1", "?") && c_e5 == ("n1", "n1", "0"))
 
     DE = CausalLoopF([:D, :E], [:D => :E], [POL_REINFORCING])
-    DE_graph = Graph(DE ; schema = "C0")
+    DE_graph = GraphSF(DE ; schema = "C0")
 
     de_n1 = node_info(DE_graph.stmts[1])
     de_n2 = node_info(DE_graph.stmts[2])
