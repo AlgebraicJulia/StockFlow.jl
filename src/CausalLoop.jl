@@ -12,54 +12,70 @@ using MLStyle
 
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 
+import Catlab.Graphs: nv
+
+
 import Base: +, *, -, /
 
 
-@present TheoryCausalLoopPM(FreeSchema) begin
+@present TheoryCausalLoopNameless(FreeSchema) begin
   
-  Name::AttrType
-
-  N::Ob
+  V::Ob
   P::Ob
   M::Ob
 
-  nname::Attr(N, Name)
+  sp::Hom(P, V)
+  tp::Hom(P, V)
 
-  sp::Hom(P, N)
-  tp::Hom(P, N)
-
-  sm::Hom(M, N)
-  tm::Hom(M, N)
+  sm::Hom(M, V)
+  tm::Hom(M, V)
 
 end
+
+
+@present TheoryCausalLoopPM <: TheoryCausalLoopNameless begin
+  
+  Name::AttrType
+  vname::Attr(V, Name)
+
+end
+
 
 @present TheoryCausalLoopZ <: TheoryCausalLoopPM begin
   Z::Ob
 
-  sz::Hom(Z, N)
-  tz::Hom(Z, N)
+  sz::Hom(Z, V)
+  tz::Hom(Z, V)
 end
 
 @present TheoryCausalLoopFull <: TheoryCausalLoopZ begin
   NWD::Ob
   U::Ob
 
-  snwd::Hom(NWD, N)
-  tnwd::Hom(NWD, N)
+  snwd::Hom(NWD, V)
+  tnwd::Hom(NWD, V)
 
-  su::Hom(U, N)
-  tu::Hom(U, N)
+  su::Hom(U, V)
+  tu::Hom(U, V)
 end
 
 
 @abstract_acset_type AbstractCausalLoop
+@acset_type CausalLoopNamelessUntyped(TheoryCausalLoopNameless, index=[:sp,:tp, :sn, :tn]) <: AbstractCausalLoop
 @acset_type CausalLoopPMUntyped(TheoryCausalLoopPM, index=[:sp,:tp, :sn, :tn]) <: AbstractCausalLoop
 @acset_type CausalLoopZUntyped(TheoryCausalLoopZ, index=[:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractCausalLoop
 @acset_type CausalLoopFullUntyped(TheoryCausalLoopFull, index = [:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractCausalLoop
 
+const CausalLoopNameless = CausalLoopNamelessUntyped
 const CausalLoopPM = CausalLoopPMUntyped{Symbol}
 const CausalLoopZ = CausalLoopZUntyped{Symbol}
 const CausalLoopFull = CausalLoopFullUntyped{Symbol}
+
+
+
+
+
+
 
 
 # const CausalLoop = CausalLoopUntyped{Symbol} 
@@ -68,49 +84,113 @@ const CausalLoopFull = CausalLoopFullUntyped{Symbol}
 
 
 
-# @present TheoryCausalLoop(FreeSchema) begin
-#   E::Ob
-#   N::Ob
+@present TheoryCausalLoop(FreeSchema) begin
+  E::Ob
+  V::Ob
 
-#   s::Hom(E,N)
-#   t::Hom(E,N)
+  s::Hom(E,V)
+  t::Hom(E,V)
 
-#   # Attributes:
-#   Name::AttrType
+  # Attributes:
+  Name::AttrType
   
-#   nname::Attr(N, Name)
-# end
+  vname::Attr(N, Name)
+end
 
-# @enum Polarity begin
-#   POL_ZERO
-#   POL_REINFORCING
-#   POL_BALANCING
-#   POL_UNKNOWN
-#   POL_NOT_WELL_DEFINED
-# end
+@present TheoryCausalLoopPol <: TheoryCausalLoop begin
+  Polarity::AttrType
+  epol::Attr(E, Polarity)
+end
+
+# TODO: Make subtyping a bit more sensible
+@abstract_acset_type AbstractSimpleCausalLoop
+@acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractSimpleCausalLoop
+@acset_type CausalLoopPolUntyped(TheoryCausalLoopPol, index=[:s,:t]) <: AbstractSimpleCausalLoop
+const CausalLoop = CausalLoopUntyped{Symbol}
+const CausalLoopPol = CausalLoopPolUntyped{Symbol, Polarity}
+
+function from_clp(cl::CausalLoopPol)
+  pols = subpart(cl, :epol)
+  CausalLoopF(subpart(cl, :vname), collect(zip(subpart(cl, :s), subpart(cl, :t))), pols)
+end
+
+function to_clp(cl::CausalLoopPM)
+  p = np(cl)
+  m = nm(cl)
+
+  clp = CausalLoopPol()
+  add_parts!(clp, :V, nparts(cl, :V))
+  # !TODO: Rename reinforcing and balancing; probably to 'positive' and 'negative'
+  add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
+  add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
+
+  clp
+
+end
+
+function to_clp(cl::CausalLoopZero)
+  clp = CausalLoopPol()
+
+  p = np(cl)
+  m = nm(cl)
+  z = nz(cl)
+
+  add_parts!(clp, :V, nparts(cl, :V))
+  add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
+  add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
+  add_parts!(clp, :Z, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
+
+end
+
+function to_clp(cl::CausalLoopFull)
+  clp = CausalLoopPol()
+
+  p = np(cl)
+  m = nm(cl)
+  z = nz(cl)
+  nwd = nnwd(cl)
+  u = nu(cl)
+
+
+  add_parts!(clp, :V, nparts(cl, :V))
+  add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
+  add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
+  add_parts!(clp, :E, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
+  add_parts!(clp, :E, m; s = subpart(cl, :snwd), t = subpart(cl, :tnwd), epol=repeat([POL_NOT_WELL_DEFINED], nwd))
+  add_parts!(clp, :E, m; s = subpart(cl, :su), t = subpart(cl, :tu), epol=repeat([POL_UNKNOWN], u))
+end
+
+
+@enum Polarity begin
+  POL_ZERO
+  POL_REINFORCING
+  POL_BALANCING
+  POL_UNKNOWN
+  POL_NOT_WELL_DEFINED
+end
   
-# function *(p1::Polarity, p2::Polarity)
-#   if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
-#   if (p1 == POL_UNKNOWN || p2 == POL_UNKNOWN) return POL_UNKNOWN end
-#   if (p1 == POL_NOT_WELL_DEFINED || p2 == POL_NOT_WELL_DEFINED) return POL_NOT_WELL_DEFINED end
-#   if ((p1 == POL_BALANCING && p2 == POL_BALANCING) || (p1 == POL_REINFORCING && p2 == POL_REINFORCING)) return POL_REINFORCING end
-#   return POL_BALANCING
-# end
+function *(p1::Polarity, p2::Polarity)
+  if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
+  if (p1 == POL_UNKNOWN || p2 == POL_UNKNOWN) return POL_UNKNOWN end
+  if (p1 == POL_NOT_WELL_DEFINED || p2 == POL_NOT_WELL_DEFINED) return POL_NOT_WELL_DEFINED end
+  if ((p1 == POL_BALANCING && p2 == POL_BALANCING) || (p1 == POL_REINFORCING && p2 == POL_REINFORCING)) return POL_REINFORCING end
+  return POL_BALANCING
+end
 
-# function +(p1::Polarity, p2::Polarity)
-#   @match (p1, p2) begin
-#     (POL_ZERO, _) => p2
-#     (_, POL_ZERO) => p1
+function +(p1::Polarity, p2::Polarity)
+  @match (p1, p2) begin
+    (POL_ZERO, _) => p2
+    (_, POL_ZERO) => p1
 
-#     (POL_UNKNOWN, _) || (_, POL_UNKNOWN) => POL_UNKNOWN
+    (POL_UNKNOWN, _) || (_, POL_UNKNOWN) => POL_UNKNOWN
     
-#     (POL_NOT_WELL_DEFINED, _) || (_, POL_NOT_WELL_DEFINED) => POL_NOT_WELL_DEFINED
-#     (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_NOT_WELL_DEFINED
+    (POL_NOT_WELL_DEFINED, _) || (_, POL_NOT_WELL_DEFINED) => POL_NOT_WELL_DEFINED
+    (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_NOT_WELL_DEFINED
 
-#     (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-#     (POL_BALANCING, POL_BALANCING) => POL_BALANCING
-#   end
-# end
+    (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
+    (POL_BALANCING, POL_BALANCING) => POL_BALANCING
+  end
+end
 
 # -(p::Polarity) = p == POL_ZERO ? POL_ZERO : DomainError(p)
 
@@ -166,8 +246,14 @@ const CausalLoopFull = CausalLoopFullUntyped{Symbol}
 # const CausalLoop = CausalLoopUntyped{Symbol} 
 # const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
-add_node!(c::AbstractCausalLoop;kw...) = add_part!(c,:N;kw...) 
-add_nodes!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:N,n;kw...)
+add_vertex!(c::AbstractCausalLoop;kw...) = add_part!(c,:V;kw...) 
+add_vertices!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:V,n;kw...)
+
+add_plus!(c::AbstractCausalLoop;kw) = add_part!(c, :P; kw...)
+add_pluses!(c::AbstractCausalLoop,n;kw) = add_part!(c, :P, n; kw...)
+
+add_minus!(c::AbstractCausalLoop;kw) = add_part!(c, :M; kw...)
+add_minuses!(c::AbstractCausalLoop,n;kw) = add_part!(c, :M, n; kw...)
 
 # add_edge!(c::AbstractCausalLoop,s,t;kw...) = add_part!(c,:E,s=s,t=t;kw...) 
 # add_edges!(c::AbstractCausalLoop,n,s,t;kw...) = add_parts!(c,:E,n,s=s,t=t;kw...)
@@ -192,109 +278,162 @@ Create causal loop diagram from collection of nodes and collection of edges.
 # end
 
 
-# CausalLoopF(ns, es, pols) = begin
-#   @assert length(pols) == length(es)
 
-#   c = CausalLoopF()
-#   ns = vectorify(ns)
-#   es = vectorify(es)
+CausalLoopF() = CausalLoopPM()
+CausalLoopF(ns, es, pols) = begin
+  @assert length(pols) == length(es)
+
+  if (POL_NOT_WELL_DEFINED ∈ pols || POL_UNKNOWN ∈ pols)
+    c = CausalLoopFull()
+  elseif(POL_ZERO ∈ pols)
+    c = CausalLoopZ()
+  else
+    c = CausalLoopPM()
+  end
+
+
+  # c = CausalLoopF()
+  ns = vectorify(ns)
+  es = vectorify(es)
   
-#   ns_idx=state_dict(ns)
-#   add_nodes!(c, length(ns), nname=ns)
+  ns_idx=state_dict(ns)
+  add_vertices!(c, length(ns), nname=ns)
 
-#   s=map(first,es)
-#   t=map(last,es)
+  s=map(first,es)
+  t=map(last,es)
 
-#   add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t), epolarity=pols)
 
-#   c
-# end
+  for i in eachindex(pols)
+    src = s[i]
+    tgt = t[i]
+    if pols[i] == POL_REINFORCING
+      add_part!(c, :P; sp = ns_idx[src], tp = ns_idx[tgt])
+    elseif pols[i] == POL_BALANCING
+      add_part!(c, :M; sm =  ns_idx[src], tm = ns_idx[tgt])
+    elseif pols[i] == POL_ZERO
+      add_part!(c, :Z; sz =  ns_idx[src], tz =ns_idx[tgt])
+    elseif pols[i] == POL_NOT_WELL_DEFINED
+      add_part!(c, :NWD; snwd =  ns_idx[src], tnwd = ns_idx[tgt])
+    elseif pols[i] == POL_UNKNOWN
+      add_part!(c, :U; su =  ns_idx[src], tu = ns_idx[tgt])
+    end
+  end
 
-# return the count of each components
-""" return count of nodes of CLD """
-nn(c::AbstractCausalLoop) = nparts(c,:N) #nodes
-""" return count of edges of CLD """
-ne(c::AbstractCausalLoop) = nparts(c,:E) #edges
+  c
+end
+
+
+
+# # type piracy, hooray
+# # return the count of each components
+# """ return count of nodes of CLD """
+# nv(c::AbstractCausalLoop) = 
+
+# """ return count of edges of CLD """
+# ne(c::AbstractCausalLoop) = nparts(c,:E) #edges
+np(c::AbstractCausalLoop) = nparts(c, :P)
+nm(c::AbstractCausalLoop) = nparts(c, :M)
+nz(c::CausalLoopZ) = nparts(c, :Z)
+nnwd(c::CausalLoopFull) = nparts(c, :NWD)
+nu(c::CausalLoopFull) = nparts(c, :U)
+
+nedges(c::AbstractCausalLoop) = np(c) + nm(c)
+nedges(c::CausalLoopZ) = np(c) + nm(c) + nz(c)
+nedges(c::CausalLoopFull) = np(c) + nm(c) + nz(c) + nnwd(c) + nu(c)
+
+sedge(c::CausalLoopPM, e) = begin
+  @assert e <= nedges(c)
+  e <= np(c) ? subpart(c, e, :sp) : subpart(c, e - np(c), :sm)
+end
+
+
+
+tedge(c::CausalLoopPM, e) = begin
+  @assert e <= nedges(c)
+  e <= np(c) ? subpart(c, e, :tp) : subpart(c, e - np(c), :tm)
+end
+
+
 
 """ return node's name with index n """
 nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
-""" return edge's name with target number t """
-sedge(c::AbstractCausalLoop,e) = subpart(c,e,:s)
-""" return edge's name with edge number e """
-tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
+# """ return edge's name with target number t """
+# sedge(c::AbstractCausalLoop,e) = subpart(c,e,:s)
+# """ return edge's name with edge number e """
+# tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
 
 """ return node names of CLD """
 nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
 
-epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
+# epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
 
-epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
-
-
-outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
-incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
+# epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
 
 
+# outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
+# incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
 
-function convertToCausalLoop(p::AbstractStockAndFlowStructure)
+
+
+# function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     
-    sns=snames(p)
-    fns=fnames(p)
-    svns=svnames(p)
-    flowVariableIndexs=[flowVariableIndex(p,f) for f in 1:nf(p)]
-    vNotf=setdiff(1:nvb(p),flowVariableIndexs)
-    vNotfns=[vname(p,v) for v in vNotf]
+#     sns=snames(p)
+#     fns=fnames(p)
+#     svns=svnames(p)
+#     flowVariableIndexs=[flowVariableIndex(p,f) for f in 1:nf(p)]
+#     vNotf=setdiff(1:nvb(p),flowVariableIndexs)
+#     vNotfns=[vname(p,v) for v in vNotf]
     
-    ns=vcat(sns,fns,svns,vNotfns)
+#     ns=vcat(sns,fns,svns,vNotfns)
 
-    lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
-    lsvfes=[svname(p,subpart(p,lsv,:lsvsv))=>subpart(p,lsv,:lsvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lsv,:lsvv),:fv))) : vname(p,subpart(p,lsv,:lsvv)) for lsv in 1:nlsv(p)]
-    lfves=[sname(p,subpart(p,lv,:lvs))=>subpart(p,lv,:lvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvv),:fv))) : vname(p,subpart(p,lv,:lvv)) for lv in 1:nlv(p)]
-    fies=[fname(p,subpart(p,i,:ifn))=>sname(p,subpart(p,i,:is)) for i in 1:ni(p)]
-    foes=[fname(p,subpart(p,o,:ofn))=>sname(p,subpart(p,o,:os)) for o in 1:no(p)]
+#     lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
+#     lsvfes=[svname(p,subpart(p,lsv,:lsvsv))=>subpart(p,lsv,:lsvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lsv,:lsvv),:fv))) : vname(p,subpart(p,lsv,:lsvv)) for lsv in 1:nlsv(p)]
+#     lfves=[sname(p,subpart(p,lv,:lvs))=>subpart(p,lv,:lvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvv),:fv))) : vname(p,subpart(p,lv,:lvv)) for lv in 1:nlv(p)]
+#     fies=[fname(p,subpart(p,i,:ifn))=>sname(p,subpart(p,i,:is)) for i in 1:ni(p)]
+#     foes=[fname(p,subpart(p,o,:ofn))=>sname(p,subpart(p,o,:os)) for o in 1:no(p)]
 
-    es=vcat(lses,lsvfes,lfves,fies,foes)
+#     es=vcat(lses,lsvfes,lfves,fies,foes)
 
-    return CausalLoop(ns,es)
-end
+#     return CausalLoop(ns,es)
+# end
 
 """
 Convert StockFlow to CLD.
 Nodes: stocks, flows, sum variables, parameters, nonflow dynamic variables
 Edges: morphisms in stock flow
 """
-function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
+# function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     
-    sns=snames(p)
-    fns=fnames(p)
-    svns=svnames(p)
-    pns=pnames(p)
-    flowVariableIndexs=[flowVariableIndex(p,f) for f in 1:nf(p)]
-    vNotf=setdiff(1:nvb(p),flowVariableIndexs)
-    vNotfns=[vname(p,v) for v in vNotf]
+#     sns=snames(p)
+#     fns=fnames(p)
+#     svns=svnames(p)
+#     pns=pnames(p)
+#     flowVariableIndexs=[flowVariableIndex(p,f) for f in 1:nf(p)]
+#     vNotf=setdiff(1:nvb(p),flowVariableIndexs)
+#     vNotfns=[vname(p,v) for v in vNotf]
     
-    ns=vcat(sns,fns,svns,vNotfns,pns)
+#     ns=vcat(sns,fns,svns,vNotfns,pns)
 
-    lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
-    lsvfes=[svname(p,subpart(p,lsv,:lsvsv))=>subpart(p,lsv,:lsvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lsv,:lsvv),:fv))) : vname(p,subpart(p,lsv,:lsvv)) for lsv in 1:nlsv(p)]
-    lfves=[sname(p,subpart(p,lv,:lvs))=>subpart(p,lv,:lvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvv),:fv))) : vname(p,subpart(p,lv,:lvv)) for lv in 1:nlv(p)]
-    fies=[fname(p,subpart(p,i,:ifn))=>sname(p,subpart(p,i,:is)) for i in 1:ni(p)]
-    foes=[fname(p,subpart(p,o,:ofn))=>sname(p,subpart(p,o,:os)) for o in 1:no(p)]
-    lpvs=[pname(p,subpart(p,lp,:lpvp))=>subpart(p,lp,:lpvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lp,:lpvv),:fv))) : vname(p,subpart(p,lp,:lpvv)) for lp in 1:nlpv(p)]
-    lvvs=[subpart(p,lv,:lvsrc) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvsrc),:fv))) : vname(p,subpart(p,lv,:lvsrc))=>subpart(p,lv,:lvtgt) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvtgt),:fv))) : vname(p,subpart(p,lv,:lvtgt)) for lv in 1:nlvv(p)]
+#     lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
+#     lsvfes=[svname(p,subpart(p,lsv,:lsvsv))=>subpart(p,lsv,:lsvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lsv,:lsvv),:fv))) : vname(p,subpart(p,lsv,:lsvv)) for lsv in 1:nlsv(p)]
+#     lfves=[sname(p,subpart(p,lv,:lvs))=>subpart(p,lv,:lvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvv),:fv))) : vname(p,subpart(p,lv,:lvv)) for lv in 1:nlv(p)]
+#     fies=[fname(p,subpart(p,i,:ifn))=>sname(p,subpart(p,i,:is)) for i in 1:ni(p)]
+#     foes=[fname(p,subpart(p,o,:ofn))=>sname(p,subpart(p,o,:os)) for o in 1:no(p)]
+#     lpvs=[pname(p,subpart(p,lp,:lpvp))=>subpart(p,lp,:lpvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lp,:lpvv),:fv))) : vname(p,subpart(p,lp,:lpvv)) for lp in 1:nlpv(p)]
+#     lvvs=[subpart(p,lv,:lvsrc) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvsrc),:fv))) : vname(p,subpart(p,lv,:lvsrc))=>subpart(p,lv,:lvtgt) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvtgt),:fv))) : vname(p,subpart(p,lv,:lvtgt)) for lv in 1:nlvv(p)]
 
 
-    es=vcat(lses,lsvfes,lfves,fies,foes,lpvs,lvvs)
+#     es=vcat(lses,lsvfes,lfves,fies,foes,lpvs,lvvs)
 
-    return CausalLoop(ns,es)
-end
+#     return CausalLoop(ns,es)
+# end
 
-function from_catlab_graph(g::Catlab.Graph, p::Vector{Polarity})
-  cl = CausalLoopF()
-  add_parts!(cl, :N, Catlab.nn(g))
-  add_parts!(cl, :E, Catlab.ne(g); s = subpart(g, :src), t = subpart(g, :tgt), epolarity = p)
-  cl
-end
+# function from_catlab_graph(g::Catlab.Graph, p::Vector{Polarity})
+#   cl = CausalLoopF()
+#   add_parts!(cl, :N, Catlab.nn(g))
+#   add_parts!(cl, :E, Catlab.ne(g); s = subpart(g, :src), t = subpart(g, :tgt), epolarity = p)
+#   cl
+# end
 
 # function from_graphs_graph(g::Graphs.Graph, p::Vector{Polarity})
 #   cl = CausalLoopF()
@@ -302,8 +441,29 @@ end
 #   add_parts!(cl, :E, Graphs.ne(g); s = subpart(g, :src), t = subpart(g, :tgt), epolarity = p)
 # end
 
-function cl_cycles(cl::K) where K <: AbstractCausalLoop
-  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+
+# function simple_cycles(c::)
+# end
+
+function to_graphs_graph(cl::CausalLoopPM)
+  edges = collect(zip(vcat(subpart(cl, :sp), subpart(cl, :sm)), vcat(subpart(cl, :tp), subpart(cl, :tm))))
+  g = SimpleDiGraph(SimpleEdge.(edges))
+  return (g, np(cl))
+end
+
+# function cl_cycles(cl::CausalLoopPM)
+#   g, last_pos = to_graphs_graph(cl)
+#   for cycle ∈ simplecycles(g)
+#     cycle_length = length(cycle)
+#     node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
+
+#   end
+# end
+
+
+
+function cl_cycles(cl::CausalLoopPM) 
+  edges = collect(zip(vcat(subpart(cl, :sp), subpart(cl, :sm)), vcat(subpart(cl, :tp), subpart(cl, :tm))))
   # Unique are sufficient for making simple graph.
   g = SimpleDiGraph(SimpleEdge.(edges))
 
@@ -317,7 +477,13 @@ function cl_cycles(cl::K) where K <: AbstractCausalLoop
     nonsimple_cycles = Vector{Vector{Int}}()
     for (p1, p2) in node_pairs
       # grab all edges with p1 as start and p2 as end
-      push!(nonsimple_cycles, Vector{Int}(intersect(incident(cl, p1, :s), incident(cl, p2, :t))))
+      push!(nonsimple_cycles, Vector{Int}(
+        union(
+          intersect(incident(cl, p1, :sp), incident(cl, p2, :tp)),
+          intersect(incident(cl, p1, :sm), incident(cl, p2, :tm)) .+ np(cl)
+        )
+      )
+      )
     end
     # generated_cycles = Vector{Vector{Int}}(Base.Iterators.product(nonsimple_cycles...))
     # For loop instead of comprehension to get around product being multidimensional
@@ -330,9 +496,27 @@ function cl_cycles(cl::K) where K <: AbstractCausalLoop
 
 end
 
-function walk_polarity(cl::CausalLoopF, edges::Vector{Int})
+function extract_loops(cl::CausalLoopPM)
+  cycles = cl_cycles(cl)
+  map(x -> x => walk_polarity(cl, x), cycles)
+end
+
+epol(cl::CausalLoopPM, e) = begin
+  @assert e <= nedges(cl)
+  e <= np(cl) ? POL_REINFORCING : POL_BALANCING
+end
+
+function walk_polarity(cl::CausalLoopPM, edges::Vector{Int})
   foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
 end
+
+function extract_all_nonduplicate_paths(cl::CausalLoopPM)
+  
+end
+
+# function walk_polarity(cl::CausalLoopF, edges::Vector{Int})
+#   foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
+# end
 
 """ 
 Cycles are uniquely characterized by sets of edges, not sets of nodes
@@ -342,39 +526,40 @@ We then product all of them, to get every cycle.
 
 This could be made more efficient, but it should be fine for now.
 """
-function extract_loops(cl::CausalLoopF)
+# function extract_loops(cl::CausalLoopF)
 
-  cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
+#   cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
 
 
-  for cycle_instance in cl_cycles(cl)
-    collected_cycle = collect(cycle_instance)
-    push!(cycle_pol, collected_cycle => walk_polarity(cl, collected_cycle))
-  end
+#   for cycle_instance in cl_cycles(cl)
+#     collected_cycle = collect(cycle_instance)
+#     push!(cycle_pol, collected_cycle => walk_polarity(cl, collected_cycle))
+#   end
 
-  cycle_pol
+#   cycle_pol
           
-end
+# end
 
-function is_walk(cl::CausalLoopF, edges::Vector{Int})
+function is_walk(cl::CausalLoopPM, edges::Vector{Int})
   all(x -> tedge(cl, edges[x]) == sedge(cl, edges[x+1]), eachindex(edges[1:end-1]))
 end
 
-function is_circuit(cl::CausalLoopF, edges::Vector{Int})
+function is_circuit(cl::CausalLoopPM, edges::Vector{Int})
   is_path(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
 end
 
+# TODO: How, pray tell, is this a functor
 function betweenness(cl::K) where K <: AbstractCausalLoop
   g = to_graphs_graph(cl)
   Graphs.betweenness_centrality(g)
 end
 
 
-function num_loops(cl::CausalLoopF, name::Symbol)
-  el = cl_cycles(cl)
-  node_num = only(incident(cl, :nname, name))
-  return count(x -> node_num ∈ x, el)
-end
+# function num_loops(cl::CausalLoopF, name::Symbol)
+#   el = cl_cycles(cl)
+#   node_num = only(incident(cl, :nname, name))
+#   return count(x -> node_num ∈ x, el)
+# end
 
 
 
@@ -423,24 +608,64 @@ function to_graphs_graph(cl::K) where K <: AbstractCausalLoop
   g 
 end
 
-function to_catlab_graph(cl::K) where K <: AbstractCausalLoop
-  g = Catlab.Graph(nn(cl))
-  add_parts!(g, :E, ne(cl) ; src = subpart(cl, :s), tgt = subpart(cl, :t))
-  g
+function num_loops_var_on(c::CausalLoopPM, name::Symbol)
+  name_index = only(incident(c, name, :nname))
+  node_cycles = map(x -> map(y -> tedge(c, y), x), cl_cycles(c)) # sedge is equivalent here.
+  # if a node is in a cycle, of course, it will be in both the src set and the tgt set
+  return count(∋(name_index), node_cycles)
 end
 
-
-function discard_zero_pol(c)
-  cl = CausalLoopF()
-  add_nodes!(cl, nn(c) ; nname = nnames(c))
-  for edge in 1:ne(c)
-    pol = epol(c, edge)
-    if pol != POL_ZERO
-      add_edge!(cl, sedge(c, edge), tedge(c, edge) ; epolarity = pol)
-    end
-  end
-  cl
+function num_indep_loops_var_on(c::CausalLoopPM, name::Symbol)
+  g = to_graphs_graph(c)
+  sc = simplecycles(g)
+  name_index = only(incident(c, name, :nname))
+  node_cycles = map(x -> map(y -> tedge(c, y), x),sc) # sedge is equivalent here.
+  # if a node is in a cycle, of course, it will be in both the src set and the tgt set
+  return count(∋(name_index), node_cycles)
 end
+
+# function to_catlab_graph(cl::K) where K <: AbstractCausalLoop
+#   g = Catlab.Graph(nn(cl))
+#   add_parts!(g, :E, ne(cl) ; src = subpart(cl, :s), tgt = subpart(cl, :t))
+#   g
+# end
+
+
+
+# ! This works, but we have version conflicts right now
+# ! I added DataMigrations to TOML; presumably, just need to wait a few days for updated requirements in used packages
+
+# function to_catlab_graph(cl::CausalLoopNameless)
+#   mig = @migration SchGraph TheoryCausalLoopNameless begin
+#     E => @cases (p::P; m::M)
+#     V => V
+#     src => begin
+#       p => sp
+#       m => sm
+#     end
+#     tgt => begin
+#       p => tp
+#       m => tm
+#     end 
+#   end
+#   return migrate(Graph, cl, mig)
+# end
+
+# function to_graphs_graph(cl::)
+# end
+
+
+# function discard_zero_pol(c)
+#   cl = CausalLoopF()
+#   add_vertices!(cl, nn(c) ; nname = nnames(c))
+#   for edge in 1:ne(c)
+#     pol = epol(c, edge)
+#     if pol != POL_ZERO
+#       add_edge!(cl, sedge(c, edge), tedge(c, edge) ; epolarity = pol)
+#     end
+#   end
+#   cl
+# end
 
 
 

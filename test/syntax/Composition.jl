@@ -2,6 +2,11 @@ using StockFlow
 using StockFlow.Syntax
 using StockFlow.Syntax.Composition
 import StockFlow.Syntax.Composition: interpret_composition_notation
+using Catlab.CategoricalAlgebra
+
+function ≅(x,y)
+  !isnothing(isomorphism(x,y))
+end
 
 @testset "Composition creates expected stock flows" begin
     empty_sf = StockAndFlowF()
@@ -11,15 +16,6 @@ import StockFlow.Syntax.Composition: interpret_composition_notation
     B = @stock_and_flow begin; :stocks; B; end;
     AB = @stock_and_flow begin :stocks; A; B; end; 
     BA = @stock_and_flow begin :stocks; B; A; end; 
-
-
-
-    @test (@compose (begin # composing no stock flows returns an empty stock flow.
-    end)) == empty_sf
-
-    @test (@compose (begin # composing no stock flows returns an empty stock flow.
-        ()
-    end)) == empty_sf
 
     @test (@compose empty_sf begin
         (sf,)
@@ -95,35 +91,76 @@ end
 
 @testset "interpret_composition_notation interprets arguments correctly" begin
     # @test interpret_composition_notation(:(() ^ A => N)) == (Vector{Symbol}(), (@foot A => N))
-    @test interpret_composition_notation(:(sf ^ A => N)) == ([:sf], (@foot A => N))
-    @test interpret_composition_notation(:((sf1, sf2) ^ A => N)) == ([:sf1,:sf2], (@foot A => N))
-    @test interpret_composition_notation(:((sf1, sf2) ^ A => N, A => NI)) == ([:sf1,:sf2], (@foot A => N, A => NI))
-    @test interpret_composition_notation(:((sf1, sf2, sf3, sf4) ^ () => NI)) == ([:sf1, :sf2, :sf3, :sf4], (@foot () => NI))
-    @test interpret_composition_notation(:((sf1, sf2) ^ L => ())) == ([:sf1,:sf2], (@foot L => ()))
+    @test interpret_composition_notation(:(sf ^ A => N), create_foot) == ([:sf], (@foot A => N))
+    @test interpret_composition_notation(:((sf1, sf2) ^ A => N), create_foot) == ([:sf1,:sf2], (@foot A => N))
+    @test interpret_composition_notation(:((sf1, sf2) ^ A => N, A => NI), create_foot) == ([:sf1,:sf2], (@foot A => N, A => NI))
+    @test interpret_composition_notation(:((sf1, sf2, sf3, sf4) ^ () => NI), create_foot) == ([:sf1, :sf2, :sf3, :sf4], (@foot () => NI))
+    @test interpret_composition_notation(:((sf1, sf2) ^ L => ()), create_foot) == ([:sf1,:sf2], (@foot L => ()))
 
-    @test interpret_composition_notation(:((sf1, sf2) ^ () => ())) == ([:sf1,:sf2], (@foot () => ()))
+    @test interpret_composition_notation(:((sf1, sf2) ^ () => ()), create_foot) == ([:sf1,:sf2], (@foot () => ()))
 
 
-    @test interpret_composition_notation(:((sf1, sf2, sf3) ^ () => (), A => N)) == ([:sf1,:sf2,:sf3], (@foot () => (), A => N))
+    @test interpret_composition_notation(:((sf1, sf2, sf3) ^ () => (), A => N), create_foot) == ([:sf1,:sf2,:sf3], (@foot () => (), A => N))
 
 end
 
 @testset "invalid composition expressions fail" begin
-    @test_throws ErrorException interpret_composition_notation(:(B => C))
-    @test_throws ErrorException interpret_composition_notation(:(A, B, C))
-    @test_throws ErrorException interpret_composition_notation(:(A ^ B ^ C))
-    @test_throws ErrorException interpret_composition_notation(:(A => B => C))
-    @test_throws ErrorException interpret_composition_notation(:(A ^ B => C => D))
+    @test_throws ErrorException interpret_composition_notation(:(B => C), create_foot)
+    @test_throws ErrorException interpret_composition_notation(:(A, B, C), create_foot)
+    @test_throws ErrorException interpret_composition_notation(:(A ^ B ^ C), create_foot)
+    @test_throws ErrorException interpret_composition_notation(:(A => B => C), create_foot)
+    @test_throws ErrorException interpret_composition_notation(:(A ^ B => C => D), create_foot)
 end
 
 @testset "invalid sfcompose calls fail" begin
-    @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
+    @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], (quote
         (sf1, sf2)
         (sf1, sf2) ^ () => ()
-    end) # not allowed to map to empty
+    end), StockAndFlowF, StockAndFlow0, create_foot) # not allowed to map to empty
     @test_throws AssertionError sfcompose([(@stock_and_flow begin; :stocks; A; end;), (@stock_and_flow begin; :stocks; A; end;)], quote
         (sf1, sf2)
         sf1 ^ A => ()
         sf2 ^ A => ()
-    end) # not allowed to map to the same foot twice
+    end, StockAndFlowF, StockAndFlow0, create_foot) # not allowed to map to the same foot twice
+end
+
+@testset "Causal Loop composition" begin
+    CL1 = @cl B => +A, B => ~C, C => ~A, G;
+    CL2 = @cl B => +A, A => +D, D => -E;       
+    CL3 = @cl B => ~C, C => -F, F => !E, E => ± B, G;
+
+    BigCL = @causal_loop begin
+        :nodes
+        A; B; C; D; E; F; G;
+
+        :edges
+        A => +D;
+        B => +A; B => ~C;
+        C => ~A; C => -F;
+        D => -E;
+        E => ±B;
+        F => !E;
+    end
+
+    @test (@compose CL1 CL2 CL3 begin
+        (CL1, CL2, CL3)
+        (CL1, CL2) ^ B => +A
+        (CL1, CL2, CL3) ^ B
+        (CL2, CL3) ^ E
+        (CL1, CL3) ^ B => ~C, G
+      end) ≅ BigCL
+
+    AB = @cl A => +B;
+    BC = @cl B => -C;
+    CA = @cl C => ±A;
+
+    ABC = @cl A => +B, B => -C, C => ±A;
+
+    @test (@compose AB BC CA begin
+        (AB, BC, CA)
+        (AB, BC) ^ B
+        (BC, CA) ^ C
+        (CA, AB) ^ A
+    end) ≅ ABC
+
 end
