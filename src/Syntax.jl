@@ -103,7 +103,8 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, infer_links, @causal_loop
+export @stock_and_flow, @foot, @feet, infer_links, @stock_and_flow_U, @foot_U,
+@causal_loop,StockArgUnitSymbol, ParamArgUnitSymbol, StockArgUnitExpr, ParamArgUnitExpr
 
 using ..StockFlow
 using MLStyle
@@ -158,14 +159,42 @@ macro stock_and_flow(block)
     end
 end
 
+abstract type ArgT end
+
+abstract type StockArgT <: ArgT end
+abstract type ParamArgT <: ArgT end
+
+struct StockArgUnitSymbol <: StockArgT
+    val::Symbol
+    unit::Symbol
+end
+
+struct StockArgUnitExpr <: StockArgT
+    val::Symbol
+    unit::Expr
+end
+
+struct ParamArgUnitSymbol <: ParamArgT
+    val::Symbol
+    unit::Symbol
+end
+
+
+struct ParamArgUnitExpr <: ParamArgT
+    val::Symbol
+    unit::Expr
+end
+
 """
     StockAndFlowBlock
 
 Contains the elements that make up the Stock and Flow block syntax.
 
 ### Fields
-- `stocks` -- Each stock is defined by a single valid Julia variable name on a line.
-- `params` -- Each parameter is defined by a single valid Julia variable name on a line.
+- `stocks` -- Each stock is defined by a single valid Julia variable name on a line, 
+              or a variable name, colon, and another variable name
+- `params` -- Each parameter is defined by a single valid Julia variable name on a line,
+              or a variable name, colon, and another variable name
 - `dyvars` -- Each dynamic variable is defined by a valid Julia assignment statement of the
               form `dyvar = expr`
 - `flows`  -- Each flow is defined by a valid Julia pair expression of the form
@@ -174,12 +203,13 @@ Contains the elements that make up the Stock and Flow block syntax.
               `sum_name = [a, b, c, ...]`
 """
 struct StockAndFlowBlock
-    stocks::Vector{Symbol}
-    params::Vector{Symbol}
+    stocks::Vector{StockArgT}
+    params::Vector{ParamArgT}
     dyvars::Vector{Tuple{Symbol,Expr}}
     flows::Vector{Tuple{Symbol,Expr,Symbol}}
     sums::Vector{Tuple{Symbol,Vector{Symbol}}}
 end
+ 
 
 """
 Contains the five parameters required to instantiate a StockAndFlowF data type,
@@ -187,6 +217,9 @@ representing a Stock and Flow model.
 
 This can be used to directly instantiate StockAndFlowF.
 """
+
+
+
 abstract type DyvarExprT end
 struct Binop{P1,P2} <: DyvarExprT
     binop::Pair{Tuple{P1,P2},Symbol}
@@ -213,6 +246,27 @@ struct StockAndFlowArguments
     sums::Vector{Symbol}
 end
 
+struct StockAndFlowUArguments
+    stocks::Vector{
+        Pair{
+            Pair{Symbol, Symbol},
+            Tuple{
+                Union{Symbol,Vector{Symbol}},
+                Union{Symbol,Vector{Symbol}},
+                Union{Symbol,Vector{Symbol}},
+            },
+        },
+    }
+    params::Vector{Pair{Symbol, Symbol}}
+    dyvars::Vector{Pair{Symbol, DyvarExprT}}
+    flows::Vector{Pair{Symbol,Symbol}}
+    sums::Vector{Symbol}
+    dunits::Vector{Pair{Symbol, Vector{Pair{Symbol, Float64}}}}
+    units::Vector{Symbol}
+end 
+
+
+
 """
     parse_stock_and_flow_syntax(statements :: Vector{Any})
 
@@ -228,8 +282,8 @@ A StockAndFlowSyntax data type which contains the syntax pieces required to defi
 a Stock and Flow model: stocks, parameters, dynamic variables, flows, and sums.
 """
 function parse_stock_and_flow_syntax(statements::Vector{Any})
-    stocks::Vector{Symbol} = []
-    params::Vector{Symbol} = []
+    stocks::Vector{StockArgT} = []
+    params::Vector{ParamArgT} = []
     dyvars::Vector{Tuple{Symbol,Expr}} = []
     flows::Vector{Tuple{Symbol,Expr,Symbol}} = []
     sums::Vector{Tuple{Symbol,Vector{Symbol}}} = []
@@ -275,12 +329,14 @@ data type instantiation
 Parameters for instantiation of a StockAndFlowF data type.
 """
 function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
+    stocks_no_units = Vector{Symbol}([s.val for s in syntax_elements.stocks])
+    params_no_units = Vector{Symbol}([p.val for p in syntax_elements.params])
     stocks = assemble_stock_definitions(
-        syntax_elements.stocks,
+        stocks_no_units,
         syntax_elements.flows,
         syntax_elements.sums,
     )
-    params = syntax_elements.params
+    params = params_no_units
     dyvars = dyvar_exprs_to_symbolic_repr(syntax_elements.dyvars)
     dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
     (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
@@ -289,7 +345,7 @@ function stock_and_flow_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
 end
 
 """
-    parse_stock!(stocks :: Vector{Symbol}, stock :: Symbol)
+    parse_stock!(stocks :: Vector{StockArgT}, stock :: Symbol)
 
 Add a stock to the list of stocks.
 
@@ -303,15 +359,20 @@ is currently done by this function.
 ### Output
 None. This mutates the given stocks vector.
 """
-function parse_stock!(stocks::Vector{Symbol}, stock::Symbol)
+function parse_stock!(stocks::Vector{StockArgT}, stock::Union{Symbol, Expr})
     push!(stocks, parse_stock(stock))
 end
 
 """
-    parse_stock(stock :: Symbol)
+    parse_stock(stock :: StockArgT)
 """
-function parse_stock(stock::Symbol)
-    stock
+function parse_stock(stock::Union{Symbol, Expr})
+    @match stock begin
+        stock::Symbol => StockArgUnitSymbol(stock, :NONE)
+        :($s:$(unit::Symbol)) => StockArgUnitSymbol(s, unit)
+        :($s:$(unit::Expr)) => StockArgUnitExpr(s, unit)
+        _ => error("Unknown argument $stock in stock syntax.")
+    end
 end
 
 
@@ -330,12 +391,16 @@ so no work is currently done by this function.
 ### Output
 None. This mutates the given params vector.
 """
-function parse_param!(params::Vector{Symbol}, param::Symbol)
-    push!(params, param)
+function parse_param!(params::Vector{ParamArgT}, param::Union{Symbol, Expr})
+    push!(params, parse_param(param))
 end
 
-function parse_param(param::Symbol)
-    param
+function parse_param(param::Union{Symbol, Expr})
+    @match param begin
+        param::Symbol => ParamArgUnitSymbol(param, :NONE)
+        :($p:$(unit::Symbol)) => ParamArgUnitSymbol(p, unit)
+        :($p:$(unit::Expr)) => ParamArgUnitExpr(p, unit)
+    end
 end
 """
    is_recursive_dyvar(dyvar_name :: Symbol, dyvar_def :: Expr)
@@ -1252,8 +1317,8 @@ Could be different from the initial definition, since this creates flows of form
 Ultimate stock flow created will be the same, though.  That is, sf(block(s)) == s
 """
 function sf_to_block(sf::AbstractStockAndFlowF)
-    stocks = snames(sf)
-    params = pnames(sf)
+    stocks = Vector{StockArgUnitSymbol}(map(x -> StockArgUnitSymbol(x, :NONE), snames(sf)))
+    params = Vector{ParamArgUnitSymbol}(map(x -> ParamArgUnitSymbol(x, :NONE), pnames(sf)))
     sums = Vector{Tuple{Symbol, Vector{Symbol}}}([(svname, collect(map(x -> sname(sf, x), stockssv(sf, i)))) for (i, svname) ∈ enumerate(svnames(sf))])
     dyvars = Vector{Tuple{Symbol, Expr}}([(vname, make_v_expr_nonrecursive(sf, i)) for (i, vname) ∈ enumerate(vnames(sf))])
     flows = [(sname(sf, outstock(sf,i)), :($fname($(vname(sf, fv(sf, i))))), (sname(sf, instock(sf, i)))) for (i, fname) ∈ enumerate(fnames(sf))]
@@ -1280,6 +1345,147 @@ Takes any arguments and returns nothing.
 Used so we can maintain equality when making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
+
+"""
+StockAndFlowBlock -> StockAndFlowUArguments
+"""
+function stock_and_flow_units_syntax_to_arguments(syntax_elements::StockAndFlowBlock)
+    stocks_symbols = Vector{Symbol}([stock.val for stock in syntax_elements.stocks])
+
+    stocks_dunits = Vector{Union{Symbol, Expr}}([stock.unit for stock in syntax_elements.stocks])
+
+    params_symbols = Vector{Symbol}([param.val for param in syntax_elements.params])
+
+    params_dunits = Vector{Union{Symbol, Expr}}([param.unit for param in syntax_elements.params])
+
+    # [stock => (inputs, outputs, sums), ...]
+    assembled_stocks = assemble_stock_definitions(
+        stocks_symbols,
+        syntax_elements.flows,
+        syntax_elements.sums,
+    )
+
+    
+    # [(stock => dunit) => (inputs, outputs, sums), ...]
+    stocks = [(stock => Symbol(dunit)) => vals for ((stock, vals), dunit) in zip(assembled_stocks, stocks_dunits)]
+
+    params = Vector{Pair{Symbol, Symbol}}(Pair.(params_symbols, Symbol.(params_dunits)))
+
+
+    dyvars = dyvar_exprs_to_symbolic_repr(syntax_elements.dyvars)
+    dyvar_names = [dyvar_name for (dyvar_name, _dyvar_def) in dyvars]
+
+    (flows, flow_dyvars) = create_flow_definitions(syntax_elements.flows, dyvar_names)
+
+    sums = sum_variables(syntax_elements.sums)
+
+    dunits = Vector{Pair{Symbol, Vector{Pair{Symbol, Float64}}}}()
+
+    units = Vector{Symbol}()
+
+    dunit_set = Set{Union{Expr, Symbol}}()
+    unit_set = Set{Symbol}()
+    for (object, dunit) in zip(vcat(stocks_symbols, params_symbols), vcat(stocks_dunits, params_dunits))
+        
+        # vcat(syntax_elements.stocks, syntax_elements.params)
+        if dunit ∉ dunit_set
+            push!(dunit_set, dunit)
+            if dunit == :NONE
+                push!(dunits, :NONE => Vector{Pair{Symbol, Float64}}())
+                continue
+            end
+            dunit_exps = extract_exponents(dunit)
+            for unit in keys(dunit_exps)
+                if unit ∉ units
+                    push!(unit_set, unit)
+                    push!(units, unit)
+                end
+            end
+            push!(dunits, Symbol(dunit) => collect(pairs(dunit_exps)))
+        end
+    end
+    return StockAndFlowUArguments(stocks, params, vcat(dyvars, flow_dyvars), flows, sums, dunits, units)
+end
+
+
+macro stock_and_flow_U(block)
+    
+    Base.remove_linenums!(block)
+    block_args = block.args
+    
+    return quote
+        
+      local syntax_lines = parse_stock_and_flow_syntax($block_args)
+      local saff_args = stock_and_flow_units_syntax_to_arguments(syntax_lines)
+      StockAndFlowU(
+          saff_args.stocks,
+          saff_args.params,
+          map(kv -> kv.first => get(kv.second), saff_args.dyvars),
+          saff_args.flows,
+          saff_args.sums,
+          saff_args.dunits,
+          saff_args.units
+      )
+    end
+end
+
+function match_foot_format_U(footblock::Union{Expr, Symbol})
+    @match footblock begin
+        ::Symbol => ((), (), (), (), footblock)
+
+        :(()              => ())              => ((), (), (), (), ())
+        :($(s :: Symbol)  => ())              => (s, (), (), s => :NONE, ())
+        :(()              => $(sv :: Symbol)) => ((), sv, (), (), ())
+        :($(s :: Symbol)  => $(sv :: Symbol)) => (s, sv, s => sv, s => :NONE, ())
+
+        :(()              => () : $du)              => ((), (), (), :NONE => du, ())
+        :($(s :: Symbol)  => () : $du)              => (s, (), (), s => du, ())
+        :(()              => $(sv :: Symbol) : $du) => ((), sv, (), :NONE => du, ())
+        :($(s :: Symbol)  => $(sv :: Symbol): $du) => (s, sv, s => sv, s => du, ())
+
+        :($(s :: Symbol)  => sv)              => error("Non-symbolic second argument of foot: $sv")
+        :($s              => $(sv :: Symbol)) => error("Non-symbolic first argument of foot: $s")
+        :($s              => $sv)             => error("Foot definition requires symbolic names. Received: $s, $sv")
+        Expr(:call, name, args...)            => error("Received: $name called with $args. Expected foot definition of form: A => B.")
+        _                                     => error("Invalid foot definition.")
+    end
+end
+
+function create_foot_U(block::Expr)
+    @match block.head begin
+
+        :tuple => begin
+            if isempty(block.args) # case for create_foot(:())
+                error("Cannot create foot with no arguments.")
+            end
+            foot_s = Vector{Symbol}()
+            foot_sv = Vector{Symbol}()
+            foot_ssv = Vector{Pair{Symbol, Symbol}}()
+            foot_du = Vector{Pair{Symbol, Union{Symbol, Expr}}}()
+            foot_u = Vector{Symbol}()
+            for (s, sv, ssv, du, u) ∈ map(match_foot_format_U, block.args)
+                if s != () push!(foot_s, s) end
+                if sv != () push!(foot_sv, sv) end
+                if ssv != () push!(foot_ssv, ssv) end
+                if du != () push!(foot_du, du) end
+                if u != () push!(foot_u, u) end
+            end
+            return footU(unique(foot_s), unique(foot_sv), foot_ssv, foot_du, unique(foot_u))
+        end
+        :call => footU(match_foot_format_U(block)...)
+        _ => error("Invalid expression type $(block.head).  Expecting tuple or call.")
+    end
+end
+
+macro foot_U(block::Expr)
+    Base.remove_linenums!(block)
+    return create_foot_U(block)
+end
+
+macro foot_U(block::Symbol)
+    return footU([],[],[],[],[block])
+end
+
 
 
 

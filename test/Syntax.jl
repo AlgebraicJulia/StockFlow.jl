@@ -597,3 +597,56 @@ end
     end) == CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_BALANCING, POL_REINFORCING])
 
 end
+
+
+@testset "Stock Flow Units DSL" begin
+    @test (@stock_and_flow_U begin end) == StockAndFlowU()
+    @test (@stock_and_flow_U begin; :stocks; S; end) == StockAndFlowU([((:S, :NONE), ([],[],[])),], [], [], [], [], [(:NONE, ())], [])
+
+    @test (@stock_and_flow_U begin; :stocks; S: km; end) == StockAndFlowU([((:S, :km), ([],[],[])),], [], [], [], [], [(:km => [(:km => 1),])], [:km])
+    
+    @test (@stock_and_flow_U begin; :stocks; S: km/s; end) == StockAndFlowU([((:S, Symbol(:(km/s))), ([],[],[])),], [], [], [], [], [(Symbol(:(km/s)) => [(:km => 1), (:s => -1),])], [:km, :s])
+
+    @test (@stock_and_flow_U begin; :stocks; S: km^2/s^2; end) == StockAndFlowU([((:S, Symbol(:(km^2/s^2))), ([],[],[])),], [], [], [], [], [(Symbol(:(km^2/s^2)) => [(:km => 2), (:s => -2),])], [:km, :s])
+
+    @test (@stock_and_flow_U begin
+        :stocks
+        A : km
+        B: km / s
+        C: 1 / s
+
+        :parameters
+        p1 : km
+        p2 : s 
+    end) == StockAndFlowU(
+        [
+            (:A, :km) => ([], [], []),
+            (:B, Symbol(:(km/s))) => ([],[],[]),
+            (:C, Symbol(:(1/s))) => ([],[],[]),
+        ],
+        [
+            (:p1, :km),
+            (:p2, :s)
+        ],
+        [], [], [],
+        [
+            (:km => [(:km => 1),]),
+            (Symbol(:(km/s)) => [(:km => 1), (:s => -1),]),
+            (Symbol(:(1/s)) => [(:s => -1),]),
+            (:s => [(:s => 1),]),
+        ],
+        [:km, :s]
+    )
+
+end
+
+
+@testset "Stock Flow Units Foot DSL" begin 
+    @test (@foot_U () => ()) == footU()
+    @test (@foot_U km) == footU([],[],[],[],[:km])
+    @test (@foot_U S => N: people, E => N: people) == footU([:S, :E], [:N], [:S => :N, :E => :N], [:S => :people, :E => :people], [:people])
+    @test (@foot_U km, S => () : s) == footU([:S], [], [], [:S => :s], [:km, :s])
+    @test (@foot_U km, S => N : s/km, s) == footU([:S], [:N], [:S => :N], [:S => :(s/km)], [:km, :s])
+
+    @test (@foot_U S => N : people, E => X : people/time) == footU([:S, :E], [:N, :X], [:S => :N, :E => :X], [:S => :people, :E => :(people/time)], [:people, :time])
+end

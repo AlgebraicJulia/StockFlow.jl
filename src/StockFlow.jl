@@ -905,7 +905,7 @@ const OpenStockAndFlowFOb, OpenStockAndFlowF = OpenACSetTypes(StockAndFlowFUntyp
 
 foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 
-ntcomponent(a, x0) = map(x->state_dict(x0)[x], a)
+ntcomponent(a, x0) = Vector{Int}(map(x->state_dict(x0)[x], a))
 
 leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowStructureF,StockAndFlowF}) = begin
     if ns(a)>0 # if have stocks
@@ -1043,6 +1043,8 @@ vectorfield(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
   end
   return f
 end
+
+include("stockflow/StockFlowUnits.jl")
 
 include("Syntax.jl")
 

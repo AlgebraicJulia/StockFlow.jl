@@ -5,6 +5,8 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
+# using ..StockFlow.StockFlowUnits
+
 export Graph, display_uwd, GraphF, Graph_RB
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
@@ -18,6 +20,25 @@ def_stock(p, s) = ("s$s", Attributes(:label=>"$(sname(p, s))",
 def_parameter(p, pp) = ("p$pp", Attributes(:label=>"$(pname(p, pp))",
                                      :shape=>"circle", 
                                      :color=>"black"))
+
+def_parameter_unit(p, pp) = begin
+  du = get_pdu(p, pp)
+  du_name = duname(p, du)
+  ("p$pp", Attributes(:label=>"$(pname(p, pp)): $du_name",
+  :shape=>"circle", 
+  :color=>"black"))
+end
+
+def_stock_unit(p, pp) = begin
+  du = get_sdu(p, pp)
+  du_name = duname(p, du)
+  ("s$pp", Attributes(:label=>"$(sname(p, pp)): $du_name",
+  :shape=>"square", 
+  :color=>"black", 
+  :style=>"filled", 
+  :fillcolor=>"#9ACEEB"))
+end
+
 
 def_auxiliaryV(p, v) = ("v$v", Attributes(:label=>"$(vname(p, v))",
                                           :shape=>"plaintext", 
@@ -281,7 +302,8 @@ function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_a
                                          make_sumV::Function=def_sumV, make_cloud::Function=def_cloud,
                                          make_flow_V::Function=def_flow_V, make_flow_noneV::Function=def_flow_noneV,
                                          make_link::Function=def_link, make_parameter::Function=def_parameter,
-                                         schema::String="C", type::String="SFVL", rd::String="LR")
+                                         schema::String="C", type::String="SFVL", rd::String="LR",
+                                         make_stock_unit::Function=def_stock_unit, make_parameter_unit::Function=def_parameter_unit)
 
 # only full schema C has Flows
   if schema == "C" begin
@@ -290,13 +312,20 @@ function GraphF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_a
       innerFlows=intersect(inflows,outflows)
       edgeInFlows=symdiff(inflows,innerFlows)
       edgeOutFlows=symdiff(outflows,innerFlows)
+      if occursin("U", type) && isa(p,Union{StockAndFlowU, StockAndFlow0U})
+        parameterNodes = [Node(make_parameter_unit(p,pp)...) for pp in 1:np(p)]
+      else
+        parameterNodes = [Node(make_parameter(p,pp)...) for pp in 1:np(p)]
+      end
 
-      parameterNodes = [Node(make_parameter(p,pp)...) for pp in 1:np(p)]
     end
   end
 
-  stockNodes = [Node(make_stock(p,s)...) for s in 1:ns(p)]
-
+  if occursin("U", type) && isa(p,Union{StockAndFlowU, StockAndFlow0U})
+    stockNodes = [Node(make_stock_unit(p,s)...) for s in 1:ns(p)]
+  else
+    stockNodes = [Node(make_stock(p,s)...) for s in 1:ns(p)]
+  end
 
   if occursin("V", type)
     if schema == "C"
