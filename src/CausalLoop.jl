@@ -1,5 +1,5 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
-nn, ne, nname,
+nn, ne, vname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
@@ -82,6 +82,13 @@ const CausalLoopFull = CausalLoopFullUntyped{Symbol}
 # const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
 
+@enum Polarity begin
+  POL_ZERO
+  POL_REINFORCING
+  POL_BALANCING
+  POL_UNKNOWN
+  POL_NOT_WELL_DEFINED
+end
 
 
 @present TheoryCausalLoop(FreeSchema) begin
@@ -94,7 +101,7 @@ const CausalLoopFull = CausalLoopFullUntyped{Symbol}
   # Attributes:
   Name::AttrType
   
-  vname::Attr(N, Name)
+  vname::Attr(V, Name)
 end
 
 @present TheoryCausalLoopPol <: TheoryCausalLoop begin
@@ -128,7 +135,7 @@ function to_clp(cl::CausalLoopPM)
 
 end
 
-function to_clp(cl::CausalLoopZero)
+function to_clp(cl::CausalLoopZ)
   clp = CausalLoopPol()
 
   p = np(cl)
@@ -161,13 +168,6 @@ function to_clp(cl::CausalLoopFull)
 end
 
 
-@enum Polarity begin
-  POL_ZERO
-  POL_REINFORCING
-  POL_BALANCING
-  POL_UNKNOWN
-  POL_NOT_WELL_DEFINED
-end
   
 function *(p1::Polarity, p2::Polarity)
   if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
@@ -285,7 +285,7 @@ CausalLoopF(ns, es, pols) = begin
 
   if (POL_NOT_WELL_DEFINED ∈ pols || POL_UNKNOWN ∈ pols)
     c = CausalLoopFull()
-  elseif(POL_ZERO ∈ pols)
+  elseif (POL_ZERO ∈ pols)
     c = CausalLoopZ()
   else
     c = CausalLoopPM()
@@ -297,7 +297,7 @@ CausalLoopF(ns, es, pols) = begin
   es = vectorify(es)
   
   ns_idx=state_dict(ns)
-  add_vertices!(c, length(ns), nname=ns)
+  add_vertices!(c, length(ns), vname=ns)
 
   s=map(first,es)
   t=map(last,es)
@@ -330,7 +330,12 @@ end
 # nv(c::AbstractCausalLoop) = 
 
 # """ return count of edges of CLD """
-# ne(c::AbstractCausalLoop) = nparts(c,:E) #edges
+nedges(c::AbstractSimpleCausalLoop) = nparts(c,:E) #edges
+# nv(c::AbstractSimpleCausalLoop) = nparts(c,:V) #vertices
+
+
+
+
 np(c::AbstractCausalLoop) = nparts(c, :P)
 nm(c::AbstractCausalLoop) = nparts(c, :M)
 nz(c::CausalLoopZ) = nparts(c, :Z)
@@ -356,22 +361,22 @@ end
 
 
 """ return node's name with index n """
-nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
-# """ return edge's name with target number t """
-# sedge(c::AbstractCausalLoop,e) = subpart(c,e,:s)
-# """ return edge's name with edge number e """
-# tedge(c::AbstractCausalLoop,e) = subpart(c,e,:t)
+# nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
+""" return edge's name with target number t """
+sedge(c::CausalLoopPol,e) = subpart(c,e,:s)
+""" return edge's name with edge number e """
+tedge(c::CausalLoopPol,e) = subpart(c,e,:t)
 
 """ return node names of CLD """
-nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
+# nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
 
-# epol(c::CausalLoopF,e) = subpart(c,e,:epolarity)
+epol(c::CausalLoopPol,e) = subpart(c,e,:epol)
 
-# epols(c::CausalLoopF) = [epol(c, n) for n in 1:ne(c)]
+# epols(c::CausalLoopPol) = [epol(c, n) for n in 1:ne(c)]
 
 
-# outgoing_edges(c::AbstractCausalLoop, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
-# incoming_edges(c::AbstractCausalLoop, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
+outgoing_edges(c::CausalLoopPol, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
+incoming_edges(c::CausalLoopPol, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
 
 
 
@@ -510,8 +515,45 @@ function walk_polarity(cl::CausalLoopPM, edges::Vector{Int})
   foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
 end
 
-function extract_all_nonduplicate_paths(cl::CausalLoopPM)
+function extract_all_nonduplicate_paths(cl::K) where K <: AbstractCausalLoop
+
+
+  function rec_search!(path, nodes, paths)
+    target = tedge(clp, path[end])
+    outgoing = Vector{Int}(incident(clp, target, :s)) # all connected edges from target vertex
+
+    for o in outgoing
+      outgoing_tgt = tedge(clp, o) # note, clp is defined in outer func
+      if outgoing_tgt ∈ nodes
+        continue
+      end
+
+      new_nodes = Set{Int}([nodes..., outgoing_tgt])
+
+      new_path = [path..., o]
+      push!(paths, new_path => paths[path] * epol(clp, o))
+      rec_search!(new_path, new_nodes, paths)
+    end
+
+  end
+
+
+  clp = to_clp(cl)
+  paths = Dict{Vector{Int}, Polarity}(Vector{Int}() => POL_REINFORCING)
+  for e in 1:nedges(clp)
+    nodes = Set{Int}([sedge(clp, e)])
+    push!(paths, [e] => epol(clp, e))
+    # target = tedge(clp, e)
+    rec_search!([e], nodes, paths)
   
+
+
+
+
+
+  end
+  paths
+
 end
 
 # function walk_polarity(cl::CausalLoopF, edges::Vector{Int})
@@ -609,7 +651,7 @@ function to_graphs_graph(cl::K) where K <: AbstractCausalLoop
 end
 
 function num_loops_var_on(c::CausalLoopPM, name::Symbol)
-  name_index = only(incident(c, name, :nname))
+  name_index = only(incident(c, name, :vname))
   node_cycles = map(x -> map(y -> tedge(c, y), x), cl_cycles(c)) # sedge is equivalent here.
   # if a node is in a cycle, of course, it will be in both the src set and the tgt set
   return count(∋(name_index), node_cycles)
@@ -618,7 +660,7 @@ end
 function num_indep_loops_var_on(c::CausalLoopPM, name::Symbol)
   g = to_graphs_graph(c)
   sc = simplecycles(g)
-  name_index = only(incident(c, name, :nname))
+  name_index = only(incident(c, name, :vname))
   node_cycles = map(x -> map(y -> tedge(c, y), x),sc) # sedge is equivalent here.
   # if a node is in a cycle, of course, it will be in both the src set and the tgt set
   return count(∋(name_index), node_cycles)
