@@ -1326,6 +1326,7 @@ function cl_macro(block)
         return CausalLoopF(Vector{Symbol}([block]), Vector{Int}([]), Vector{Polarity}([]))
     end
 
+
     edges = Vector{Pair{Symbol, Symbol}}()
     nodes = Vector{Symbol}()
     polarities = Vector{Polarity}()
@@ -1402,9 +1403,17 @@ macro causal_loop(block)
   end
 end
 
+macro cl()
+    quote
+        CausalLoopF()  
+    end
+end
+
 macro cl(block)
-    Base.remove_linenums!(block)
-    return cl_macro(block)
+    escaped_block = Expr(:quote, block)
+    quote
+      cl_macro($(esc(escaped_block)))
+    end
 end
 
 

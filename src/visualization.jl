@@ -239,7 +239,7 @@ function GraphSF(c::CausalLoop)
 
 end
 
-function GraphSF(c::CausalLoopF; schema="BASE")
+function GraphSF(c::CausalLoopPol; schema="BASE")
 
   NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
 

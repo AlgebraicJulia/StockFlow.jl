@@ -17,6 +17,11 @@ import Catlab.Graphs: nv
 
 import Base: +, *, -, /
 
+# Whenever we map from something with attributes to something without, can think
+# of it like mapping the attribute to a type with a single instance, which should
+# be equivalent to identity
+
+# Need some more work on the theory to ensure it's functorial, though.
 
 @present TheoryCausalLoopNameless(FreeSchema) begin
   
@@ -91,18 +96,32 @@ const CausalLoopFull = CausalLoopFullUntyped{Symbol}
 end
 
 
-@present TheoryCausalLoop(FreeSchema) begin
-  E::Ob
-  V::Ob
+# @present TheoryCausalLoop(FreeSchema) begin
+#   E::Ob
+#   V::Ob
 
-  s::Hom(E,V)
-  t::Hom(E,V)
+#   s::Hom(E,V)
+#   t::Hom(E,V)
+
+#   # Attributes:
+#   Name::AttrType
+  
+#   vname::Attr(V, Name)
+# end
+
+@present TheoryCausalLoop <: SchGraph begin
+  # E::Ob
+  # V::Ob
+
+  # s::Hom(E,V)
+  # t::Hom(E,V)
 
   # Attributes:
   Name::AttrType
   
   vname::Attr(V, Name)
 end
+
 
 @present TheoryCausalLoopPol <: TheoryCausalLoop begin
   Polarity::AttrType
@@ -111,61 +130,110 @@ end
 
 # TODO: Make subtyping a bit more sensible
 @abstract_acset_type AbstractSimpleCausalLoop
-@acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractSimpleCausalLoop
-@acset_type CausalLoopPolUntyped(TheoryCausalLoopPol, index=[:s,:t]) <: AbstractSimpleCausalLoop
+@acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:src,:tgt]) <: AbstractSimpleCausalLoop
+@acset_type CausalLoopPolUntyped(TheoryCausalLoopPol, index=[:src,:tgt]) <: AbstractSimpleCausalLoop
 const CausalLoop = CausalLoopUntyped{Symbol}
 const CausalLoopPol = CausalLoopPolUntyped{Symbol, Polarity}
 
 function from_clp(cl::CausalLoopPol)
   pols = subpart(cl, :epol)
-  CausalLoopF(subpart(cl, :vname), collect(zip(subpart(cl, :s), subpart(cl, :t))), pols)
+  names = Dict([i => x for (i, x) in enumerate(subpart(cl, :vname))])
+  src = map(x -> names[x], subpart(cl, :src))
+  tgt = map(x -> names[x], subpart(cl, :tgt))
+  st = Vector{Pair{Symbol, Symbol}}(map(((x,y),) -> x => y, zip(src, tgt)))
+  CausalLoopF(subpart(cl, :vname), st, pols)
 end
 
-function to_clp(cl::CausalLoopPM)
-  p = np(cl)
-  m = nm(cl)
+
+function to_clp(nodes::Vector{Symbol}, reinf::Vector{Pair{Int, Int}}, 
+  bal::Vector{Pair{Int, Int}}, zero::Vector{Pair{Int, Int}}, unknown::Vector{Pair{Int, Int}},
+  nwd::Vector{Pair{Int, Int}})
+
+  ne = length(reinf) + length(bal) + length(zero) + length(unknown) + length(nwd)
+  pols = vcat(
+    repeat([POL_REINFORCING], length(reinf)),
+    repeat([POL_BALANCING], length(bal)),
+    repeat([POL_ZERO], length(zero)),
+    repeat([POL_UNKNOWN], length(unknown)),
+    repeat([POL_NOT_WELL_DEFINED], length(nwd)),
+  )
+
+  edges = vcat(reinf, bal, zero, unknown, nwd)
+  src = map(first, edges)
+  tgt = map(last, edges)
 
   clp = CausalLoopPol()
-  add_parts!(clp, :V, nparts(cl, :V))
-  # !TODO: Rename reinforcing and balancing; probably to 'positive' and 'negative'
-  add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
-  add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
+  add_parts!(clp, :V, length(nodes); vname=nodes)
+  add_parts!(clp, :E, ne; src = src, tgt = tgt, epol = pols)
 
   clp
 
 end
 
+function to_clp(cl::CausalLoopPM)
+  to_clp(
+    Vector{Symbol}(subpart(cl, :vname)), 
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sp), subpart(cl, :tp)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sm), subpart(cl, :tm)))),
+    Vector{Pair{Int,Int}}(),
+    Vector{Pair{Int,Int}}(),
+    Vector{Pair{Int,Int}}()
+    )
+end
+
 function to_clp(cl::CausalLoopZ)
-  clp = CausalLoopPol()
-
-  p = np(cl)
-  m = nm(cl)
-  z = nz(cl)
-
-  add_parts!(clp, :V, nparts(cl, :V))
-  add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
-  add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
-  add_parts!(clp, :Z, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
-
+  to_clp(
+    Vector{Symbol}(subpart(cl, :vname)), 
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sp), subpart(cl, :tp)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sm), subpart(cl, :tm)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sz), subpart(cl, :tz)))),
+    Vector{Pair{Int,Int}}(),
+    Vector{Pair{Int,Int}}()
+    )
 end
 
 function to_clp(cl::CausalLoopFull)
-  clp = CausalLoopPol()
-
-  p = np(cl)
-  m = nm(cl)
-  z = nz(cl)
-  nwd = nnwd(cl)
-  u = nu(cl)
-
-
-  add_parts!(clp, :V, nparts(cl, :V))
-  add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
-  add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
-  add_parts!(clp, :E, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
-  add_parts!(clp, :E, m; s = subpart(cl, :snwd), t = subpart(cl, :tnwd), epol=repeat([POL_NOT_WELL_DEFINED], nwd))
-  add_parts!(clp, :E, m; s = subpart(cl, :su), t = subpart(cl, :tu), epol=repeat([POL_UNKNOWN], u))
+  to_clp(
+    Vector{Symbol}(subpart(cl, :vname)), 
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sp), subpart(cl, :tp)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sm), subpart(cl, :tm)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sz), subpart(cl, :tz)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :su), subpart(cl, :tu)))),
+    Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :snwd), subpart(cl, :tnwd)))),
+    )
 end
+
+# function to_clp(cl::CausalLoopZ)
+#   clp = CausalLoopPol()
+
+#   p = np(cl)
+#   m = nm(cl)
+#   z = nz(cl)
+
+#   add_parts!(clp, :V, nparts(cl, :V))
+#   add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
+#   add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
+#   add_parts!(clp, :Z, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
+
+# end
+
+# function to_clp(cl::CausalLoopFull)
+#   clp = CausalLoopPol()
+
+#   p = np(cl)
+#   m = nm(cl)
+#   z = nz(cl)
+#   nwd = nnwd(cl)
+#   u = nu(cl)
+
+
+#   add_parts!(clp, :V, nparts(cl, :V))
+#   add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
+#   add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
+#   add_parts!(clp, :E, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
+#   add_parts!(clp, :E, m; s = subpart(cl, :snwd), t = subpart(cl, :tnwd), epol=repeat([POL_NOT_WELL_DEFINED], nwd))
+#   add_parts!(clp, :E, m; s = subpart(cl, :su), t = subpart(cl, :tu), epol=repeat([POL_UNKNOWN], u))
+# end
 
 
   
@@ -280,7 +348,7 @@ Create causal loop diagram from collection of nodes and collection of edges.
 
 
 CausalLoopF() = CausalLoopPM()
-CausalLoopF(ns, es, pols) = begin
+CausalLoopF(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{Polarity}) = begin
   @assert length(pols) == length(es)
 
   if (POL_NOT_WELL_DEFINED ∈ pols || POL_UNKNOWN ∈ pols)
@@ -306,6 +374,7 @@ CausalLoopF(ns, es, pols) = begin
   for i in eachindex(pols)
     src = s[i]
     tgt = t[i]
+
     if pols[i] == POL_REINFORCING
       add_part!(c, :P; sp = ns_idx[src], tp = ns_idx[tgt])
     elseif pols[i] == POL_BALANCING
@@ -330,6 +399,7 @@ end
 # nv(c::AbstractCausalLoop) = 
 
 # """ return count of edges of CLD """
+# TODO: This should be unnecessary now, since it subtypes graph.  Just use ne and nv like normal.
 nedges(c::AbstractSimpleCausalLoop) = nparts(c,:E) #edges
 # nv(c::AbstractSimpleCausalLoop) = nparts(c,:V) #vertices
 
@@ -345,6 +415,10 @@ nu(c::CausalLoopFull) = nparts(c, :U)
 nedges(c::AbstractCausalLoop) = np(c) + nm(c)
 nedges(c::CausalLoopZ) = np(c) + nm(c) + nz(c)
 nedges(c::CausalLoopFull) = np(c) + nm(c) + nz(c) + nnwd(c) + nu(c)
+
+
+
+
 
 sedge(c::CausalLoopPM, e) = begin
   @assert e <= nedges(c)
@@ -363,9 +437,9 @@ end
 """ return node's name with index n """
 # nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
 """ return edge's name with target number t """
-sedge(c::CausalLoopPol,e) = subpart(c,e,:s)
+sedge(c::CausalLoopPol,e) = subpart(c,e,:src)
 """ return edge's name with edge number e """
-tedge(c::CausalLoopPol,e) = subpart(c,e,:t)
+tedge(c::CausalLoopPol,e) = subpart(c,e,:tgt)
 
 """ return node names of CLD """
 # nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
@@ -450,10 +524,16 @@ Edges: morphisms in stock flow
 # function simple_cycles(c::)
 # end
 
-function to_graphs_graph(cl::CausalLoopPM)
-  edges = collect(zip(vcat(subpart(cl, :sp), subpart(cl, :sm)), vcat(subpart(cl, :tp), subpart(cl, :tm))))
-  g = SimpleDiGraph(SimpleEdge.(edges))
-  return (g, np(cl))
+# function to_graphs_graph(cl::CausalLoopPM)
+#   edges = collect(zip(vcat(subpart(cl, :sp), subpart(cl, :sm)), vcat(subpart(cl, :tp), subpart(cl, :tm))))
+#   g = SimpleDiGraph(SimpleEdge.(edges))
+#   g
+#   # return (g, np(cl))
+# end
+
+function to_graphs_graph(cl::CausalLoopPol)
+  g = SimpleDiGraph(SimpleEdge.(zip(subpart(cl, :src), subpart(cl, :tgt))))
+  g
 end
 
 # function cl_cycles(cl::CausalLoopPM)
@@ -465,15 +545,16 @@ end
 #   end
 # end
 
+function cl_cycles(cl::K) where K <: AbstractCausalLoop
+  cl_cycles(to_clp(cl))
+end
 
-
-function cl_cycles(cl::CausalLoopPM) 
-  edges = collect(zip(vcat(subpart(cl, :sp), subpart(cl, :sm)), vcat(subpart(cl, :tp), subpart(cl, :tm))))
+function cl_cycles(cl::CausalLoopPol)
+  edges = collect(zip(subpart(cl, :src), subpart(cl, :tgt)))
   # Unique are sufficient for making simple graph.
   g = SimpleDiGraph(SimpleEdge.(edges))
 
   all_cycles = Vector{Vector{Int}}()
-
   # Edges => Polarity
   for cycle ∈ simplecycles(g)
     cycle_length = length(cycle)
@@ -482,13 +563,7 @@ function cl_cycles(cl::CausalLoopPM)
     nonsimple_cycles = Vector{Vector{Int}}()
     for (p1, p2) in node_pairs
       # grab all edges with p1 as start and p2 as end
-      push!(nonsimple_cycles, Vector{Int}(
-        union(
-          intersect(incident(cl, p1, :sp), incident(cl, p2, :tp)),
-          intersect(incident(cl, p1, :sm), incident(cl, p2, :tm)) .+ np(cl)
-        )
-      )
-      )
+      push!(nonsimple_cycles, Vector{Int}(intersect(incident(cl, p1, :src), incident(cl, p2, :tgt))))
     end
     # generated_cycles = Vector{Vector{Int}}(Base.Iterators.product(nonsimple_cycles...))
     # For loop instead of comprehension to get around product being multidimensional
@@ -501,26 +576,159 @@ function cl_cycles(cl::CausalLoopPM)
 
 end
 
-function extract_loops(cl::CausalLoopPM)
+
+# function cl_cycles(cl::CausalLoopPol)
+
+#   edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+#   pair_to_edge = state_dict(edges) # Note, this is unique pairs, not all.
+#   # Unique are sufficient for making simple graph.
+#   g = SimpleDiGraph(SimpleEdge.(edges))
+
+#   # Edges => Polarity
+#   cycle_pol = Vector{Pair{Vector{Int}, Polarity}}()
+#   for cycle ∈ simplecycles(g)
+#     cycle_length = length(cycle)
+#     # Last pair is cycle[end], cycle[1]
+#     node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
+#     nonsimple_cycles = Vector{Vector{Int}}()
+#     for (p1, p2) in node_pairs
+#       matching_edges = Vector{Int}()
+#       # grab all edges with p1 as start and p2 as end
+#       # This is the bit that could be made more efficient, it loops over all edges every time
+#       for cl_node in 1:ne(cl)
+#         if sedge(cl, cl_node) == p1 && tedge(cl, cl_node) == p2
+#           push!(matching_edges, cl_node)
+#         end
+#       end
+#       push!(nonsimple_cycles, matching_edges)
+#     end
+
+#     for cycle_instance in Base.Iterators.product(nonsimple_cycles...)
+#       balancing_count = 0
+#       is_unknown = false
+#       is_zero = false
+#       is_not_well_defined = false
+#       for node_number in cycle_instance
+#         current_pol = epol(cl, node_number)
+#         if current_pol == POL_BALANCING
+#           balancing_count += 1
+#         elseif current_pol == POL_UNKNOWN
+#           is_unknown = true
+#         elseif current_pol == POL_ZERO
+#           is_zero = true
+#           break
+#         elseif current_pol == POL_NOT_WELL_DEFINED
+#           is_not_well_defined = true
+#         end
+#       end
+
+#       collected_cycle = collect(cycle_instance)
+
+#       if is_zero
+#         push!(cycle_pol, collected_cycle => POL_ZERO)
+#       elseif is_unknown
+#         push!(cycle_pol, collected_cycle => POL_UNKNOWN)
+#       elseif is_not_well_defined
+#         push!(cycle_pol, collected_cycle => POL_NOT_WELL_DEFINED)
+#       elseif iseven(balancing_count)
+#         push!(cycle_pol, collected_cycle => POL_REINFORCING)
+#       else
+#         push!(cycle_pol, collected_cycle => POL_BALANCING)
+#       end
+#     end
+#   end
+
+#   cycle_pol
+          
+# end
+
+
+
+# function cl_cycles(cl::CausalLoopPM) 
+#   edges = collect(zip(vcat(subpart(cl, :sp), subpart(cl, :sm)), vcat(subpart(cl, :tp), subpart(cl, :tm))))
+#   # Unique are sufficient for making simple graph.
+#   g = SimpleDiGraph(SimpleEdge.(edges))
+
+#   all_cycles = Vector{Vector{Int}}()
+
+#   # Edges => Polarity
+#   for cycle ∈ simplecycles(g)
+#     cycle_length = length(cycle)
+#     # Last pair is cycle[end], cycle[1]
+#     node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
+#     nonsimple_cycles = Vector{Vector{Int}}()
+#     for (p1, p2) in node_pairs
+#       # grab all edges with p1 as start and p2 as end
+#       push!(nonsimple_cycles, Vector{Int}(
+#         union(
+#           intersect(incident(cl, p1, :sp), incident(cl, p2, :tp)),
+#           intersect(incident(cl, p1, :sm), incident(cl, p2, :tm)) .+ np(cl)
+#         )
+#       )
+#       )
+#     end
+#     # generated_cycles = Vector{Vector{Int}}(Base.Iterators.product(nonsimple_cycles...))
+#     # For loop instead of comprehension to get around product being multidimensional
+#     for c in Base.Iterators.product(nonsimple_cycles...)
+#       push!(all_cycles, collect(c))
+#     end
+#   end
+
+#   all_cycles
+
+# end
+
+
+
+function extract_loops(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   cycles = cl_cycles(cl)
   map(x -> x => walk_polarity(cl, x), cycles)
 end
 
+# TODO: terrible
 epol(cl::CausalLoopPM, e) = begin
   @assert e <= nedges(cl)
   e <= np(cl) ? POL_REINFORCING : POL_BALANCING
 end
 
-function walk_polarity(cl::CausalLoopPM, edges::Vector{Int})
+epol(cl::CausalLoopZ, e) = begin
+  @assert e <= nedges(cl)
+  if e <= np(cl)
+    POL_REINFORCING
+  elseif e <= (np(cl) + nm(cl))
+    POL_BALANCING
+  else
+    POL_ZERO
+  end
+end
+
+epol(cl::CausalLoopFull, e) = begin
+  @assert e <= nedges(cl)
+  if e <= np(cl)
+    POL_REINFORCING
+  elseif e <= (np(cl) + nm(cl))
+    POL_BALANCING
+  elseif e <= (np(cl) + nm(cl) + nz(cl))
+    POL_ZERO
+  elseif e <= (np(cl) + nm(cl) + nz(cl) + nu(cl))
+    POL_UNKNOWN
+  else
+    POL_NOT_WELL_DEFINED
+  end
+end
+
+
+function walk_polarity(cl::K, edges::Vector{Int}) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
 end
 
-function extract_all_nonduplicate_paths(cl::K) where K <: AbstractCausalLoop
+
+function extract_all_nonduplicate_paths(clp::CausalLoopPol)
 
 
   function rec_search!(path, nodes, paths)
     target = tedge(clp, path[end])
-    outgoing = Vector{Int}(incident(clp, target, :s)) # all connected edges from target vertex
+    outgoing = Vector{Int}(incident(clp, target, :src)) # all connected edges from target vertex
 
     for o in outgoing
       outgoing_tgt = tedge(clp, o) # note, clp is defined in outer func
@@ -534,26 +742,23 @@ function extract_all_nonduplicate_paths(cl::K) where K <: AbstractCausalLoop
       push!(paths, new_path => paths[path] * epol(clp, o))
       rec_search!(new_path, new_nodes, paths)
     end
-
   end
 
 
-  clp = to_clp(cl)
   paths = Dict{Vector{Int}, Polarity}(Vector{Int}() => POL_REINFORCING)
   for e in 1:nedges(clp)
     nodes = Set{Int}([sedge(clp, e)])
     push!(paths, [e] => epol(clp, e))
-    # target = tedge(clp, e)
     rec_search!([e], nodes, paths)
-  
-
-
-
-
-
   end
+
   paths
 
+end
+
+function extract_all_nonduplicate_paths(cl::K) where K <: AbstractCausalLoop
+  clp = to_clp(cl)
+  extract_all_nonduplicate_paths(clp)
 end
 
 # function walk_polarity(cl::CausalLoopF, edges::Vector{Int})
@@ -642,29 +847,38 @@ end
 
   
 # end
+# NOTE: simplecycles returns NODES!!!
 
+#TODO: Deal with nameless AbstractCausalLoop, or create a subtype without nameless
 
 function to_graphs_graph(cl::K) where K <: AbstractCausalLoop
-  edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
-  g = SimpleDiGraph(SimpleEdge.(edges)) # Note, this will discard the final nodes if they have no edges
-  g 
+  to_graphs_graph(to_clp(cl))
+  # edges = collect(zip(subpart(cl, :s), subpart(cl, :t)))
+  # g = SimpleDiGraph(SimpleEdge.(edges)) # Note, this will discard the final nodes if they have no edges
+  # g 
 end
 
-function num_loops_var_on(c::CausalLoopPM, name::Symbol)
+# Acts as if there can be more than one edge between nodes
+function num_loops_var_on(c::K, name::Symbol) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   name_index = only(incident(c, name, :vname))
   node_cycles = map(x -> map(y -> tedge(c, y), x), cl_cycles(c)) # sedge is equivalent here.
   # if a node is in a cycle, of course, it will be in both the src set and the tgt set
   return count(∋(name_index), node_cycles)
 end
 
-function num_indep_loops_var_on(c::CausalLoopPM, name::Symbol)
+# Acts as if there is at most one edge between nodes
+function num_indep_loops_var_on(c::K, name::Symbol) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   g = to_graphs_graph(c)
   sc = simplecycles(g)
+  # @show sc
   name_index = only(incident(c, name, :vname))
-  node_cycles = map(x -> map(y -> tedge(c, y), x),sc) # sedge is equivalent here.
+  # retuer
+
+  # node_cycles = map(x -> map(y -> tedge(c, y), x),sc) # sedge is equivalent here.
   # if a node is in a cycle, of course, it will be in both the src set and the tgt set
-  return count(∋(name_index), node_cycles)
+  return count(∋(name_index), sc)
 end
+
 
 # function to_catlab_graph(cl::K) where K <: AbstractCausalLoop
 #   g = Catlab.Graph(nn(cl))
