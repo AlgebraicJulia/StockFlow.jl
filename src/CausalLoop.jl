@@ -3,7 +3,8 @@ nn, ne, vname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
-outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles
+outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
+CausalLoopPol, to_clp
 
 
 using MLStyle
@@ -22,6 +23,73 @@ import Base: +, *, -, /
 # be equivalent to identity
 
 # Need some more work on the theory to ensure it's functorial, though.
+
+@present TheoryStockAndFlowPol <: TheoryStockAndFlow0 begin
+  F::Ob
+  I::Ob
+  O::Ob
+
+  ifn::Hom(I,F)
+  is::Hom(I,S)
+  ofn::Hom(O,F)
+  os::Hom(O,S)
+
+  P::Ob
+
+  Add::Ob
+
+  Sub::Ob
+
+  Times::Ob
+
+  Pos::Ob
+  PosLink::Ob
+  Neg::Ob
+  NegLink::Ob
+
+  Out::Ob
+
+
+  la::Hom(Add, Pos)
+  ra::Hom(Add, Pos)
+
+  ls::Hom(Sub, Pos)
+  rs::Hom(Sub, Neg)
+
+  lt::Hom(Times, Pos)
+  rt::Hom(Times, Pos)
+
+  poslinkpos::Hom(PosLink, Pos)
+  poslinkout::Hom(PosLink, Out)
+
+  neglinkneg::Hom(NegLink, Neg)
+  neglinkout::Hom(NegLink, Out)
+
+  sout::Hom(S, Out)
+  svout::Hom(SV, Out)
+  fout::Hom(F, Out)
+  pout::Hom(P, Out)
+
+  addout::Hom(Add, Out)
+  subout::Hom(Sub, Out)
+  timesout::Hom(Times, Out)
+
+  fname::Attr(F, Name)
+  pname::Attr(P, Name)
+
+  addname::Attr(Add, Name)
+  subname::Attr(Sub, Name)
+  timesname::Attr(Times, Name)
+
+  # outname::Attr(Out, Name)
+
+end
+@abstract_acset_type AbstractStockAndFlowPol <: AbstractStockAndFlow0
+@acset_type StockAndFlowUntypedPol(TheoryStockAndFlowPol, index=[:is,:os,:ifn,:ofn, :la, :ra, :ls, :rs, :lt, :rt, :lroutre, :lroutout, :lboutbal, :lboutout, 
+  :sout, :svout, :fout, :pout, :aout, :suout, :tout,    :lss,:lssv]) <: AbstractStockAndFlowPol
+const StockAndFlowPol = StockAndFlowUntypedPol{Symbol}
+
+
 
 @present TheoryCausalLoopNameless(FreeSchema) begin
   
@@ -67,18 +135,26 @@ end
 
 @abstract_acset_type AbstractCausalLoop
 @acset_type CausalLoopNamelessUntyped(TheoryCausalLoopNameless, index=[:sp,:tp, :sn, :tn]) <: AbstractCausalLoop
-@acset_type CausalLoopPMUntyped(TheoryCausalLoopPM, index=[:sp,:tp, :sn, :tn]) <: AbstractCausalLoop
-@acset_type CausalLoopZUntyped(TheoryCausalLoopZ, index=[:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractCausalLoop
-@acset_type CausalLoopFullUntyped(TheoryCausalLoopFull, index = [:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractCausalLoop
+@abstract_acset_type AbstractNamedCausalLoop <: AbstractCausalLoop
+@acset_type CausalLoopPMUntyped(TheoryCausalLoopPM, index=[:sp,:tp, :sn, :tn]) <: AbstractNamedCausalLoop
+@acset_type CausalLoopZUntyped(TheoryCausalLoopZ, index=[:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractNamedCausalLoop
+@acset_type CausalLoopFullUntyped(TheoryCausalLoopFull, index = [:sp,:tp, :sn, :tn, :sz, :tz]) <: AbstractNamedCausalLoop
 
 const CausalLoopNameless = CausalLoopNamelessUntyped
 const CausalLoopPM = CausalLoopPMUntyped{Symbol}
 const CausalLoopZ = CausalLoopZUntyped{Symbol}
 const CausalLoopFull = CausalLoopFullUntyped{Symbol}
 
+const OpenCausalLoopNamelessOb, OpenCausalLoopNameless = OpenACSetTypes(CausalLoopNamelessUntyped, CausalLoopNamelessUntyped)
+const OpenCausalLoopPMOb, OpenCausalLoopPM = OpenACSetTypes(CausalLoopPMUntyped, CausalLoopPMUntyped)
+const OpenCausalLoopZOb, OpenCausalLoopZ = OpenACSetTypes(CausalLoopZUntyped, CausalLoopZUntyped)
+const OpenCausalLoopFullOb, OpenCausalLoopFull = OpenACSetTypes(CausalLoopFullUntyped, CausalLoopFullUntyped)
 
-
-
+# leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
+# Open(p::CausalLoopPol, feet...) = begin
+#   legs = map(x->leg(x, p), feet)
+#   OpenCausalLoopPol{Symbol,Polarity}(p, legs...)
+# end
 
 
 
@@ -134,6 +210,29 @@ end
 @acset_type CausalLoopPolUntyped(TheoryCausalLoopPol, index=[:src,:tgt]) <: AbstractSimpleCausalLoop
 const CausalLoop = CausalLoopUntyped{Symbol}
 const CausalLoopPol = CausalLoopPolUntyped{Symbol, Polarity}
+
+const OpenCausalLoopPolOb, OpenCausalLoopPol = OpenACSetTypes(CausalLoopPolUntyped, CausalLoopPolUntyped)
+
+
+vname(c::AbstractSimpleCausalLoop,n) = subpart(c,n,:vname)
+vnames(c::AbstractSimpleCausalLoop) = subpart(c, :vname)
+
+# I'm like 80% sure this will also work for AbstractCausalLoop
+ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
+enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
+
+# pname(c::CausalLoopPol, e) = ()
+
+leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
+Open(p::CausalLoopPol, feet...) = begin
+  legs = map(x->leg(x, p), feet)
+  OpenCausalLoopPol{Symbol,Polarity}(p, legs...)
+end
+
+
+
+
+
 
 function from_clp(cl::CausalLoopPol)
   pols = subpart(cl, :epol)
@@ -796,10 +895,11 @@ function is_circuit(cl::CausalLoopPM, edges::Vector{Int})
 end
 
 # TODO: How, pray tell, is this a functor
-function betweenness(cl::K) where K <: AbstractCausalLoop
+function betweenness(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   g = to_graphs_graph(cl)
   Graphs.betweenness_centrality(g)
 end
+
 
 
 # function num_loops(cl::CausalLoopF, name::Symbol)
@@ -923,5 +1023,39 @@ end
 #   cl
 # end
 
+
+
+function smallest_required_cl(cl::AbstractCausalLoop) 
+  if typeof(cl) == CausalLoopFull
+    if length(subpart(cl, :NWD)) == length(subpart(cl, :U)) == 0
+      if length(subpart(cl, :Z)) == 0
+        clpm = CausalLoopPM()
+        add_parts!(clpm, :N, nv(cl))
+        add_parts!(clpm, :P, np(cl) ; sp = subpart(cl, :sp), tp = subpart(cl, :tp))
+        clpm
+      else
+        clz = CausalLoopZ()
+        add_parts!(clz, :N, nv(cl))
+        add_parts!(clz, :P, np(cl) ; sp = subpart(cl, :sp), tp = subpart(cl, :tp))
+        add_parts!(clz, :P, np(cl) ; sz = subpart(cl, :sz), tz = subpart(cl, :tz))
+        clz
+      end
+    else
+      cl
+  end
+
+  if typeof(cl) == CausalLoopZ
+    if length(subpart(cl, :Z)) == 0
+      clpm = CausalLoopPM()
+      add_parts!(clpm, :N, nv(cl))
+      add_parts!(clpm, :P, np(cl) ; sp = subpart(cl, :sp), tp = subpart(cl, :tp))
+      clpm
+    else
+      cl
+  end
+
+  cl
+
+end
 
 
