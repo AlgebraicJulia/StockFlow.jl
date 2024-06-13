@@ -9,7 +9,7 @@ CausalLoopPol, to_clp
 
 using MLStyle
 
-# using DataMigrations
+using DataMigrations
 
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 
@@ -991,21 +991,21 @@ end
 # ! This works, but we have version conflicts right now
 # ! I added DataMigrations to TOML; presumably, just need to wait a few days for updated requirements in used packages
 
-# function to_catlab_graph(cl::CausalLoopNameless)
-#   mig = @migration SchGraph TheoryCausalLoopNameless begin
-#     E => @cases (p::P; m::M)
-#     V => V
-#     src => begin
-#       p => sp
-#       m => sm
-#     end
-#     tgt => begin
-#       p => tp
-#       m => tm
-#     end 
-#   end
-#   return migrate(Graph, cl, mig)
-# end
+function to_catlab_graph(cl::CausalLoopNameless)
+  mig = @migration SchGraph TheoryCausalLoopNameless begin
+    E => @cases (p::P; m::M)
+    V => V
+    src => begin
+      p => sp
+      m => sm
+    end
+    tgt => begin
+      p => tp
+      m => tm
+    end 
+  end
+  return migrate(Graph, cl, mig)
+end
 
 # function to_graphs_graph(cl::)
 # end
@@ -1023,6 +1023,72 @@ end
 #   cl
 # end
 
+F = @finfunctor TheoryStockAndFlowPol TheoryCausalLoopPM begin
+  Out => V
+  S => V
+  F => V
+  P => V
+  SV => V
+  Add => V
+  Sub => V
+  Times => V
+  Pos => V
+  Neg => V
+
+  PosLink => P
+  I => P
+  LS => P
+
+  NegLink => M
+  O => M
+
+  lss => sp
+  poslinkpos => sp
+  is => sp
+
+  lssv => tp
+  poslinkout => tp
+  ifn => tp
+
+  neglinkneg => sm
+  os => sm
+
+  neglinkout => tm
+  ofn => tm
+
+  sout => id(V)
+  pout => id(V)
+  fout => id(V)
+  svout => id(V)
+  addout => id(V)
+  subout => id(V)
+  timesout => id(V)
+  la => id(V)
+  ra => id(V)
+  ls => id(V)
+  rs => id(V)
+  lt => id(V)
+  rt => id(V)
+  
+
+  Name => Name
+  sname => vname
+  fname => vname
+  pname => vname
+  svname => vname
+  addname => vname
+  subname => vname
+  timesname => vname
+  
+end
+
+ΣF = SigmaMigrationFunctor(F, StockAndFlowPol, CausalLoopPM) 
+
+function migrate_stockflow(sf::StockAndFlowPol)
+  
+  ΣF(sf)
+
+end
 
 
 function smallest_required_cl(cl::AbstractCausalLoop) 
@@ -1042,6 +1108,7 @@ function smallest_required_cl(cl::AbstractCausalLoop)
       end
     else
       cl
+    end
   end
 
   if typeof(cl) == CausalLoopZ
@@ -1052,6 +1119,7 @@ function smallest_required_cl(cl::AbstractCausalLoop)
       clpm
     else
       cl
+    end
   end
 
   cl
