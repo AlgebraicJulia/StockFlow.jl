@@ -183,8 +183,10 @@ macro compose(args...)
                 sfcompose([$(sfs...)], $escaped_block, StockAndFlowF, StockAndFlow0, create_foot)
             elseif model_type <: CausalLoopPol
                 sfcompose([$(sfs...)], $escaped_block, CausalLoopPol, CausalLoopPol, x -> to_clp(cl_macro(x)))
-            elseif model_type <: AbstractCausalLoop
-                sfcompose([$(sfs...)], $escaped_block, CausalLoopFull, CausalLoopFull, cl_macro)
+            elseif model_type <: CausalLoopPM
+                sfcompose([$(sfs...)], $escaped_block, CausalLoopPM, CausalLoopPM, cl_macro)
+            # elseif model_type <: AbstractCausalLoop
+            #     sfcompose([$(sfs...)], $escaped_block, CausalLoopFull, CausalLoopFull, cl_macro)
             else
                 :(MethodError("Invalid type $($(model_type)) for composition syntax."))
             end

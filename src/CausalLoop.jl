@@ -4,7 +4,7 @@ sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
-CausalLoopPol, to_clp
+CausalLoopPol, to_clp, from_clp, CausalLoopPM, CausalLoopZ, CausalLoopFull, leg
 
 
 using MLStyle
@@ -150,6 +150,8 @@ const OpenCausalLoopPMOb, OpenCausalLoopPM = OpenACSetTypes(CausalLoopPMUntyped,
 const OpenCausalLoopZOb, OpenCausalLoopZ = OpenACSetTypes(CausalLoopZUntyped, CausalLoopZUntyped)
 const OpenCausalLoopFullOb, OpenCausalLoopFull = OpenACSetTypes(CausalLoopFullUntyped, CausalLoopFullUntyped)
 
+# leg(a::CausalLoopPM, CausalLoopPM) = OpenACSetLeg(a, P=ntcomponent())
+
 # leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
 # Open(p::CausalLoopPol, feet...) = begin
 #   legs = map(x->leg(x, p), feet)
@@ -217,7 +219,9 @@ const OpenCausalLoopPolOb, OpenCausalLoopPol = OpenACSetTypes(CausalLoopPolUntyp
 vname(c::AbstractSimpleCausalLoop,n) = subpart(c,n,:vname)
 vnames(c::AbstractSimpleCausalLoop) = subpart(c, :vname)
 
-# I'm like 80% sure this will also work for AbstractCausalLoop
+vname(c::K, n) where K <: CausalLoopPM = subpart(c, n, :vname)
+vnames(c::K) where K <: CausalLoopPM = subpart(c, :vname)
+
 ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
 enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
 
@@ -532,6 +536,49 @@ tedge(c::CausalLoopPM, e) = begin
 end
 
 
+spedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :sp)
+tpedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :tp)
+spedges(c::K) where K <: AbstractCausalLoop = subpart(c, :sp)
+tpedges(c::K) where K <: AbstractCausalLoop = subpart(c, :tp)
+
+smedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :sm)
+tmedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :tm)
+smedges(c::K) where K <: AbstractCausalLoop = subpart(c, :sm)
+tmedges(c::K) where K <: AbstractCausalLoop = subpart(c, :tm)
+
+szedge(c::K, e) where K <: Union{CausalLoopZ, CausalLoopFull} =  subpart(c, e, :sz)
+tzedge(c::K, e) where K <: Union{CausalLoopZ, CausalLoopFull} =  subpart(c, e, :tz)
+szedges(c::K) where K <: Union{CausalLoopZ, CausalLoopFull} =  subpart(c, :sz)
+tzedges(c::K) where K <: Union{CausalLoopZ, CausalLoopFull} =  subpart(c, :tz)
+
+snwdedge(c::K, e) where K <: CausalLoopFull =  subpart(c, e, :snwd)
+tnwdedge(c::K, e) where K <: CausalLoopFull =  subpart(c, e, :tnwd)
+snwdedges(c::K) where K <: CausalLoopFull =  subpart(c, :snwd)
+tnwdedges(c::K) where K <: CausalLoopFull =  subpart(c, :tnwd)
+
+suedge(c::K, e) where K <: CausalLoopFull =  subpart(c, e, :su)
+tuedge(c::K, e) where K <: CausalLoopFull =  subpart(c, e, :tu)
+suedges(c::K) where K <: CausalLoopFull =  subpart(c, :su)
+tuedges(c::K) where K <: CausalLoopFull =  subpart(c, :tu)
+
+
+pname(c::K, e) where K <: AbstractCausalLoop = (vname(c, spedge(c, e)), vname(c, tpedge(c, e)))
+pnames(c::K) where K <: AbstractCausalLoop = [pname(c,e) for e in 1:np(c)]
+
+mname(c::K, e) where K <: AbstractCausalLoop = (vname(c, smedge(c, e)), vname(c, tmedge(c, e)))
+mnames(c::K) where K <: AbstractCausalLoop = [mname(c,e) for e in 1:nm(c)]
+
+zname(c::K, e) where K <: Union{CausalLoopZ, CausalLoopFull} = (vname(c, szedge(c, e)), vname(c, tzedge(c, e)))
+mnames(c::K) where K <: Union{CausalLoopZ, CausalLoopFull} = [zname(c,e) for e in 1:nz(c)]
+
+nwdname(c::K, e) where K <: CausalLoopFull = (vname(c, swdedge(c, e)), vname(c, tnwdedge(c, e)))
+nwdnames(c::K) where K <: CausalLoopFull = [nwdname(c,e) for e in 1:nwd(c)]
+
+uname(c::K, e) where K <: CausalLoopFull = (vname(c, suedge(c, e)), vname(c, tuedge(c, e)))
+unames(c::K) where K <: CausalLoopFull = [uname(c,e) for e in 1:nu(c)]
+
+
+
 
 """ return node's name with index n """
 # nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
@@ -550,6 +597,13 @@ epol(c::CausalLoopPol,e) = subpart(c,e,:epol)
 
 outgoing_edges(c::CausalLoopPol, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
 incoming_edges(c::CausalLoopPol, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
+
+
+leg(a::CausalLoopPM, x::CausalLoopPM) = OpenACSetLeg(a, P=ntcomponent(pnames(a), pnames(x)),  M=ntcomponent(mnames(a), mnames(x)), V=ntcomponent(vnames(a), vnames(x)))
+Open(p::CausalLoopPM, feet...) = begin
+  legs = map(x->leg(x, p), feet)
+  OpenCausalLoopPM{Symbol}(p, legs...)
+end
 
 
 
