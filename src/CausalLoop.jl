@@ -1,17 +1,18 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
 nn, ne, vname,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
-Polarity, POL_ZERO, POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
+Polarity, POL_ZERO, POL_POSITIVE, POL_NEGATIVE, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
-CausalLoopPol, to_clp, from_clp, CausalLoopPM, CausalLoopZ, CausalLoopFull, leg
+CausalLoopPol, to_clp, from_clp, CausalLoopPM, CausalLoopZ, CausalLoopFull, leg,
+nvert
 
 
 using MLStyle
 
 using DataMigrations
 
-import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
+import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality
 
 import Catlab.Graphs: nv
 
@@ -150,53 +151,19 @@ const OpenCausalLoopPMOb, OpenCausalLoopPM = OpenACSetTypes(CausalLoopPMUntyped,
 const OpenCausalLoopZOb, OpenCausalLoopZ = OpenACSetTypes(CausalLoopZUntyped, CausalLoopZUntyped)
 const OpenCausalLoopFullOb, OpenCausalLoopFull = OpenACSetTypes(CausalLoopFullUntyped, CausalLoopFullUntyped)
 
-# leg(a::CausalLoopPM, CausalLoopPM) = OpenACSetLeg(a, P=ntcomponent())
-
-# leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
-# Open(p::CausalLoopPol, feet...) = begin
-#   legs = map(x->leg(x, p), feet)
-#   OpenCausalLoopPol{Symbol,Polarity}(p, legs...)
-# end
-
-
-
-
-# const CausalLoop = CausalLoopUntyped{Symbol} 
-# const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
 
 @enum Polarity begin
   POL_ZERO
-  POL_REINFORCING
-  POL_BALANCING
+  POL_POSITIVE
+  POL_NEGATIVE
   POL_UNKNOWN
   POL_NOT_WELL_DEFINED
 end
 
 
-# @present TheoryCausalLoop(FreeSchema) begin
-#   E::Ob
-#   V::Ob
-
-#   s::Hom(E,V)
-#   t::Hom(E,V)
-
-#   # Attributes:
-#   Name::AttrType
-  
-#   vname::Attr(V, Name)
-# end
-
 @present TheoryCausalLoop <: SchGraph begin
-  # E::Ob
-  # V::Ob
-
-  # s::Hom(E,V)
-  # t::Hom(E,V)
-
-  # Attributes:
   Name::AttrType
-  
   vname::Attr(V, Name)
 end
 
@@ -225,8 +192,6 @@ vnames(c::K) where K <: CausalLoopPM = subpart(c, :vname)
 ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
 enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
 
-# pname(c::CausalLoopPol, e) = ()
-
 leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
 Open(p::CausalLoopPol, feet...) = begin
   legs = map(x->leg(x, p), feet)
@@ -254,8 +219,8 @@ function to_clp(nodes::Vector{Symbol}, reinf::Vector{Pair{Int, Int}},
 
   ne = length(reinf) + length(bal) + length(zero) + length(unknown) + length(nwd)
   pols = vcat(
-    repeat([POL_REINFORCING], length(reinf)),
-    repeat([POL_BALANCING], length(bal)),
+    repeat([POL_POSITIVE], length(reinf)),
+    repeat([POL_NEGATIVE], length(bal)),
     repeat([POL_ZERO], length(zero)),
     repeat([POL_UNKNOWN], length(unknown)),
     repeat([POL_NOT_WELL_DEFINED], length(nwd)),
@@ -305,47 +270,13 @@ function to_clp(cl::CausalLoopFull)
     Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :snwd), subpart(cl, :tnwd)))),
     )
 end
-
-# function to_clp(cl::CausalLoopZ)
-#   clp = CausalLoopPol()
-
-#   p = np(cl)
-#   m = nm(cl)
-#   z = nz(cl)
-
-#   add_parts!(clp, :V, nparts(cl, :V))
-#   add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
-#   add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
-#   add_parts!(clp, :Z, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
-
-# end
-
-# function to_clp(cl::CausalLoopFull)
-#   clp = CausalLoopPol()
-
-#   p = np(cl)
-#   m = nm(cl)
-#   z = nz(cl)
-#   nwd = nnwd(cl)
-#   u = nu(cl)
-
-
-#   add_parts!(clp, :V, nparts(cl, :V))
-#   add_parts!(clp, :E, p; s = subpart(cl, :sp), t = subpart(cl, :tp), epol=repeat([POL_REINFORCING], p))
-#   add_parts!(clp, :E, m; s = subpart(cl, :sm), t = subpart(cl, :tm), epol=repeat([POL_BALANCING], m))
-#   add_parts!(clp, :E, m; s = subpart(cl, :sz), t = subpart(cl, :tz), epol=repeat([POL_ZERO], z))
-#   add_parts!(clp, :E, m; s = subpart(cl, :snwd), t = subpart(cl, :tnwd), epol=repeat([POL_NOT_WELL_DEFINED], nwd))
-#   add_parts!(clp, :E, m; s = subpart(cl, :su), t = subpart(cl, :tu), epol=repeat([POL_UNKNOWN], u))
-# end
-
-
   
 function *(p1::Polarity, p2::Polarity)
   if (p1 == POL_ZERO || p2 == POL_ZERO) return POL_ZERO end
   if (p1 == POL_UNKNOWN || p2 == POL_UNKNOWN) return POL_UNKNOWN end
   if (p1 == POL_NOT_WELL_DEFINED || p2 == POL_NOT_WELL_DEFINED) return POL_NOT_WELL_DEFINED end
-  if ((p1 == POL_BALANCING && p2 == POL_BALANCING) || (p1 == POL_REINFORCING && p2 == POL_REINFORCING)) return POL_REINFORCING end
-  return POL_BALANCING
+  if ((p1 == POL_NEGATIVE && p2 == POL_NEGATIVE) || (p1 == POL_POSITIVE && p2 == POL_POSITIVE)) return POL_POSITIVE end
+  return POL_NEGATIVE
 end
 
 function +(p1::Polarity, p2::Polarity)
@@ -356,66 +287,12 @@ function +(p1::Polarity, p2::Polarity)
     (POL_UNKNOWN, _) || (_, POL_UNKNOWN) => POL_UNKNOWN
     
     (POL_NOT_WELL_DEFINED, _) || (_, POL_NOT_WELL_DEFINED) => POL_NOT_WELL_DEFINED
-    (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_NOT_WELL_DEFINED
+    (POL_POSITIVE, POL_NEGATIVE) || (POL_NEGATIVE, POL_POSITIVE) => POL_NOT_WELL_DEFINED
 
-    (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-    (POL_BALANCING, POL_BALANCING) => POL_BALANCING
+    (POL_POSITIVE, POL_POSITIVE) => POL_POSITIVE
+    (POL_NEGATIVE, POL_NEGATIVE) => POL_NEGATIVE
   end
 end
-
-# -(p::Polarity) = p == POL_ZERO ? POL_ZERO : DomainError(p)
-
-# function -(p1::Polarity, p2::Polarity)
-#   @match (p1, p2) begin
-#     (_, POL_ZERO) => p1
-#     (POL_ZERO, POL_ZERO) => POL_ZERO
-#     (POL_ZERO, _) => DomainError((p1, p2))
-
-#     (POL_UNKNOWN, _) => POL_UNKNOWN
-
-#     (POL_NOT_WELL_DEFINED, POL_UNKNOWN) => DomainError((p1, p2))
-#     (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
-
-#     (POL_BALANCING, POL_BALANCING) => POL_BALANCING
-#     (POL_BALANCING, _) => DomainError((p1, p2))
-
-#     (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-#     (POL_REINFORCING, _) => DomainError((p1, p2))
-
-#   end
-# end
-
-# """p1 is a path of concatenated pols, p2 is what's being removed from the end """
-# function /(p1::Polarity, p2::Polarity)
-#   @match (p1, p2) begin
-#     (POL_BALANCING, POL_BALANCING) || (POL_REINFORCING, POL_REINFORCING) => POL_REINFORCING
-#     (POL_REINFORCING, POL_BALANCING) || (POL_BALANCING, POL_REINFORCING) => POL_BALANCING
-#     (POL_ZERO, POL_ZERO) => POL_UNKNOWN # it's possible the previous value was the only zero
-    
-#     (_, POL_ZERO) => DivideError()
-
-#     (POL_UNKNOWN, POL_UNKNOWN) => POL_UNKNOWN
-#     (_, POL_UNKNOWN) => DivideError()
-
-    
-#     (POL_NOT_WELL_DEFINED, _) => POL_NOT_WELL_DEFINED
-#     (_, POL_NOT_WELL_DEFINED) => DivideError()
-#   end
-# end
-
-
-
-
-# @present TheoryCausalLoopF <: TheoryCausalLoop begin
-#   Polarity::AttrType
-#   epolarity::Attr(E, Polarity)
-# end
-
-# @abstract_acset_type AbstractCausalLoop
-# @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:s,:t]) <: AbstractCausalLoop
-# @acset_type CausalLoopFUntyped(TheoryCausalLoopF, index=[:s,:t]) <: AbstractCausalLoop
-# const CausalLoop = CausalLoopUntyped{Symbol} 
-# const CausalLoopF = CausalLoopFUntyped{Symbol, Polarity}
 
 add_vertex!(c::AbstractCausalLoop;kw...) = add_part!(c,:V;kw...) 
 add_vertices!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:V,n;kw...)
@@ -429,28 +306,12 @@ add_minuses!(c::AbstractCausalLoop,n;kw) = add_part!(c, :M, n; kw...)
 # add_edge!(c::AbstractCausalLoop,s,t;kw...) = add_part!(c,:E,s=s,t=t;kw...) 
 # add_edges!(c::AbstractCausalLoop,n,s,t;kw...) = add_parts!(c,:E,n,s=s,t=t;kw...)
 
-"""
-    CausalLoop(ns,es)
-Create causal loop diagram from collection of nodes and collection of edges.
-"""
-# CausalLoop(ns,es) = begin
-#     c = CausalLoop()
-#     ns = vectorify(ns)
-#     es = vectorify(es)
-    
-#     ns_idx=state_dict(ns)
-#     add_nodes!(c, length(ns), nname=ns)
-
-#     s=map(first,es)
-#     t=map(last,es)
-#     add_edges!(c, length(es), map(x->ns_idx[x], s), map(x->ns_idx[x], t))
-
-#     c
-# end
-
-
+CausalLoopF()
 
 CausalLoopF() = CausalLoopPM()
+# CausalLoopF(g::Graph, pols::Vector{Polarity}) = begin
+  
+# end
 CausalLoopF(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{Polarity}) = begin
   @assert length(pols) == length(es)
 
@@ -463,7 +324,6 @@ CausalLoopF(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{P
   end
 
 
-  # c = CausalLoopF()
   ns = vectorify(ns)
   es = vectorify(es)
   
@@ -478,9 +338,9 @@ CausalLoopF(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{P
     src = s[i]
     tgt = t[i]
 
-    if pols[i] == POL_REINFORCING
+    if pols[i] == POL_POSITIVE
       add_part!(c, :P; sp = ns_idx[src], tp = ns_idx[tgt])
-    elseif pols[i] == POL_BALANCING
+    elseif pols[i] == POL_NEGATIVE
       add_part!(c, :M; sm =  ns_idx[src], tm = ns_idx[tgt])
     elseif pols[i] == POL_ZERO
       add_part!(c, :Z; sz =  ns_idx[src], tz =ns_idx[tgt])
@@ -496,15 +356,11 @@ end
 
 
 
-# # type piracy, hooray
-# # return the count of each components
-# """ return count of nodes of CLD """
-# nv(c::AbstractCausalLoop) = 
 
 # """ return count of edges of CLD """
 # TODO: This should be unnecessary now, since it subtypes graph.  Just use ne and nv like normal.
 nedges(c::AbstractSimpleCausalLoop) = nparts(c,:E) #edges
-# nv(c::AbstractSimpleCausalLoop) = nparts(c,:V) #vertices
+nvert(c::AbstractSimpleCausalLoop) = nparts(c,:V) #vertices
 
 
 
@@ -689,15 +545,6 @@ function to_graphs_graph(cl::CausalLoopPol)
   g
 end
 
-# function cl_cycles(cl::CausalLoopPM)
-#   g, last_pos = to_graphs_graph(cl)
-#   for cycle ∈ simplecycles(g)
-#     cycle_length = length(cycle)
-#     node_pairs = ((cycle[node_index], cycle[(node_index % cycle_length) + 1]) for node_index in 1:cycle_length)
-
-#   end
-# end
-
 function cl_cycles(cl::K) where K <: AbstractCausalLoop
   cl_cycles(to_clp(cl))
 end
@@ -763,7 +610,7 @@ end
 #       is_not_well_defined = false
 #       for node_number in cycle_instance
 #         current_pol = epol(cl, node_number)
-#         if current_pol == POL_BALANCING
+#         if current_pol == POL_NEGATIVE
 #           balancing_count += 1
 #         elseif current_pol == POL_UNKNOWN
 #           is_unknown = true
@@ -784,9 +631,9 @@ end
 #       elseif is_not_well_defined
 #         push!(cycle_pol, collected_cycle => POL_NOT_WELL_DEFINED)
 #       elseif iseven(balancing_count)
-#         push!(cycle_pol, collected_cycle => POL_REINFORCING)
+#         push!(cycle_pol, collected_cycle => POL_POSITIVE)
 #       else
-#         push!(cycle_pol, collected_cycle => POL_BALANCING)
+#         push!(cycle_pol, collected_cycle => POL_NEGATIVE)
 #       end
 #     end
 #   end
@@ -841,15 +688,15 @@ end
 # TODO: terrible
 epol(cl::CausalLoopPM, e) = begin
   @assert e <= nedges(cl)
-  e <= np(cl) ? POL_REINFORCING : POL_BALANCING
+  e <= np(cl) ? POL_POSITIVE : POL_NEGATIVE
 end
 
 epol(cl::CausalLoopZ, e) = begin
   @assert e <= nedges(cl)
   if e <= np(cl)
-    POL_REINFORCING
+    POL_POSITIVE
   elseif e <= (np(cl) + nm(cl))
-    POL_BALANCING
+    POL_NEGATIVE
   else
     POL_ZERO
   end
@@ -858,9 +705,9 @@ end
 epol(cl::CausalLoopFull, e) = begin
   @assert e <= nedges(cl)
   if e <= np(cl)
-    POL_REINFORCING
+    POL_POSITIVE
   elseif e <= (np(cl) + nm(cl))
-    POL_BALANCING
+    POL_NEGATIVE
   elseif e <= (np(cl) + nm(cl) + nz(cl))
     POL_ZERO
   elseif e <= (np(cl) + nm(cl) + nz(cl) + nu(cl))
@@ -872,7 +719,7 @@ end
 
 
 function walk_polarity(cl::K, edges::Vector{Int}) where K <: Union{AbstractCausalLoop, CausalLoopPol}
-  foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
+  foldl(*, map(x -> epol(cl, x), edges); init = POL_POSITIVE)
 end
 
 
@@ -898,7 +745,7 @@ function extract_all_nonduplicate_paths(clp::CausalLoopPol)
   end
 
 
-  paths = Dict{Vector{Int}, Polarity}(Vector{Int}() => POL_REINFORCING)
+  paths = Dict{Vector{Int}, Polarity}(Vector{Int}() => POL_POSITIVE)
   for e in 1:nedges(clp)
     nodes = Set{Int}([sedge(clp, e)])
     push!(paths, [e] => epol(clp, e))
@@ -915,7 +762,7 @@ function extract_all_nonduplicate_paths(cl::K) where K <: AbstractCausalLoop
 end
 
 # function walk_polarity(cl::CausalLoopF, edges::Vector{Int})
-#   foldl(*, map(x -> epol(cl, x), edges); init = POL_REINFORCING)
+#   foldl(*, map(x -> epol(cl, x), edges); init = POL_POSITIVE)
 # end
 
 """ 
@@ -951,56 +798,10 @@ end
 # TODO: How, pray tell, is this a functor
 function betweenness(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   g = to_graphs_graph(cl)
-  Graphs.betweenness_centrality(g)
+  betweenness_centrality(g)
 end
 
 
-
-# function num_loops(cl::CausalLoopF, name::Symbol)
-#   el = cl_cycles(cl)
-#   node_num = only(incident(cl, :nname, name))
-#   return count(x -> node_num ∈ x, el)
-# end
-
-
-
-
-
-
-# # Graphs.betweenness_centrality
-# # ^ Use this if we don't care about polarities
-# function betweenness(cl::CausalLoopF; max_edges = typemax(Int))
-#   g = to_graphs_graph(cl)
-#   num_graph_vert = vertices(g)[end] # ensures we don't go over if the conversion deleted the end 
-#   # deleting the end can only happen if there are no edges which come from or leave the node, so the betweenness centrality value for it is 0
-
-
-#   # past a certain threshold, we start getting infinity confused with very large.
-
-#   # Though we're using typemax(Int) for this so why does this matter
-#   @assert length(edges(g)) < max_edges
-
-#   betweenness_values = zeroes(nn(cl))
-
-#   for node in nn(cl)
-#     if node > num_graph_vert
-#       break
-#     end
-
-#     dij = dijkstra_shortest_paths(g, node ; maxdist=max_edges)
-#     preds = dij.predecessors
-
-#     # cache the 
-
-
-
-
-#   end
-
-
-
-  
-# end
 # NOTE: simplecycles returns NODES!!!
 
 #TODO: Deal with nameless AbstractCausalLoop, or create a subtype without nameless

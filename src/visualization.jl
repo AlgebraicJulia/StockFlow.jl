@@ -226,7 +226,7 @@ end
 
 function GraphSF(c::CausalLoop)
 
-  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nv(c)]
 
   Edges=map(1:ne(c)) do k
     [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
@@ -241,14 +241,14 @@ end
 
 function GraphSF(c::CausalLoopPol; schema="BASE")
 
-  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nn(c)]
+  NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"plaintext")) for n in 1:nvert(c)]
 
   if occursin("BASE", schema)
-    Edges=map(1:ne(c)) do k
+    Edges=map(1:nedges(c)) do k
       pol_int = epol(c,k)
-      if pol_int == POL_REINFORCING
+      if pol_int == POL_POSITIVE
         pol = :+
-      elseif pol_int == POL_BALANCING
+      elseif pol_int == POL_NEGATIVE
         pol = :-
       elseif pol_int == POL_ZERO
         pol = 0
@@ -459,15 +459,15 @@ end
 
     
 function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
-    NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"square")) for n in 1:nn(c)]
+    NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"square")) for n in 1:nvert(c)]
     Edges = Vector{Edge}()
     edge_to_intermediate_node = Dict{Int, Int}()
 
-    for k in 1:StockFlow.ne(c)
+    for k in 1:nedges(c)
       pol_int = epol(c,k)
-      if pol_int == POL_REINFORCING
+      if pol_int == POL_POSITIVE
         pol = :+
-      elseif pol_int == POL_BALANCING
+      elseif pol_int == POL_NEGATIVE
         pol = :-
       elseif pol_int == POL_ZERO
         pol = 0
@@ -495,9 +495,9 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
 
     for (edges, polarity) ∈ extract_loops(c)
 
-      if polarity == POL_REINFORCING 
+      if polarity == POL_POSITIVE 
         label = "R" # reinforcing
-      elseif polarity == POL_BALANCING
+      elseif polarity == POL_NEGATIVE
         label = "B" # balancing
       elseif polarity == POL_ZERO
         label = "0"

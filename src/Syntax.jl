@@ -1292,13 +1292,13 @@ function match_cl_format(statement, nodes, edges, polarities)
             :($A => - $B) => begin
               push!(nodes, A, B)
               push!(edges, A => B)
-              push!(polarities, POL_BALANCING)
+              push!(polarities, POL_NEGATIVE)
             end
             :($A => + $B) => begin
               push!(nodes, A, B)
 
               push!(edges, A => B)
-              push!(polarities, POL_REINFORCING)
+              push!(polarities, POL_POSITIVE)
             end
             :($A => ~ $B) => begin
             push!(nodes, A, B)
@@ -1366,11 +1366,11 @@ function causal_loop_macro(block)
             end
             :($A => - $B) => begin
               push!(edges, A => B)
-              push!(polarities, POL_BALANCING)
+              push!(polarities, POL_NEGATIVE)
             end
             :($A => + $B) => begin
               push!(edges, A => B)
-              push!(polarities, POL_REINFORCING)
+              push!(polarities, POL_POSITIVE)
             end
             :($A => ~ $B) => begin
               push!(edges, A => B)
