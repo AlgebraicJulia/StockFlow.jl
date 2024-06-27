@@ -5,7 +5,8 @@ Polarity, POL_ZERO, POL_POSITIVE, POL_NEGATIVE, POL_UNKNOWN, POL_NOT_WELL_DEFINE
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
 CausalLoopPol, to_clp, from_clp, CausalLoopPM, CausalLoopZ, CausalLoopFull, leg,
-nvert, extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on
+nvert, extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
+betweenness,
 
 
 using MLStyle
@@ -17,7 +18,8 @@ import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality
 import Catlab.Graphs: nv
 
 
-import Base: +, *, -, /
+import Base: +, *
+# , -, /
 
 # Whenever we map from something with attributes to something without, can think
 # of it like mapping the attribute to a type with a single instance, which should
