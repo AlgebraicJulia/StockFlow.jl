@@ -1,5 +1,5 @@
 using Pkg;
-Pkg.activate("..")
+Pkg.activate(".")
 
 using Test
 
@@ -49,6 +49,14 @@ end
     @test cl_cycles(CausalLoopF()) == Vector{Vector{Int}}()
     @test cl_cycles(clc) == [[1, 4], [2, 4], [3]]
 
+    cl = (@cl A => +B, C => -D, D => -C, E => +E)
+    
+    # Unfortunately, this is pretty non-indicative of what they actually are.
+    # Edges are ordered first by pos > neg > zero > nwd > unknown, then by order in which they appear.
+    # So, the order of edges here is A => +B == 1, E => +E == 2, C => -D == 3,
+    # D => -C == 4
+    @test cl_cycles(cl) == [[3,4], [2]] 
+
     @test extract_loops(CausalLoopF()) == Vector{Pair{Vector{Int}, Polarity}}()
     @test extract_loops(clc) == [[1,4] => POL_NEGATIVE, [2, 4] => POL_POSITIVE, [3] => POL_NEGATIVE]
 
@@ -88,6 +96,17 @@ end
 end
 
 
+@testset "all paths" begin
+
+    # Won't hit same node twice
+    @test extract_all_nonduplicate_paths( (@cl )) == Dict([Vector{Int}() => POL_POSITIVE])
+    @test extract_all_nonduplicate_paths((@cl A => +B)) == Dict([Vector{Int}() => POL_POSITIVE,
+                                                                 [1] => POL_POSITIVE])
+    @test extract_all_nonduplicate_paths((@cl A => +B, A => -C, A => +C, B => -C)) == Dict([
+                                                                                       Vector{Int}() => POL_POSITIVE, [1] => POL_POSITIVE, [1, 4] => POL_NEGATIVE, [2] => POL_POSITIVE, [3] => POL_NEGATIVE 
+                                                                                      ])
+
+end
 
 #ne = StockFlow.ne
 #

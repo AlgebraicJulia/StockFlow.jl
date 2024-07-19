@@ -9,7 +9,7 @@
   edge_info(statement) = (statement.path[1].name, statement.path[2].name, statement.attrs[:label])
 
   @testset "Graphing standard Causal Loop F" begin
-    ABA = CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_BALANCING, POL_REINFORCING])
+    ABA = CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_POSITIVE])
     ABA_graph = GraphSF(ABA)
     
     n1 = node_info(ABA_graph.stmts[1])
@@ -21,7 +21,7 @@
     @test n1 == ("n1", "A") && n2 == ("n2", "B") && e1 == ("n1", "n2", "-") && e2 == ("n2", "n1", "+")
 
 
-    C = CausalLoopF([:C], [:C => :C for _ in 1:5], [POL_BALANCING, POL_REINFORCING, POL_NOT_WELL_DEFINED, POL_UNKNOWN, POL_ZERO])
+    C = CausalLoopF([:C], [:C => :C for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NOT_WELL_DEFINED, POL_UNKNOWN, POL_ZERO])
     C_graph = GraphSF(C)
 
     c_n1 = node_info(C_graph.stmts[1])
@@ -35,7 +35,7 @@
     @test (c_n1 == ("n1", "C") && c_e1 == ("n1", "n1", "-") && c_e2 == ("n1", "n1", "+")
       && c_e3 == ("n1", "n1", "±") && c_e4 == ("n1", "n1", "?") && c_e5 == ("n1", "n1", "0"))
 
-    DE = CausalLoopF([:D, :E], [:D => :E], [POL_REINFORCING])
+    DE = CausalLoopF([:D, :E], [:D => :E], [POL_POSITIVE])
     DE_graph = GraphSF(DE ; schema = "C0")
 
     de_n1 = node_info(DE_graph.stmts[1])
@@ -54,7 +54,7 @@
     
     @test isempty(Graph_RB(CausalLoopF()).stmts)
 
-    C2 = CausalLoopF([:C2], [:C2 => :C2 for _ in 1:5], [POL_BALANCING, POL_REINFORCING, POL_NOT_WELL_DEFINED, POL_UNKNOWN, POL_ZERO])
+    C2 = CausalLoopF([:C2], [:C2 => :C2 for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NOT_WELL_DEFINED, POL_UNKNOWN, POL_ZERO])
     C2_RB = Graph_RB(C2)
 
 

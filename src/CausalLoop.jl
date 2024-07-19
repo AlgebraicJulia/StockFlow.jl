@@ -1,12 +1,12 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
-nn, ne, vname,
+nvert, nedges, vname, np, nm, nz, nnwd, nu,
 sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
 Polarity, POL_ZERO, POL_POSITIVE, POL_NEGATIVE, POL_UNKNOWN, POL_NOT_WELL_DEFINED,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
 CausalLoopPol, to_clp, from_clp, CausalLoopPM, CausalLoopZ, CausalLoopFull, leg,
-nvert, extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
-betweenness,
+extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
+betweenness
 
 
 using MLStyle
@@ -15,7 +15,7 @@ using DataMigrations
 
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality
 
-import Catlab.Graphs: nv
+# import Catlab.Graphs: nv
 
 
 import Base: +, *
@@ -363,7 +363,7 @@ nedges(c::AbstractSimpleCausalLoop) = nparts(c,:E) #edges
 nvert(c::AbstractSimpleCausalLoop) = nparts(c,:V) #vertices
 
 
-
+nvert(c::AbstractCausalLoop) = nparts(c, :V)
 
 np(c::AbstractCausalLoop) = nparts(c, :P)
 nm(c::AbstractCausalLoop) = nparts(c, :M)
@@ -682,7 +682,7 @@ end
 
 function extract_loops(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   cycles = cl_cycles(cl)
-  map(x -> x => walk_polarity(cl, x), cycles)
+  Vector{Pair{Vector{Int}, Polarity}}(map(x -> x => walk_polarity(cl, x), cycles))
 end
 
 # TODO: terrible
@@ -719,6 +719,7 @@ end
 
 
 function walk_polarity(cl::K, edges::Vector{Int}) where K <: Union{AbstractCausalLoop, CausalLoopPol}
+  @assert is_walk(cl, edges)
   foldl(*, map(x -> epol(cl, x), edges); init = POL_POSITIVE)
 end
 
@@ -788,11 +789,12 @@ This could be made more efficient, but it should be fine for now.
 # end
 
 function is_walk(cl::CausalLoopPM, edges::Vector{Int})
+    length(edges) == 1 ? only(edges) <= nedges(cl) :
   all(x -> tedge(cl, edges[x]) == sedge(cl, edges[x+1]), eachindex(edges[1:end-1]))
 end
 
 function is_circuit(cl::CausalLoopPM, edges::Vector{Int})
-  is_path(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
+    length(edges) > 0 && is_walk(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
 end
 
 # TODO: How, pray tell, is this a functor
@@ -951,12 +953,12 @@ function smallest_required_cl(cl::AbstractCausalLoop)
     if length(subpart(cl, :NWD)) == length(subpart(cl, :U)) == 0
       if length(subpart(cl, :Z)) == 0
         clpm = CausalLoopPM()
-        add_parts!(clpm, :N, nv(cl))
+        add_parts!(clpm, :N, nvert(cl))
         add_parts!(clpm, :P, np(cl) ; sp = subpart(cl, :sp), tp = subpart(cl, :tp))
         clpm
       else
         clz = CausalLoopZ()
-        add_parts!(clz, :N, nv(cl))
+        add_parts!(clz, :N, nvert(cl))
         add_parts!(clz, :P, np(cl) ; sp = subpart(cl, :sp), tp = subpart(cl, :tp))
         add_parts!(clz, :P, np(cl) ; sz = subpart(cl, :sz), tz = subpart(cl, :tz))
         clz
@@ -969,7 +971,7 @@ function smallest_required_cl(cl::AbstractCausalLoop)
   if typeof(cl) == CausalLoopZ
     if length(subpart(cl, :Z)) == 0
       clpm = CausalLoopPM()
-      add_parts!(clpm, :N, nv(cl))
+      add_parts!(clpm, :N, nvert(cl))
       add_parts!(clpm, :P, np(cl) ; sp = subpart(cl, :sp), tp = subpart(cl, :tp))
       clpm
     else

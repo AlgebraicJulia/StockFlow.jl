@@ -1323,7 +1323,7 @@ end
 function cl_macro(block)
 
     if block isa Symbol
-        return CausalLoopF(Vector{Symbol}([block]), Vector{Int}([]), Vector{Polarity}([]))
+        return CausalLoopF(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
     end
 
 

@@ -584,7 +584,7 @@ end
         A => !A
         A => ±A
         A => ~A
-    end) == CausalLoopF([:A], [:A => :A for _ in 1:5], [POL_BALANCING, POL_REINFORCING, POL_ZERO, POL_NOT_WELL_DEFINED, POL_UNKNOWN])
+    end) == CausalLoopF([:A], [:A => :A for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_ZERO, POL_NOT_WELL_DEFINED, POL_UNKNOWN])
     
     @test (@causal_loop begin
        :nodes
@@ -594,6 +594,6 @@ end
        :edges
        A => -B
        B => +A
-    end) == CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_BALANCING, POL_REINFORCING])
+    end) == CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_POSITIVE])
 
 end
