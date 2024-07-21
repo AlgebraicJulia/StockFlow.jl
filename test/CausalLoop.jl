@@ -1,15 +1,26 @@
-using Pkg;
-Pkg.activate(".")
-
 using Test
 
 using StockFlow
 using StockFlow.Syntax
+using StockFlow.PremadeModels
+
+
 using Catlab.CategoricalAlgebra
 
 
-@testset "Empty CausalLoopPM" begin
-    empty = CausalLoopF()
+@testset "Empty CausalLoop" begin
+    
+    e = CausalLoop() # Graph with names
+    @test (nvert(e) == 0
+           && nedges(e) == 0)
+
+    e2 = CausalLoopPol()
+    @test (nvert(e2) == 0
+           && nedges(e2) == 0
+           && epols(e2) == Vector{Polarity}())
+
+
+    empty = CausalLoopF() # CausalLoopPM
     @test (nvert(empty) == 0
            && np(empty) == 0
            && nm(empty) == 0)
@@ -17,6 +28,74 @@ using Catlab.CategoricalAlgebra
     @test from_clp(to_clp(empty)) == empty
 
 end
+
+
+
+@testset "sf to causal loop" begin
+    @test (convertToCausalLoop(seir()) 
+           == to_simple_cl(
+           @causal_loop begin
+           :nodes
+           S; E; I; R; f_birth; f_incid; f_deathS; f_inf; f_deathE; f_rec; f_deathI; f_deathR; N; NI; NS; v_prevalence; v_meanInfectiousContactsPerS; v_perSIncidenceRate; μ; β; tlatent; trecovery; δ; c;
+           :edges
+            S => +N
+            S => +NS
+            E => +N
+            E => +NS
+            I => +N
+            I => +NI
+            I => +NS
+            R => +N
+            R => +NS
+            
+            NI => +v_prevalence
+            NS => +v_prevalence
+            N => +f_birth
+            
+            S => +f_incid
+            E => +f_inf
+            I => +f_rec
+            
+            S => +f_deathS
+            E => +f_deathE
+            I => +f_deathI
+            R => +f_deathR
+            f_birth => +S
+            f_incid => +E
+            f_inf => +I
+            f_rec => +R
+            f_incid => +S 
+            f_deathS => +S
+            f_inf => +E
+            f_deathE => +E
+            f_rec => +I
+            f_deathI => +I
+            f_deathR => +R
+
+            c => +v_meanInfectiousContactsPerS
+            β => +v_perSIncidenceRate
+            μ => +f_birth
+            tlatent => +f_inf
+            trecovery => +f_rec
+            δ => +f_deathS
+            δ => +f_deathE
+            δ => +f_deathI
+            δ => +f_deathR
+            
+            v_prevalence => +v_meanInfectiousContactsPerS
+            v_meanInfectiousContactsPerS => +v_perSIncidenceRate
+            v_perSIncidenceRate => +f_incid
+
+        
+           end
+
+                        ) 
+
+          )
+end
+
+
+
 
 @testset "Basic CausalLoop Creation" begin
     cl1 = (@cl A => +B, B => -C, D, C => -A)
@@ -90,9 +169,6 @@ end
     @test num_indep_loops_var_on(cll, :E) == 1
 
     @test_throws ArgumentError num_loops_var_on(cll, :H)
-
-
-
 end
 
 
@@ -102,66 +178,7 @@ end
     @test extract_all_nonduplicate_paths( (@cl )) == Dict([Vector{Int}() => POL_POSITIVE])
     @test extract_all_nonduplicate_paths((@cl A => +B)) == Dict([Vector{Int}() => POL_POSITIVE,
                                                                  [1] => POL_POSITIVE])
-    @test extract_all_nonduplicate_paths((@cl A => +B, A => -C, A => +C, B => -C)) == Dict([
-                                                                                       Vector{Int}() => POL_POSITIVE, [1] => POL_POSITIVE, [1, 4] => POL_NEGATIVE, [2] => POL_POSITIVE, [3] => POL_NEGATIVE 
-                                                                                      ])
+    @test (extract_all_nonduplicate_paths((@cl A => +B, A => -C, A => +C, B => -C))
+      == Dict([Vector{Int}() => POL_POSITIVE, [1] => POL_POSITIVE, [1, 4] => POL_NEGATIVE, [2] => POL_POSITIVE, [3] => POL_NEGATIVE, [4] => POL_NEGATIVE ]))
 
 end
-
-#ne = StockFlow.ne
-#
-#@testset "Empty CausalLoopF" begin
-  #empty = CausalLoopF()
-  #@test ( nvert(empty) == 0 
-    #&& ne(empty) == 0 
-    #&& isempty(subpart(empty, :epolarity)) )
-#end
-#
-#@testset "Helper functions" begin
-  #cl0 = CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_NEGATIVE])
-  #@test epol(cl0, 1) == POL_NEGATIVE 
-  #@test epols(cl0)[1] == POL_NEGATIVE
-  #@test outgoing_edges(cl0, 1) == [1] && outgoing_edges(cl0, 2) == [2]
-  #@test incoming_edges(cl0, 1) == [2] && incoming_edges(cl0, 2) == [1]
-#end
-#
-#@testset "Simple CausalLoopF" begin
-  #cl1 = CausalLoopF([:A, :B], [:A => :B], [POL_NEGATIVE])
-  #@test nnames(cl1) == [:A, :B] && ne(cl1) == 1 && epol(cl1, 1) == POL_NEGATIVE
-  #
-  #cl2 = CausalLoopF([:A, :B, :C], [:A => :B, :B => :C, :C => :A], [POL_POSITIVE, POL_NOT_WELL_DEFINED, POL_ZERO])
-  #@test nnames(cl2) == [:A, :B, :C] && ne(cl2) == 3 && epols(cl2) == [POL_POSITIVE, POL_NOT_WELL_DEFINED, POL_ZERO]
-#
-  #cl3 = CausalLoopF([:A], [:A => :A for _ in 1:5], [POL_POSITIVE, POL_NEGATIVE, POL_UNKNOWN, POL_ZERO, POL_NOT_WELL_DEFINED])
-  #@test nnames(cl3) == [:A] && ne(cl3) == 5 && epols(cl3) == [POL_POSITIVE, POL_NEGATIVE, POL_UNKNOWN, POL_ZERO, POL_NOT_WELL_DEFINED]
-#end
-#
-#@testset "Extract Loops" begin
-  #cl4 = CausalLoopF([:A], [:A => :A], [POL_UNKNOWN])
-  #@test extract_loops(cl4) == [[1] => POL_UNKNOWN]
-#
-  ## 2 balancing make a reinforcing
-  #cl5 = CausalLoopF([:A, :B], [:A => :A, :A => :B, :B => :A], [POL_NEGATIVE, POL_NEGATIVE, POL_NEGATIVE])
-  #@test extract_loops(cl5) == [[1] => POL_NEGATIVE, [2, 3] => POL_POSITIVE]
-#
-  ## A -> B -> C -> D -> E
-  ## ^ - - - - |    |    |
-  ##^ - - - - - - - -    |
-  ##^ - - - - - - - - - - 
-#
-  ## B -> C is not well defined, C -> D is unknown, D -> E is zero.
-  #cl6 = CausalLoopF([:A, :B, :C, :D, :E], 
-    #[:A => :B, :B => :C, :C => :A, :C => :D, :D => :A, :D => :E, :E => :A], 
-    #[POL_NEGATIVE, POL_NOT_WELL_DEFINED, POL_NEGATIVE, POL_UNKNOWN, POL_NEGATIVE, POL_ZERO, POL_NEGATIVE])
-  #
-  ## shows that not well defined < unknown < zero
-  ## run Graph_RB(cl6) to see the cycles
-  #@test extract_loops(cl6) == [[1,2,3] => POL_NOT_WELL_DEFINED, [1,2,4,5] => POL_UNKNOWN, [1,2,4,6,7] => POL_ZERO]
-#end
-#
-#@testset "Discard Zero Pol" begin
-  #cl_disc_zero = CausalLoopF([:A], [:A => :A for _ in 1:10], [POL_ZERO for _ in 1:10])
-  #cl_disc_zero′ = discard_zero_pol(cl_disc_zero)
-  #@test nnames(cl_disc_zero′) == [:A] && ne(cl_disc_zero′) == 0 && epols(cl_disc_zero′) == []
-#end
-#
