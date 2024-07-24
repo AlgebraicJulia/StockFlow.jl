@@ -1283,12 +1283,6 @@ NothingFunction(x...)::Nothing = nothing;
 
 function match_cl_format(statement, nodes, edges, polarities)
     @match statement begin
-            :($A => !$B) => begin
-            # :($A => Expr(:quote, :(! $B))) => begin
-              push!(nodes, A, B)
-              push!(edges, A => B)
-              push!(polarities, POL_ZERO)
-            end
             :($A => - $B) => begin
               push!(nodes, A, B)
               push!(edges, A => B)
@@ -1296,21 +1290,8 @@ function match_cl_format(statement, nodes, edges, polarities)
             end
             :($A => + $B) => begin
               push!(nodes, A, B)
-
               push!(edges, A => B)
               push!(polarities, POL_POSITIVE)
-            end
-            :($A => ~ $B) => begin
-            push!(nodes, A, B)
-
-              push!(edges, A => B)
-              push!(polarities, POL_UNKNOWN)
-            end
-            :($A => ± $B) => begin
-            push!(nodes, A, B)
-
-              push!(edges, A => B)
-              push!(polarities, POL_NOT_WELL_DEFINED)
             end
             :($A) => begin
             push!(nodes, A)
@@ -1360,10 +1341,6 @@ function causal_loop_macro(block)
       QuoteNode(:edges) => begin
         current_phase = e -> begin
           @match e begin
-            :($A => ! $B) => begin
-              push!(edges, A => B)
-              push!(polarities, POL_ZERO)
-            end
             :($A => - $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_NEGATIVE)
@@ -1371,14 +1348,6 @@ function causal_loop_macro(block)
             :($A => + $B) => begin
               push!(edges, A => B)
               push!(polarities, POL_POSITIVE)
-            end
-            :($A => ~ $B) => begin
-              push!(edges, A => B)
-              push!(polarities, POL_UNKNOWN)
-            end
-            :($A => ± $B) => begin
-              push!(edges, A => B)
-              push!(polarities, POL_NOT_WELL_DEFINED)
             end
             _ =>
               return error("Unknown syntax type for causal loop edge: " * string(e))
