@@ -6,14 +6,15 @@ add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
 CausalLoopPol, to_clp, from_clp, CausalLoopPM, leg,
 extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
-betweenness, to_simple_cl
+betweenness, to_simple_cl, num_inputs_outputs, num_inputs_outputs_pols,
+shortest_path, to_graphs_graph
 
 
 using MLStyle
 
 using DataMigrations
 
-import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality
+import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality, a_star
 
 
 import Base: *
@@ -503,12 +504,44 @@ end
 
 
 function num_inputs_outputs(cl::CausalLoopPol)
+  @assert allunique(vnames(cl))
   ssvec = Vector{Tuple{Symbol, Int, Int}}()
   for i in 1:nvert(cl)
-    push!(ssvet, (i, incident(cl, i, :src), (incident(cl, i, :tgt))))
+    push!(ssvec, (subpart(cl, i, :vname), length(incident(cl, i, :tgt)), length((incident(cl, i, :src))))) # name, num inputs, num outputs
   end
   ssvec
 end
+
+function num_inputs_outputs(cl::CausalLoopPM)
+  num_inputs_outputs(to_clp(cl))
+end
+
+
+function num_inputs_outputs_pols(cl::CausalLoopPol)
+  @assert allunique(vnames(cl))
+  ssvec = Vector{Tuple{Symbol, Int, Int, Int, Int}}() # name, pos in, pos out, neg in, neg out
+  for i in 1:nvert(cl)
+    push!(ssvec, 
+    (subpart(cl, i, :vname), 
+    (count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :tgt))), 
+    (count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :src))), 
+    (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :tgt))), 
+    (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :src))))
+    )
+    
+  end
+  ssvec
+end
+
+function num_inputs_outputs_pols(cl::CausalLoopPM)
+  num_inputs_outputs_pols(to_clp(cl))
+end
+
+
+function shortest_path(cl::Union{CausalLoopPol, CausalLoopPM}, s, d) # finds a shortest path, not all
+  map(e -> (e.src => e.dst), a_star(to_graphs_graph(cl), s, d))
+end
+
 
 
 
