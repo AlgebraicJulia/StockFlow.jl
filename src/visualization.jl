@@ -228,7 +228,7 @@ function GraphSF(c::CausalLoop)
 
   NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nv(c)]
 
-  Edges=map(1:ne(c)) do k
+  Edges=map(1:nedges(c)) do k
     [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
   end |> flatten |> collect
 
@@ -237,6 +237,10 @@ function GraphSF(c::CausalLoop)
   g = Graphviz.Digraph("G", stmts;graph_attrs=Attributes(:rankdir=>"LR"))
   return g
 
+end
+
+function GraphSF(c::CausalLoopPM; schema="BASE")
+  GraphSF(to_clp(c) ; schema=schema)
 end
 
 function GraphSF(c::CausalLoopPol; schema="BASE")
@@ -250,19 +254,13 @@ function GraphSF(c::CausalLoopPol; schema="BASE")
         pol = :+
       elseif pol_int == POL_NEGATIVE
         pol = :-
-      elseif pol_int == POL_ZERO
-        pol = 0
-      elseif pol_int == POL_UNKNOWN
-        pol = :?
-      elseif pol_int == POL_NOT_WELL_DEFINED
-        pol = :±
       else
         error("Unknown Polarity $pol_int.")
       end
       [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue",:label=>"$(pol)"))]
     end |> flatten |> collect
   elseif schema == "C0"
-    Edges=map(1:ne(c)) do k
+    Edges=map(1:nedges(c)) do k
       [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
     end |> flatten |> collect
   end

@@ -571,8 +571,8 @@ end
 
 @testset "Causal Loop F DSL" begin
     @test (@causal_loop begin end) == CausalLoopF()
-    @test (@causal_loop begin; :nodes; A; end) == CausalLoopF([:A], [],[])
-    @test (@causal_loop begin; :nodes; A; :edges; A => !A; end) == CausalLoopF([:A], [:A => :A], [POL_ZERO])
+    @test (@causal_loop begin; :nodes; A; end) == CausalLoopF([:A], Vector{Pair{Symbol, Symbol}}(), Vector{Polarity}())
+    @test (@causal_loop begin; :nodes; A; :edges; A => +A; end) == CausalLoopF([:A], [:A => :A], [POL_POSITIVE])
     
     @test (@causal_loop begin
         :nodes
@@ -581,10 +581,7 @@ end
         :edges
         A => -A
         A => +A
-        A => !A
-        A => ±A
-        A => ~A
-    end) == CausalLoopF([:A], [:A => :A for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_ZERO, POL_NOT_WELL_DEFINED, POL_UNKNOWN])
+    end) == CausalLoopF([:A], [:A => :A for _ in 1:2], [POL_NEGATIVE, POL_POSITIVE])
     
     @test (@causal_loop begin
        :nodes
