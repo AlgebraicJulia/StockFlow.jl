@@ -12,8 +12,6 @@ shortest_path, to_graphs_graph
 
 using MLStyle
 
-using DataMigrations
-
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality, a_star
 
 
