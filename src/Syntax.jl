@@ -1304,7 +1304,7 @@ end
 function cl_macro(block)
 
     if block isa Symbol
-        return CausalLoopF(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
+        return CausalLoopPM(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
     end
 
 
@@ -1321,7 +1321,7 @@ function cl_macro(block)
         :call => match_cl_format(block, nodes, edges, polarities)
     end
         
-    return CausalLoopF(unique(nodes), edges, polarities)
+    return CausalLoopPM(unique(nodes), edges, polarities)
 
 end
 
@@ -1330,7 +1330,7 @@ function causal_loop_macro(block)
   Base.remove_linenums!(block)
   edges = Vector{Pair{Symbol, Symbol}}()
   nodes = Vector{Symbol}()
-  polarities = Vector{Polarity}()
+  polarities = Vector{Union{Polarity, Nothing}}()
 
   current_phase = (_, _) -> ()
   for statement in block.args
@@ -1349,6 +1349,10 @@ function causal_loop_macro(block)
               push!(edges, A => B)
               push!(polarities, POL_POSITIVE)
             end
+            :($A => $B)=> begin
+                push!(edges, A => B)
+                push!(polarities, nothing)
+            end
             _ =>
               return error("Unknown syntax type for causal loop edge: " * string(e))
           end
@@ -1360,8 +1364,11 @@ function causal_loop_macro(block)
     end
     
   end
-
-  return CausalLoopF(nodes, edges, polarities)
+  if nothing in polarities
+    return CausalLoop(nodes, edges)
+  else
+    return CausalLoopPM(nodes, edges, Vector{Polarity}(polarities))
+  end
 
 end
 
@@ -1374,7 +1381,7 @@ end
 
 macro cl()
     quote
-        CausalLoopF()  
+        CausalLoopPM()  
     end
 end
 

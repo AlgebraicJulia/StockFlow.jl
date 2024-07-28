@@ -1,6 +1,6 @@
-export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop, CausalLoopF,
+export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop,
 nvert, nedges, vname, np, nm,
-sedge, tedge, convertToCausalLoop, nnames, CausalLoopF, epol, epols,
+sedge, tedge, convertToCausalLoop, nnames, epol, epols,
 Polarity, POL_POSITIVE, POL_NEGATIVE,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
@@ -18,6 +18,14 @@ import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality, 
 import Base: *
 
 
+
+"""
+P - sp - >  
+  - tp - >  
+            V
+M - sm - >
+  - tm - >
+"""
 @present TheoryCausalLoopNameless(FreeSchema) begin
   
   V::Ob
@@ -33,6 +41,13 @@ import Base: *
 end
 
 
+"""
+P - sp - >    
+  - tp - >    
+            V - vname - > Name
+M - sm - >
+  - tm - >
+"""
 @present TheoryCausalLoopPM <: TheoryCausalLoopNameless begin
   
   Name::AttrType
@@ -63,19 +78,26 @@ const OpenCausalLoopPMOb, OpenCausalLoopPM = OpenACSetTypes(CausalLoopPMUntyped,
   POL_NEGATIVE
 end
 
-
+"""
+  - src -> 
+E           V - vname -> Name
+  - tgt -> 
+"""
 @present TheoryCausalLoop <: SchGraph begin
   Name::AttrType
   vname::Attr(V, Name)
 end
 
-
+"""
+                      - src -> 
+Polarity <- epol - E           V - vname -> Name
+                      - tgt -> 
+"""
 @present TheoryCausalLoopPol <: TheoryCausalLoop begin
   Polarity::AttrType
   epol::Attr(E, Polarity)
 end
 
-# TODO: Make subtyping a bit more sensible
 @abstract_acset_type AbstractSimpleCausalLoop
 @acset_type CausalLoopUntyped(TheoryCausalLoop, index=[:src,:tgt]) <: AbstractSimpleCausalLoop
 @acset_type CausalLoopPolUntyped(TheoryCausalLoopPol, index=[:src,:tgt]) <: AbstractSimpleCausalLoop
@@ -88,8 +110,8 @@ const OpenCausalLoopPolOb, OpenCausalLoopPol = OpenACSetTypes(CausalLoopPolUntyp
 vname(c::AbstractSimpleCausalLoop,n) = subpart(c,n,:vname)
 vnames(c::AbstractSimpleCausalLoop) = subpart(c, :vname)
 
-vname(c::K, n) where K <: CausalLoopPM = subpart(c, n, :vname)
-vnames(c::K) where K <: CausalLoopPM = subpart(c, :vname)
+vname(c::CausalLoopPM, n) = subpart(c, n, :vname)
+vnames(c::CausalLoopPM) = subpart(c, :vname)
 
 ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
 enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
@@ -100,8 +122,14 @@ Open(p::CausalLoopPol, feet...) = begin
   OpenCausalLoopPol{Symbol,Polarity}(p, legs...)
 end
 
+"""
+Create a CausalLoop (Graph with named vertices) with a vector of vertices, and
+a vector of pairs of vertices.
 
-function CausalLoop(vs, es)
+CausalLoop([:A, :B], [:A => :B, :B => :B]) will create a CausalLoop with 
+vertices A and B, an edge A => B and an edge B => B.
+"""
+function CausalLoop(vs::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}})
     c = CausalLoop()
     add_parts!(c, :V, length(vs) ; vname = vs)
     vs_idx = state_dict(vs)
@@ -114,7 +142,9 @@ function CausalLoop(vs, es)
 
     c
 end
-
+"""
+Construct a CausalLoop from a StockFlow.
+"""
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     
     sns=snames(p)
@@ -137,6 +167,10 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     return CausalLoop(ns,es)
 end
 
+
+"""
+Convert a CausalLoopPol to a CausalLoop (forget polarities).
+"""
 function to_simple_cl(cl::CausalLoopPol)
     c = CausalLoop()
     add_parts!(c, :V, length(vnames(cl)) ; vname = vnames(cl))
@@ -144,12 +178,18 @@ function to_simple_cl(cl::CausalLoopPol)
     c
 end
 
+"""
+Convert a CausalLoopPM to a CausalLoop (forget polarities).
+"""
 function to_simple_cl(cl::CausalLoopPM)
-    to_simple_cl(to_clp(cl))
+    c = CausalLoop()
+    add_parts!(c, :V, length(vnames(cl)) ; vname = vnames(cl))
+    add_parts!(c, :E, nedges(cl) ; src=vcat(subpart(cl, :sp), subpart(cl, :sm)),
+     tgt=vcat(subpart(cl, :tm), subpart(cl, :tp)))
 end
 
 """
-Convert StockFlow to CLD.
+Convert StockFlow to CausalLoop.
 Nodes: stocks, flows, sum variables, parameters, nonflow dynamic variables
 Edges: morphisms in stock flow
 """
@@ -181,17 +221,25 @@ end
 
 
 
-
+"""
+Convert a CausalLoopPol to a CausalLoopPM.
+"""
 function from_clp(cl::CausalLoopPol)
   pols = subpart(cl, :epol)
   names = Dict([i => x for (i, x) in enumerate(subpart(cl, :vname))])
   src = map(x -> names[x], subpart(cl, :src))
   tgt = map(x -> names[x], subpart(cl, :tgt))
   st = Vector{Pair{Symbol, Symbol}}(map(((x,y),) -> x => y, zip(src, tgt)))
-  CausalLoopF(subpart(cl, :vname), st, pols)
+  CausalLoopPM(subpart(cl, :vname), st, pols)
 end
 
+"""
+Create a CausalLoopPol from a vector of node names, and two vectors indicating 
+which indices for vertices will act as edges.
 
+to_clp([:A, :B], [1 => 2], Vector{Pair{Int, Int}}()) will create a 
+CausalLoopPol with a positive polarity edge from A to B.
+"""
 function to_clp(nodes::Vector{Symbol}, reinf::Vector{Pair{Int, Int}}, 
   bal::Vector{Pair{Int, Int}})
 
@@ -213,6 +261,9 @@ function to_clp(nodes::Vector{Symbol}, reinf::Vector{Pair{Int, Int}},
 
 end
 
+"""
+Convert CausalLoopPM to CausalLoopPol.
+"""
 function to_clp(cl::CausalLoopPM)
   to_clp(
     Vector{Symbol}(subpart(cl, :vname)), 
@@ -221,7 +272,12 @@ function to_clp(cl::CausalLoopPM)
     )
 end
 
-# assuming only positive and negative exist
+"""
+Polarity multiplication for edge concatenation.
+
+POS * POS == NEG * NEG == POS
+POS * NEG == NEG * POS == NEG
+"""
 function *(p1::Polarity, p2::Polarity)
   if p1 == p2
     return POL_POSITIVE
@@ -230,21 +286,27 @@ function *(p1::Polarity, p2::Polarity)
   end
 end
 
-
-add_vertex!(c::AbstractCausalLoop;kw...) = add_part!(c,:V;kw...) 
+"""Add vertex to CausalLoopPM."""
+add_vertex!(c::AbstractCausalLoop;kw...) = add_part!(c,:V;kw...)
+"""Add vertices to CausalLoopPM."""
 add_vertices!(c::AbstractCausalLoop,n;kw...) = add_parts!(c,:V,n;kw...)
 
+"""Add positive edge to CausalLoopPM."""
 add_plus!(c::AbstractCausalLoop;kw) = add_part!(c, :P; kw...)
+"""Add positive edges to CausalLoopPM."""
 add_pluses!(c::AbstractCausalLoop,n;kw) = add_part!(c, :P, n; kw...)
 
+"""Add negative edge to CausalLoopPM."""
 add_minus!(c::AbstractCausalLoop;kw) = add_part!(c, :M; kw...)
+"""Add negative edges to CausalLoopPM."""
 add_minuses!(c::AbstractCausalLoop,n;kw) = add_part!(c, :M, n; kw...)
 
 
-
-CausalLoopF() = CausalLoopPM()
-
-CausalLoopF(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{Polarity}) = begin
+"""
+Create CausalLoopPM from vector of symbols, vector of pairs of symbols, and
+vector of polarities.
+"""
+CausalLoopPM(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{Polarity}) = begin
   @assert length(pols) == length(es)
 
   
@@ -278,80 +340,110 @@ end
 
 
 
-# """ return count of edges of CLD """
-# TODO: This should be unnecessary now, since it subtypes graph.  Just use ne and nv like normal.
+""" Return count of edges of CausalLoop. """
 nedges(c::AbstractSimpleCausalLoop) = nparts(c,:E) #edges
+""" Return count of vertices of CausalLoop. """
 nvert(c::AbstractSimpleCausalLoop) = nparts(c,:V) #vertices
 
-
+"""Return count of vertices of CausalLoopPM. """
 nvert(c::AbstractCausalLoop) = nparts(c, :V)
 
+""" Return count of positive edges of CausalLoopPM. """
 np(c::AbstractCausalLoop) = nparts(c, :P)
+""" Return count of negative edges of CausalLoopPM. """
 nm(c::AbstractCausalLoop) = nparts(c, :M)
 
-
+""" Return total number of edges of CausalLoopPM (# pos + # neg). """
 nedges(c::AbstractCausalLoop) = np(c) + nm(c)
 
 
 
 
 
+"""
+Return source vertex index of an edge of CausalLoopPM by index.
+Negative edges come after positive edges.
 
+```julia-repl
+julia> using StockFlow; StockFlow.Syntax; 
+julia> cl = (@cl A => +B, B => -C, C => +D);
+julia> sedge(cl, 3)
+2
+````
+The nodes are ordered A, B, C.
+The edges are ordered A => +B, C => +D, B => -C; so, the source index of the 
+third edge is B, which has index 2.
+"""
 sedge(c::CausalLoopPM, e) = begin
   @assert e <= nedges(c)
   e <= np(c) ? subpart(c, e, :sp) : subpart(c, e - np(c), :sm)
 end
 
 
-
+"""
+Return target vertex index of an edge of CausalLoopPM by index.
+Negative edges come after positive edges.
+See sedge.
+"""
 tedge(c::CausalLoopPM, e) = begin
   @assert e <= nedges(c)
   e <= np(c) ? subpart(c, e, :tp) : subpart(c, e - np(c), :tm)
 end
 
+""" CausalLoopPM positive edge source. """
+spedge(c::AbstractCausalLoop, e) = subpart(c, e, :sp)
+""" CausalLoopPM positive edge target. """
+tpedge(c::AbstractCausalLoop, e) = subpart(c, e, :tp)
+""" CausalLoopPM positive edge sources. """
+spedges(c::AbstractCausalLoop) = subpart(c, :sp)
+""" CausalLoopPM positive edge targets. """
+tpedges(c::AbstractCausalLoop) = subpart(c, :tp)
 
-spedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :sp)
-tpedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :tp)
-spedges(c::K) where K <: AbstractCausalLoop = subpart(c, :sp)
-tpedges(c::K) where K <: AbstractCausalLoop = subpart(c, :tp)
-
-smedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :sm)
-tmedge(c::K, e) where K <: AbstractCausalLoop = subpart(c, e, :tm)
-smedges(c::K) where K <: AbstractCausalLoop = subpart(c, :sm)
-tmedges(c::K) where K <: AbstractCausalLoop = subpart(c, :tm)
-
-
-
-
-pname(c::K, e) where K <: AbstractCausalLoop = (vname(c, spedge(c, e)), vname(c, tpedge(c, e)))
-pnames(c::K) where K <: AbstractCausalLoop = [pname(c,e) for e in 1:np(c)]
-
-mname(c::K, e) where K <: AbstractCausalLoop = (vname(c, smedge(c, e)), vname(c, tmedge(c, e)))
-mnames(c::K) where K <: AbstractCausalLoop = [mname(c,e) for e in 1:nm(c)]
+""" CausalLoopPM negative edge source. """
+smedge(c::AbstractCausalLoop, e) = subpart(c, e, :sm)
+""" CausalLoopPM negative edge target. """
+tmedge(c::AbstractCausalLoop, e) = subpart(c, e, :tm)
+""" CausalLoopPM negative edge sources. """
+smedges(c::AbstractCausalLoop) = subpart(c, :sm)
+""" CausalLoopPM negative edge targets. """
+tmedges(c::AbstractCausalLoop) = subpart(c, :tm)
 
 
 
+""" CausalLoopPM, name a positive edge by its source and target.  For composition. """
+pname(c::AbstractCausalLoop, e) = (vname(c, spedge(c, e)), vname(c, tpedge(c, e)))
+""" CausalLoopPM, pairs of source, target for positive edges.  Used for composition. """
+pnames(c::AbstractCausalLoop) = Vector{Pair{Symbol, Symbol}}([pname(c,e) for e in 1:np(c)])
 
-""" return node's name with index n """
-# nname(c::AbstractCausalLoop,n) = subpart(c,n,:nname) # return the node's name with index of s
-""" return edge's name with target number t """
+""" CausalLoopPM, name a negative edge by its source and target.  For composition. """
+mname(c::AbstractCausalLoop, e) = (vname(c, smedge(c, e)), vname(c, tmedge(c, e)))
+""" CausalLoopPM, pairs of source, target for negative edges.  Used for composition. """
+mnames(c::AbstractCausalLoop) = Vector{Pair{Symbol, Symbol}}([mname(c,e) for e in 1:nm(c)])
+
+
+
+
+""" CausalLoopPol, return edge's name with src number e """
 sedge(c::CausalLoopPol,e) = subpart(c,e,:src)
-""" return edge's name with edge number e """
+""" CausalLoopPol, return edge's name with tgt number e """
 tedge(c::CausalLoopPol,e) = subpart(c,e,:tgt)
 
-""" return node names of CLD """
-# nnames(c::AbstractCausalLoop) = [nname(c, n) for n in 1:nn(c)]
 
+""" CausalLoopPol, return Polarity of edge e. """
 epol(c::CausalLoopPol,e) = subpart(c,e,:epol)
 
+""" CausalLoopPol, return vector of Polarities. """
 epols(c::CausalLoopPol) = Vector{Polarity}([epol(c, n) for n in 1:nedges(c)])
 
-
+""" CausalLoopPol, indices of all edges with src vertex with index n. """
 outgoing_edges(c::CausalLoopPol, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
+""" CausalLoopPol, indices of all edges with tgt vertex with index n. """
 incoming_edges(c::CausalLoopPol, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
 
-
+""" CausalLoopPM, used for composition. """
 leg(a::CausalLoopPM, x::CausalLoopPM) = OpenACSetLeg(a, P=ntcomponent(pnames(a), pnames(x)),  M=ntcomponent(mnames(a), mnames(x)), V=ntcomponent(vnames(a), vnames(x)))
+
+"""Construct an OpenCausalLoopPM with a CausalLoopPM, and any number of additional CausalLoopPM to act as feet. """
 Open(p::CausalLoopPM, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenCausalLoopPM{Symbol}(p, legs...)
@@ -359,16 +451,32 @@ end
 
 
 
-
+""" Convert a CausalLoopPol to a Graphs package Graph. """
 function to_graphs_graph(cl::CausalLoopPol)
   g = SimpleDiGraph(SimpleEdge.(zip(subpart(cl, :src), subpart(cl, :tgt))))
   g
 end
 
-function cl_cycles(cl::K) where K <: AbstractCausalLoop
+""" 
+  CausalLoopPM, return all cycles of a causal loop as a vector of vectors of int, 
+  where positive edges come before negative.
+
+  Each cycle will include each edge at most once.
+
+  Don't count empty vector as a cycle.
+"""
+function cl_cycles(cl::AbstractCausalLoop)
   cl_cycles(to_clp(cl))
 end
 
+
+""" 
+  CausalLoopPol, return all cycles of a causal loop as a vector of vectors of int.
+
+  Each cycle will include each edge at most once.
+
+  Don't count empty vector as a cycle.
+"""
 function cl_cycles(cl::CausalLoopPol)
   edges = collect(zip(subpart(cl, :src), subpart(cl, :tgt)))
   # Unique are sufficient for making simple graph.
@@ -398,13 +506,17 @@ end
 
 
 
+"""
+Return vector of pairs of edges => polarity.
 
+TODO: Should it instead return a dictionary of edges => Polarity?
+"""
 function extract_loops(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   cycles = cl_cycles(cl)
   Vector{Pair{Vector{Int}, Polarity}}(map(x -> x => walk_polarity(cl, x), cycles))
 end
 
-# TODO: terrible
+""" CausalLoopPM, return """
 epol(cl::CausalLoopPM, e) = begin
   @assert e <= nedges(cl)
   e <= np(cl) ? POL_POSITIVE : POL_NEGATIVE

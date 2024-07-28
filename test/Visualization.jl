@@ -1,6 +1,6 @@
 @testset "Causal Loop F" begin
   @testset "Graphing Empty Causal Loop F" begin
-    empty = CausalLoopF()
+    empty = CausalLoopPM()
     empty_graph = GraphSF(empty)
     @test isempty(empty_graph.stmts)
   end
@@ -9,7 +9,7 @@
   edge_info(statement) = (statement.path[1].name, statement.path[2].name, statement.attrs[:label])
 
   @testset "Graphing standard Causal Loop F" begin
-    ABA = CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_POSITIVE])
+    ABA = CausalLoopPM([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_POSITIVE])
     ABA_graph = GraphSF(ABA)
     
     n1 = node_info(ABA_graph.stmts[1])
@@ -22,7 +22,7 @@
     @test n1 == ("n1", "A") && n2 == ("n2", "B") && e2 == ("n1", "n2", "-") && e1 == ("n2", "n1", "+")
 
 
-    C = CausalLoopF([:C], [:C => :C for _ in 1:2], [POL_NEGATIVE, POL_POSITIVE])
+    C = CausalLoopPM([:C], [:C => :C for _ in 1:2], [POL_NEGATIVE, POL_POSITIVE])
     C_graph = GraphSF(C)
 
     c_n1 = node_info(C_graph.stmts[1])
@@ -33,7 +33,7 @@
     
     @test (c_n1 == ("n1", "C") && c_e2 == ("n1", "n1", "-") && c_e1 == ("n1", "n1", "+"))
 
-    DE = CausalLoopF([:D, :E], [:D => :E], [POL_POSITIVE])
+    DE = CausalLoopPM([:D, :E], [:D => :E], [POL_POSITIVE])
     DE_graph = GraphSF(DE ; schema = "C0")
 
     de_n1 = node_info(DE_graph.stmts[1])
@@ -50,9 +50,9 @@
 
   @testset "Graph_RB for Causal Loop F" begin
     
-    @test isempty(Graph_RB(CausalLoopF()).stmts)
+    @test isempty(Graph_RB(CausalLoopPM()).stmts)
 
-    C2 = CausalLoopF([:C2], [:C2 => :C2 for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE])
+    C2 = CausalLoopPM([:C2], [:C2 => :C2 for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE])
   #   C2_RB = Graph_RB(C2)
 
 
