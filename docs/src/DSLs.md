@@ -74,7 +74,7 @@ Binary:  :+, :-, :*, :/, :÷, :^, :%, :log
 
 Unary: :log, :exp, :sqrt, :+, :-
 :plus\_one, :minus\_one, :reciprocal, :one\_minus, :plus\_two,
-:minus_two
+:minus\_two
 
 The unary functions can be expressed as plus\_one(X), or how you'd expect,
 as X + 1 or 1 + X.
@@ -302,22 +302,32 @@ rewrite rule to replace L with R in sf.
 
 Every object in sf must have a unique name.
 
-Rewrite has 8 headers, :stocks, :flows, :sums, :dynamic\_variables, :redefs, :removes,
-and :dyvar\_swaps
+Rewrite has 10 headers, :stocks, :flows, :sums, :dynamic\_variables, :redefs, 
+:removes, :dyvar\_swaps, :add\_links and :remove\_links
 
 The first five are used to indicate if an instance of that type is being
-added.  Use the same definition syntax as in @stock_and_flow.
+added.  Use the same definition syntax as in @stock\_and\_flow.
 
 :redefs is used to change the definition of a dynamic variable, flow or
-sum.  Again, use the same syntax as in @stock_and_flow.
+sum.  Again, use the same syntax as in @stock\_and\_flow.
 
 :removes indicates that an object should be deleted.  You just need the name of it in the original.
+As with stratify, you can use ~ to indicate a substring match of what should be removed.
 
 :dyvar\_swaps is used to swap all instances of an object inside dynamic variables
-with another object.  Use the notation A => B to indicate every A in a
-dynamic variable should now instead be B.
+with another object.  Use the notation old > new to indicate every instance of old in a
+dynamic variable should now instead be new.
 
-For this to work, there must exist homomorphisms I => L and I => R, and every name in the original stockflow must be unique.
+:add\_links indicates that a link should be added, either adding a stock as an inflow/outflow,
+some non-flow object as an operand in a dynamic variable, or a stock to a sum.  Use the notation
+src => tgt where tgt is the dynamic variable, flow or sum which is having the link added.  For
+dynamic variables and flows, where position matters, use src => tgt, position, where position is an integer.
+For flows, 1 represents the stock the flow comes from, and 2 represents the stock the flow goes to.
+
+:add\_link indicates a link should be removed, using the same syntax as :add\_links.  Omit position
+to remove all links between src and tgt.
+
+For this to work, there must exist homomorphisms L => sf, I => L and I => R, and every name in the original stockflow must be unique.
 
 ```julia
 aged_sir_rewritten = @rewrite aged_sir begin
@@ -349,23 +359,51 @@ end
 
 Covid19_rewritten = @rewrite COVID19 begin
   :dyvar_swaps
-  λ => v_NewIncidence₂
-  rw_v => rw
+  λ > v_NewIncidence₂
+  rw_v > rw
 
   :removes
   λ
   rw_v
 end
 
-sirv_rewritten = @rewrite sirv begin
-  :dyvar_swaps
-  lambda => v_inf₂
-  rdeath_svi => rdeath
+sir_to_seir = @rewrite sir_model begin
+    :stocks
+    E
 
-  :removes
-  lambda
-  rdeath_svi
-end
+    :parameters
+    μ
+    tlatent
+    δ
+    
+    :dynamic_variables
+    v_newIncidence = S * v_perSIncidenceRate
+    v_birth = μ * N
+    v_inf = E / tlatent
+
+    v_deathS = δ * S
+    v_deathE = δ * E
+    v_deathI = δ * I
+    v_deathR = δ * R
+
+    :redefs
+    E => f_inf(v_inf) => I
+    
+    :flows
+    CLOUD => f_birth(v_birth) => S
+    S => f_incid(v_newIncidence) => E
+    S => f_deathS(v_deathS) => CLOUD
+    E => f_deathE(v_deathE) => CLOUD
+    I => f_deathI(v_deathI) => CLOUD
+    R => f_deathR(v_deathR) => CLOUD
+
+    :add_links
+    E => N
+    E => NS
+    
+    :removes
+    v_newInfections
+  end
 ```
 
 ---
