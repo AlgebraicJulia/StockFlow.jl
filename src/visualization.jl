@@ -240,7 +240,7 @@ function GraphCL(c::CausalLoop)
 end
 
 function GraphCL(c::CausalLoopPM; schema="BASE")
-  GraphSF(to_clp(c) ; schema=schema)
+  GraphCL(to_clp(c) ; schema=schema)
 end
 
 function GraphCL(c::CausalLoopPol; schema="BASE")

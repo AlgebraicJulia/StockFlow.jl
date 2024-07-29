@@ -507,21 +507,20 @@ end
 
 
 """
-Return vector of pairs of edges => polarity.
-
-TODO: Should it instead return a dictionary of edges => Polarity?
+Return dict of pairs of edges => polarity.
 """
 function extract_loops(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   cycles = cl_cycles(cl)
-  Vector{Pair{Vector{Int}, Polarity}}(map(x -> x => walk_polarity(cl, x), cycles))
+  Dict{Vector{Int}, Polarity}(map(x -> x => walk_polarity(cl, x), cycles))
 end
 
-""" CausalLoopPM, return """
+""" CausalLoopPM, return polarity of edge with index e. """
 epol(cl::CausalLoopPM, e) = begin
   @assert e <= nedges(cl)
   e <= np(cl) ? POL_POSITIVE : POL_NEGATIVE
 end
 
+""" Return polarity of walk.  Empty walk is positive. """
 function walk_polarity(cl::K, edges::Vector{Int}) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   @assert is_walk(cl, edges)
   foldl(*, map(x -> epol(cl, x), edges); init = POL_POSITIVE)
@@ -655,15 +654,14 @@ function num_indep_loops_var_on(c::K, name::Symbol) where K <: Union{AbstractCau
   return count(∋(name_index), sc)
 end
 
-# TODO: Turn into dictionary
 """
 Return vector of tuple of (name, num inputs, num outputs)
 """
 function num_inputs_outputs(cl::CausalLoopPol)
   @assert allunique(vnames(cl))
-  ssvec = Vector{Tuple{Symbol, Int, Int}}()
+  ssvec = Dict{Symbol, Tuple{Int, Int}}()
   for i in 1:nvert(cl)
-    push!(ssvec, (subpart(cl, i, :vname), length(incident(cl, i, :tgt)), length((incident(cl, i, :src))))) # name, num inputs, num outputs
+    push!(ssvec, subpart(cl, i, :vname) => (length(incident(cl, i, :tgt)), length((incident(cl, i, :src))))) # name, num inputs, num outputs
   end
   ssvec
 end
@@ -680,11 +678,11 @@ Return vector of tuple of (name, num pos inputs, num pos outputs, num neg inputs
 """
 function num_inputs_outputs_pols(cl::CausalLoopPol)
   @assert allunique(vnames(cl))
-  ssvec = Vector{Tuple{Symbol, Int, Int, Int, Int}}() # name, pos in, pos out, neg in, neg out
+  ssvec = Dict{Symbol, Tuple{Int, Int, Int, Int}}() # name, pos in, pos out, neg in, neg out
   for i in 1:nvert(cl)
     push!(ssvec, 
-    (subpart(cl, i, :vname), 
-    (count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :tgt))), 
+    subpart(cl, i, :vname) => 
+    ((count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :tgt))), 
     (count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :src))), 
     (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :tgt))), 
     (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :src))))

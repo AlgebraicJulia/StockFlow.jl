@@ -1,5 +1,3 @@
-
-
 using StockFlow
 using StockFlow.Syntax
 using StockFlow.PremadeModels
@@ -132,8 +130,8 @@ end
     # D => -C == 4
     @test cl_cycles(cl) == [[3,4], [2]] 
 
-    @test extract_loops(CausalLoopPM()) == Vector{Pair{Vector{Int}, Polarity}}()
-    @test extract_loops(clc) == [[1,4] => POL_NEGATIVE, [2, 4] => POL_POSITIVE, [3] => POL_NEGATIVE]
+    @test extract_loops(CausalLoopPM()) == Dict{Vector{Int}, Polarity}()
+    @test extract_loops(clc) == Dict([[1,4] => POL_NEGATIVE, [2, 4] => POL_POSITIVE, [3] => POL_NEGATIVE])
 
 end
 
@@ -178,14 +176,14 @@ end
 end
 
 @testset "Number of Outputs" begin
-    @test num_inputs_outputs(@cl ) == Vector{Tuple{Symbol, Int, Int}}()
-    @test num_inputs_outputs(@cl A) == [(:A, 0, 0),]
-    @test num_inputs_outputs(@cl A => +B, B => +C, C => -D) == [(:A, 0, 1), (:B, 1, 1), (:C, 1, 1), (:D, 1, 0)]
+    @test num_inputs_outputs(@cl ) == Dict{Symbol, Tuple{Int, Int}}()
+    @test num_inputs_outputs(@cl A) == Dict([:A => (0, 0)])
+    @test num_inputs_outputs(@cl A => +B, B => +C, C => -D) == Dict([:A => (0, 1), :B => (1, 1), :C => (1, 1), :D => (1, 0)])
 
     @test (num_inputs_outputs_pols(@cl A => +B, A => -C, A => +D, A => -E, A => -B) == 
-    [(:A, 0, 2, 0, 3), (:B, 1, 0, 1, 0),
-     (:C, 0, 0, 1, 0), (:D, 1, 0, 0, 0), (:E, 0, 0, 1, 0)    
-    ])
+    Dict([:A => (0, 2, 0, 3), :B => (1, 0, 1, 0),
+     :C => (0, 0, 1, 0), :D => (1, 0, 0, 0), :E => (0, 0, 1, 0)    
+    ]))
 
 end
 
