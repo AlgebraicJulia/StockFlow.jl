@@ -1,17 +1,13 @@
-using ReTestItems
-
-@testsetup module TestSetup
-    using Reexport
-
-    @reexport using StockFlow
-    @reexport using StockFlow.Syntax
-    @reexport using StockFlow.PremadeModels
 
 
-    @reexport using Catlab.CategoricalAlgebra    
-end
+using StockFlow
+using StockFlow.Syntax
+using StockFlow.PremadeModels
 
-@testitem "Empty CausalLoop" setup=[TestSetup] begin
+using Catlab.CategoricalAlgebra    
+
+
+@testset "Empty CausalLoop" begin
     
     e = CausalLoop() # Graph with names
     @test (nvert(e) == 0
@@ -34,10 +30,7 @@ end
 
 
 
-@testitem "sf to causal loop" setup=[TestSetup] begin
-    using StockFlow.Syntax
-    using StockFlow.PremadeModels
-
+@testset "sf to causal loop" begin
     @test (convertToCausalLoop(seir()) 
            == (@causal_loop begin
             :nodes
@@ -100,8 +93,7 @@ end
 
 
 
-@testitem "Basic CausalLoop Creation" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "Basic CausalLoop Creation" begin
     cl1 = (@cl A => +B, B => -C, D, C => -A)
     cl2 = (@causal_loop begin
                :nodes #TODO: rename to vertices
@@ -126,8 +118,7 @@ using StockFlow.Syntax
 end
 
 
-@testitem "Cycles" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "Cycles" begin
     clc = (@cl A => +B, A => -B, B => -B, B => -A)
     
     @test cl_cycles(CausalLoopPM()) == Vector{Vector{Int}}()
@@ -146,8 +137,7 @@ using StockFlow.Syntax
 
 end
 
-@testitem "Walk polarity" setup=[TestSetup] begin
-    using StockFlow.Syntax
+@testset "Walk polarity" begin
     @test is_walk(CausalLoopPM(), Vector{Int}())
     @test !is_walk((@cl A => +B, B => +C), [2, 1])
     @test !is_walk(CausalLoopPM(), [1])
@@ -164,8 +154,7 @@ end
 end
 
 
-@testitem "Count of loops a variable is on" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "Count of loops a variable is on" begin
     cll = (@cl A => +B, B => +C, C => -D, D => +A, D => -A, E => +E, E => -E, F => +F, G)
 
     @test num_loops_var_on(cll, :A) == 2
@@ -178,8 +167,7 @@ using StockFlow.Syntax
 end
 
 
-@testitem "all paths" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "all paths" begin
     # Won't hit same node twice
     @test extract_all_nonduplicate_paths( (@cl )) == Dict([Vector{Int}() => POL_POSITIVE])
     @test extract_all_nonduplicate_paths((@cl A => +B)) == Dict([Vector{Int}() => POL_POSITIVE,
@@ -189,8 +177,7 @@ using StockFlow.Syntax
 
 end
 
-@testitem "Number of Outputs" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "Number of Outputs" begin
     @test num_inputs_outputs(@cl ) == Vector{Tuple{Symbol, Int, Int}}()
     @test num_inputs_outputs(@cl A) == [(:A, 0, 0),]
     @test num_inputs_outputs(@cl A => +B, B => +C, C => -D) == [(:A, 0, 1), (:B, 1, 1), (:C, 1, 1), (:D, 1, 0)]
@@ -203,8 +190,7 @@ using StockFlow.Syntax
 end
 
 
-@testitem "A shortest path" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "A shortest path" begin
     @test (shortest_path((@cl A => +B, B => -C, C => -D, D => +E), 1, 5) == [1 => 2, 2 => 3, 3 => 4, 4 => 5])
 
     sp = shortest_path((@cl A => +B, B => -C, A => +D, D => +C), 1, 3)
@@ -212,8 +198,7 @@ using StockFlow.Syntax
 end
 
 
-@testitem "betweenness" setup=[TestSetup] begin
-using StockFlow.Syntax
+@testset "betweenness" begin
     @test betweenness(@cl A => +B, B => +C, C => +A) == [0.5, 0.5, 0.5]
     @test betweenness(@cl A => +B, B => +C) == [0, 0.5, 0]
 end
