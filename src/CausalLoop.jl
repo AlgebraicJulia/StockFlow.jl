@@ -424,9 +424,10 @@ mnames(c::AbstractCausalLoop) = Vector{Tuple{Symbol, Symbol}}([mname(c,e) for e 
 
 
 """ CausalLoopPol, return edge's name with src number e """
-sedge(c::CausalLoopPol,e) = subpart(c,e,:src)
+sedge(c::Union{CausalLoopPol,CausalLoop},e) = subpart(c,e,:src)
 """ CausalLoopPol, return edge's name with tgt number e """
-tedge(c::CausalLoopPol,e) = subpart(c,e,:tgt)
+tedge(c::Union{CausalLoopPol, CausalLoop},e) = subpart(c,e,:tgt)
+
 
 
 """ CausalLoopPol, return Polarity of edge e. """
