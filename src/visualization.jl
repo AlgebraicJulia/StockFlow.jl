@@ -69,7 +69,7 @@ def_link(s,t) = ([s, t])
 
 function GraphCL(c::CausalLoop)
 
-  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nv(c)]
+  NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nvert(c)]
 
   Edges=map(1:nedges(c)) do k
     [Edge(["n$(sedge(c,k))", "n$(tedge(c,k))"],Attributes(:color=>"blue"))]
