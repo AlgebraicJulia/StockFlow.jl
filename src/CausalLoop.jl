@@ -527,7 +527,10 @@ function walk_polarity(cl::K, edges::Vector{Int}) where K <: Union{AbstractCausa
   foldl(*, map(x -> epol(cl, x), edges); init = POL_POSITIVE)
 end
 
-
+"""
+CausalLoopPol, return all dictionary of path => Polarity, for all paths with nonduplicate edges.
+Each path therefore will be at most |E|.
+"""
 function extract_all_nonduplicate_paths(clp::CausalLoopPol)
 
 
@@ -561,6 +564,11 @@ function extract_all_nonduplicate_paths(clp::CausalLoopPol)
 
 end
 
+
+"""
+CausalLoopPM, return all dictionary of path => Polarity, for all paths with nonduplicate edges.
+Each path therefore will be at most |E|.
+"""
 function extract_all_nonduplicate_paths(cl::K) where K <: AbstractCausalLoop
   clp = to_clp(cl)
   extract_all_nonduplicate_paths(clp)
@@ -568,40 +576,75 @@ end
 
 
 
+"""
+CausalLoopPM, return true if a given list of edges is a walk; that the target for each edge is the
+source of the next.  Empty list of edges counts as a walk.
 
+Note, negative edges come after positive edges:
+```julia-repl
+julia> using StockFlow; using StockFlow.Syntax;
+julia> cl = (@cl A => +B, B => -C, C => +D, D => -E);
+julia> is_walk(cl, [1,3,2,4])
+true
+```
+"""
 function is_walk(cl::CausalLoopPM, edges::Vector{Int})
     length(edges) == 1 ? only(edges) <= nedges(cl) :
   all(x -> tedge(cl, edges[x]) == sedge(cl, edges[x+1]), eachindex(edges[1:end-1]))
 end
 
+"""
+CausalLoopPM, return true if a given list of edges is a walk, and the target of the final edge is
+the source of the first.
+
+Empty list of edges does not count as a circuit.
+"""
 function is_circuit(cl::CausalLoopPM, edges::Vector{Int})
     length(edges) > 0 && is_walk(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
 end
 
-# TODO: How, pray tell, is this a functor
-function betweenness(cl::K) where K <: Union{AbstractCausalLoop, CausalLoopPol}
+"""
+Calculate betweenness centrality.
+"""
+function betweenness(cl::Union{AbstractCausalLoop, CausalLoopPol})
   g = to_graphs_graph(cl)
   betweenness_centrality(g)
 end
 
 
-# NOTE: simplecycles returns NODES!!!
 
-#TODO: Deal with nameless AbstractCausalLoop, or create a subtype without nameless
-
-function to_graphs_graph(cl::K) where K <: AbstractCausalLoop
+"""
+Convert CausalLoopPM to a Graphs' library graph.
+"""
+function to_graphs_graph(cl::AbstractCausalLoop)
   to_graphs_graph(to_clp(cl))
 end
 
-# Acts as if there can be more than one edge between nodes
-function num_loops_var_on(c::K, name::Symbol) where K <: Union{AbstractCausalLoop, CausalLoopPol}
+"""
+Count how many loops a variable is on.
+
+A => +B, B => +C, C => +A, C => -A will be treated as 2 loops: [1,2,3] and [1,2,4].
+Each variable will be treated as being on 2 loops.
+
+Takes a CausalLoopPM or a CausalLoopPol, and a Symbol.  Throws an error if that Symbol
+is the name for more than one variable.
+"""
+function num_loops_var_on(c::Union{AbstractCausalLoop, CausalLoopPol}, name::Symbol)
   name_index = only(incident(c, name, :vname))
   node_cycles = map(x -> map(y -> tedge(c, y), x), cl_cycles(c)) # sedge is equivalent here.
   # if a node is in a cycle, of course, it will be in both the src set and the tgt set
   return count(∋(name_index), node_cycles)
 end
 
-# Acts as if there is at most one edge between nodes
+
+"""
+Count how many loops a variable is on, ignoring when two vertices have more than one edge between them.
+
+A => +B, B => +C, C => +A, C => -A will be treated as 1 loop.
+
+Takes a CausalLoopPM or a CausalLoopPol, and a Symbol.  Throws an error if that Symbol
+is the name for more than one variable.
+"""
 function num_indep_loops_var_on(c::K, name::Symbol) where K <: Union{AbstractCausalLoop, CausalLoopPol}
   g = to_graphs_graph(c)
   sc = simplecycles(g)
@@ -612,7 +655,10 @@ function num_indep_loops_var_on(c::K, name::Symbol) where K <: Union{AbstractCau
   return count(∋(name_index), sc)
 end
 
-
+# TODO: Turn into dictionary
+"""
+Return vector of tuple of (name, num inputs, num outputs)
+"""
 function num_inputs_outputs(cl::CausalLoopPol)
   @assert allunique(vnames(cl))
   ssvec = Vector{Tuple{Symbol, Int, Int}}()
@@ -622,11 +668,16 @@ function num_inputs_outputs(cl::CausalLoopPol)
   ssvec
 end
 
+"""
+Return vector of tuple of (name, num inputs, num outputs)
+"""
 function num_inputs_outputs(cl::CausalLoopPM)
   num_inputs_outputs(to_clp(cl))
 end
 
-
+"""
+Return vector of tuple of (name, num pos inputs, num pos outputs, num neg inputs, num neg outputs)
+"""
 function num_inputs_outputs_pols(cl::CausalLoopPol)
   @assert allunique(vnames(cl))
   ssvec = Vector{Tuple{Symbol, Int, Int, Int, Int}}() # name, pos in, pos out, neg in, neg out
@@ -643,11 +694,16 @@ function num_inputs_outputs_pols(cl::CausalLoopPol)
   ssvec
 end
 
+"""
+Return vector of tuple of (name, num pos inputs, num pos outputs, num neg inputs, num neg outputs)
+"""
 function num_inputs_outputs_pols(cl::CausalLoopPM)
   num_inputs_outputs_pols(to_clp(cl))
 end
 
-
+"""
+Return a shortest path using a_star.
+"""
 function shortest_path(cl::Union{CausalLoopPol, CausalLoopPM}, s, d) # finds a shortest path, not all
   map(e -> (e.src => e.dst), a_star(to_graphs_graph(cl), s, d))
 end
