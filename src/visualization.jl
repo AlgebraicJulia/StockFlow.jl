@@ -5,7 +5,7 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
-export GraphSF, display_uwd, GraphF, Graph_RB
+export GraphSF, display_uwd, GraphF, Graph_RB, GraphCL
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
 
@@ -224,7 +224,7 @@ function GraphSF(p::AbstractStockAndFlow0; make_stock::Function=def_stock, make_
 
 end
 
-function GraphSF(c::CausalLoop)
+function GraphCL(c::CausalLoop)
 
   NNodes = [Node("n$n", Attributes(:label=>"$(nname(c, n))",:shape=>"plaintext")) for n in 1:nv(c)]
 
@@ -239,11 +239,11 @@ function GraphSF(c::CausalLoop)
 
 end
 
-function GraphSF(c::CausalLoopPM; schema="BASE")
+function GraphCL(c::CausalLoopPM; schema="BASE")
   GraphSF(to_clp(c) ; schema=schema)
 end
 
-function GraphSF(c::CausalLoopPol; schema="BASE")
+function GraphCL(c::CausalLoopPol; schema="BASE")
 
   NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"plaintext")) for n in 1:nvert(c)]
 
