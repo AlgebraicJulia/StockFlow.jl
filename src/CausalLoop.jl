@@ -413,12 +413,12 @@ tmedges(c::AbstractCausalLoop) = subpart(c, :tm)
 """ CausalLoopPM, name a positive edge by its source and target.  For composition. """
 pname(c::AbstractCausalLoop, e) = (vname(c, spedge(c, e)), vname(c, tpedge(c, e)))
 """ CausalLoopPM, pairs of source, target for positive edges.  Used for composition. """
-pnames(c::AbstractCausalLoop) = Vector{Pair{Symbol, Symbol}}([pname(c,e) for e in 1:np(c)])
+pnames(c::AbstractCausalLoop) = Vector{Tuple{Symbol, Symbol}}([pname(c,e) for e in 1:np(c)])
 
 """ CausalLoopPM, name a negative edge by its source and target.  For composition. """
 mname(c::AbstractCausalLoop, e) = (vname(c, smedge(c, e)), vname(c, tmedge(c, e)))
 """ CausalLoopPM, pairs of source, target for negative edges.  Used for composition. """
-mnames(c::AbstractCausalLoop) = Vector{Pair{Symbol, Symbol}}([mname(c,e) for e in 1:nm(c)])
+mnames(c::AbstractCausalLoop) = Vector{Tuple{Symbol, Symbol}}([mname(c,e) for e in 1:nm(c)])
 
 
 
