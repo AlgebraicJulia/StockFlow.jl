@@ -1299,8 +1299,10 @@ function match_cl_format(statement, nodes, edges, polarities)
     end
 end
 
-
-
+"""
+Create a causal loop with polarities with a block of statements in a tuple, consisting of A => +B,
+A => -B and A.
+"""
 function cl_macro(block)
 
     if block isa Symbol
@@ -1372,6 +1374,49 @@ function causal_loop_macro(block)
 
 end
 
+
+"""
+Create a causal loop diagram, with or without Polarities.
+X => +Y creates a positive edge, X => -Y a negative, and
+X => Y creates a causal loop without polarities.  Defaults
+to creating with polarities, if there are no edges.
+
+```julia-repl
+
+julia> (@causal_loop begin
+       :nodes
+       A
+       B
+
+       :edges
+       A => +B
+
+       end) == CausalLoopPM([:A,:B], [:A => :B], [POL_POSITIVE])
+true
+
+julia> ((@causal_loop begin
+       :nodes
+       λ
+       β
+       :edges
+       λ => β
+       β => -λ
+       end) ==
+       (@causal_loop begin
+       :nodes
+       λ
+       β
+       :edges
+       λ => β
+       β => λ
+       end) ==
+       CausalLoop([:λ, :β], [:λ => :β, :β => :λ]))
+true
+
+julia> (@causal_loop begin end) == CausalLoopPM()
+true
+```
+"""
 macro causal_loop(block)
   escaped_block = Expr(:quote, block)
   quote
@@ -1379,12 +1424,35 @@ macro causal_loop(block)
   end
 end
 
+
+"""
+Compressed notation to create causal loop with polarities.
+
+No argument function for empty causal loop.
+
+```julia-repl
+julia> @cl
+CausalLoopPM {V:0, P:0, M:0, Name:0}
+```
+"""
 macro cl()
     quote
         CausalLoopPM()  
     end
 end
 
+
+"""
+Compressed notation to create causal loop with polarities.
+
+```julia-repl
+julia> (@cl A => +B, C => -D) == CausalLoopPM([:A, :B, :C, :D], [:A => :B, :C => :D], [POL_POSITIVE, POL_NEGATIVE])
+true
+
+julia> (@cl A, B, C => -A, C => +B, D) == CausalLoopPM([:A, :B, :C, :D], [:C => :A, :C => :B], [POL_NEGATIVE, POL_POSITIVE])
+true
+```
+"""
 macro cl(block)
     escaped_block = Expr(:quote, block)
     quote
