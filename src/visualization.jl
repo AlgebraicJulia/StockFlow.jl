@@ -309,18 +309,11 @@ end
 
 
 
-"""
-Graph reinforcing and balancing loops of a CausalLoopPM.
-"""
-function GraphRB(c::CausalLoopPM ; cycle_color=:yellow, edge_label_color=:lightblue)
-    GraphRB(to_clp(c) ; cycle_color=cycle_color, edge_label_color=edge_label_color)
-end
-
 
 """
-Graph reinforcing and balancing loops of a CausalLoopPol.
+Graph reinforcing and balancing loops of a causal loop diagram.
 """    
-function GraphRB(c::CausalLoopPol ; cycle_color=:yellow, edge_label_color=:lightblue)
+function GraphRB(c::Union{CausalLoopPM, CausalLoopPol} ; cycle_color=:yellow, edge_label_color=:lightblue)
     NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"square")) for n in 1:nvert(c)]
     Edges = Vector{Edge}()
     edge_to_intermediate_node = Dict{Int, Int}()

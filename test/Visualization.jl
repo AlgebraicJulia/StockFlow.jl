@@ -48,12 +48,12 @@
   end
 
 
-  @testset "Graph_RB for Causal Loop F" begin
+  @testset "GraphRB for Causal Loop F" begin
     
-    @test isempty(Graph_RB(CausalLoopPM()).stmts)
+    @test isempty(GraphRB(CausalLoopPM()).stmts)
 
     C2 = CausalLoopPM([:C2], [:C2 => :C2 for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE])
-    C2_RB = Graph_RB(C2)
+    C2_RB = GraphRB(C2)
 
 
   #   # number nodes + 2 * number edges
@@ -63,6 +63,7 @@
 
      @test (C_nodes, C_edges) == ([("n1", "C2"), ("n2", "+"), ("n3", "+"), ("n4", "-"), ("n5", "-"), ("n6", "-"), ("n7", "B"), ("n8", "R"), ("n9", "B"), ("n10", "B"), ("n11", "R")], [("n1", "n2"), ("n2", "n1"), ("n1", "n3"), ("n3", "n1"), ("n1", "n4"), ("n4", "n1"), ("n1", "n5"), ("n5", "n1"), ("n1", "n6"), ("n6", "n1"), ("n4", "n7"), ("n2", "n8"), ("n6", "n9"), ("n5", "n10"), ("n3", "n11")])
 
+     @test GraphRB(to_clp(C2)) == GraphRB(C2)
 
   end
 
