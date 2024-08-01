@@ -5,7 +5,7 @@ import Base.Iterators: flatten
 using StatsBase
 using Catlab.Graphics
 
-export display_uwd, GraphF, Graph_RB, GraphCL
+export display_uwd, GraphF, GraphRB, GraphCL
 
 display_uwd(ex) = to_graphviz(ex, box_labels=:name, junction_labels=:variable, edge_attrs=Dict(:len=>"1"))
 
@@ -66,7 +66,9 @@ def_flow_noneV(p, us, ds, f) = ([us, ds],Attributes(:label=>"$(fname(p,f))", :la
 # t: string of the target name                             
 def_link(s,t) = ([s, t])
 
-
+"""
+Graph a Causal Loop diagram (no polarities).
+"""
 function GraphCL(c::CausalLoop)
 
   NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"plaintext")) for n in 1:nvert(c)]
@@ -82,10 +84,16 @@ function GraphCL(c::CausalLoop)
 
 end
 
+"""
+Graph a CausalLoopPM.
+"""
 function GraphCL(c::CausalLoopPM; schema="BASE")
   GraphCL(to_clp(c) ; schema=schema)
 end
 
+"""
+Graph a CausalLoopPol.
+"""
 function GraphCL(c::CausalLoopPol; schema="BASE")
 
   NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"plaintext")) for n in 1:nvert(c)]
@@ -301,10 +309,18 @@ end
 
 
 
+"""
+Graph reinforcing and balancing loops of a CausalLoopPM.
+"""
+function GraphRB(c::CausalLoopPM ; cycle_color=:yellow, edge_label_color=:lightblue)
+    GraphRB(to_clp(c) ; cycle_color=cycle_color, edge_label_color=edge_label_color)
+end
 
 
-    
-function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
+"""
+Graph reinforcing and balancing loops of a CausalLoopPol.
+"""    
+function GraphRB(c::CausalLoopPol ; cycle_color=:yellow, edge_label_color=:lightblue)
     NNodes = [Node("n$n", Attributes(:label=>"$(vname(c, n))",:shape=>"square")) for n in 1:nvert(c)]
     Edges = Vector{Edge}()
     edge_to_intermediate_node = Dict{Int, Int}()
@@ -315,12 +331,6 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
         pol = :+
       elseif pol_int == POL_NEGATIVE
         pol = :-
-      elseif pol_int == POL_ZERO
-        pol = 0
-      elseif pol_int == POL_UNKNOWN
-        pol = :?
-      elseif pol_int == POL_NOT_WELL_DEFINED
-        pol = :±
       else
         error("Unknown Polarity $pol_int.")
       end
@@ -345,12 +355,6 @@ function Graph_RB(c ; cycle_color=:yellow, edge_label_color=:lightblue)
         label = "R" # reinforcing
       elseif polarity == POL_NEGATIVE
         label = "B" # balancing
-      elseif polarity == POL_ZERO
-        label = "0"
-      elseif polarity == POL_UNKNOWN
-        label = "?"
-      elseif polarity == POL_NOT_WELL_DEFINED
-        label = "±"
       else
         error("Unknown cycle polarity $polarity")
       end
