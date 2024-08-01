@@ -1,6 +1,6 @@
 export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop,
 nvert, nedges, vname, np, nm,
-sedge, tedge, convertToCausalLoop, nnames, epol, epols,
+sedge, tedge, convertToCausalLoop, vnames, epol, epols,
 Polarity, POL_POSITIVE, POL_NEGATIVE,
 add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
