@@ -577,7 +577,7 @@ end
 
 
 """
-CausalLoopPM, return true if a given list of edges is a walk; that the target for each edge is the
+Return true if a given list of edges is a walk; that the target for each edge is the
 source of the next.  Empty list of edges counts as a walk.
 
 Note, negative edges come after positive edges:
@@ -588,18 +588,18 @@ julia> is_walk(cl, [1,3,2,4])
 true
 ```
 """
-function is_walk(cl::CausalLoopPM, edges::Vector{Int})
+function is_walk(cl::Union{CausalLoopPM, CausalLoopPol}, edges::Vector{Int})
     length(edges) == 1 ? only(edges) <= nedges(cl) :
   all(x -> tedge(cl, edges[x]) == sedge(cl, edges[x+1]), eachindex(edges[1:end-1]))
 end
 
 """
-CausalLoopPM, return true if a given list of edges is a walk, and the target of the final edge is
+Return true if a given list of edges is a walk, and the target of the final edge is
 the source of the first.
 
 Empty list of edges does not count as a circuit.
 """
-function is_circuit(cl::CausalLoopPM, edges::Vector{Int})
+function is_circuit(cl::Union{CausalLoopPM, CausalLoopPol}, edges::Vector{Int})
     length(edges) > 0 && is_walk(cl, edges) && sedge(cl, edges[1]) == tedge(cl, edges[end])
 end
 
