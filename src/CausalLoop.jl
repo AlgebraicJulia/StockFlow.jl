@@ -765,7 +765,7 @@ end
 """
 Return vector of all shortest paths between two nodes.  Takes node indices as args.
 """
-function shortest_paths(cl::CausalLoop, s::Int, d::Int)
+function shortest_paths(cl::Union{CausalLoopPM, CausalLoopPol, CausalLoop}, s::Int, d::Int)
   paths = Vector{Vector{Int}}()
   minimum = Inf
  
@@ -776,6 +776,9 @@ function shortest_paths(cl::CausalLoop, s::Int, d::Int)
 
     outgoing = outgoing_edges(cl, nodes[end])
     for o in outgoing
+      if tedge(cl, o) in nodes
+        continue
+      end
       new_path = [path..., o]
       if tedge(cl, o) == d
         if length(new_path) == minimum
@@ -795,7 +798,7 @@ function shortest_paths(cl::CausalLoop, s::Int, d::Int)
     return [Vector{Int}()]
   end
 
-
+  cl = to_simple_cl(cl)
   rec_search!(Vector{Int}(), [s])
 
   paths
@@ -839,6 +842,9 @@ function all_shortest_paths(cl::CausalLoop)
       target = tedge(cl, o)
 
       if length(path) >= minimum[target] # this is not shortest path to target.
+        continue
+      end
+      if target in nodes
         continue
       end
       new_path = [path..., o]

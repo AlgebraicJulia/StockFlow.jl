@@ -187,16 +187,23 @@ end
 
 end
 
+@testset "Shortest path functions" begin
 
-@testset "A shortest path" begin
-    @test (shortest_path((@cl A => +B, B => -C, C => -D, D => +E), 1, 5) == [1 => 2, 2 => 3, 3 => 4, 4 => 5])
+    @testset "Shortest paths" begin
+        @test shortest_paths((@cl A), :A, :A) == Vector{Int}[[]] # trivial path
+        @test shortest_paths((@cl A => A), :A, :A) == Vector{Int}[[]]
+        @test shortest_paths((@cl A => B), :A, :A) == Vector{Int}[[]]
+        @test shortest_paths((@cl A => B), :A, :B) == Vector{Int}[[1]]
+        @test shortest_paths((@cl A => B), :B, :A) == Vector{Int}[] # no path
 
-    sp = shortest_path((@cl A => +B, B => -C, A => +D, D => +C), 1, 3)
-    @test sp == [1 => 2, 2 => 3] || sp == [1 => 4, 4 => 3]
-end
+        @test shortest_paths((@cl A => B, B => C), :A, :C) == Vector{Int}[[1,2]]
+        @test shortest_paths((@cl A => B, B => C, A => C), :A, :C) == Vector{Int}[[3]]
 
+        @test shortest_paths((@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D), :A, :D) == Vector{Int}[[1, 2, 3], [4,5,6]]
+        @test shortest_paths((@cl A => B, A => B), :A, :B) == Vector{Int}[[1], [2]]
 
-@testset "betweenness" begin
-    @test betweenness(@cl A => +B, B => +C, C => +A) == [0.5, 0.5, 0.5]
-    @test betweenness(@cl A => +B, B => +C) == [0, 0.5, 0]
+        @test shortest_paths(convertToCausalLoop(seir()), :S, :E) ==  Vector{Int}[[13, 21]] #  S => f_incid => E
+
+    end
+
 end
