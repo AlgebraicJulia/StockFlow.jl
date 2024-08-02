@@ -2,16 +2,17 @@ export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop,
 nvert, nedges, vname, np, nm,
 sedge, tedge, convertToCausalLoop, vnames, epol, epols,
 Polarity, POL_POSITIVE, POL_NEGATIVE,
-add_node!, add_nodes!, add_edge!, add_edges!, discard_zero_pol,
+add_node!, add_nodes!, add_edge!, add_edges!,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
 CausalLoopPol, to_clp, from_clp, CausalLoopPM, leg,
 extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
 betweenness, to_simple_cl, num_inputs_outputs, num_inputs_outputs_pols,
-shortest_path, to_graphs_graph
+shortest_path, to_graphs_graph, shortest_paths, all_shortest_paths
 
 
 using MLStyle
 
+import Graphs
 import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality, a_star
 
 
@@ -178,6 +179,9 @@ function to_simple_cl(cl::CausalLoopPol)
     c
 end
 
+""" Identity function on CausalLoop. """
+to_simple_cl(cl::CausalLoop) = cl;
+
 """
 Convert a CausalLoopPM to a CausalLoop (forget polarities).
 """
@@ -186,6 +190,7 @@ function to_simple_cl(cl::CausalLoopPM)
     add_parts!(c, :V, length(vnames(cl)) ; vname = vnames(cl))
     add_parts!(c, :E, nedges(cl) ; src=vcat(subpart(cl, :sp), subpart(cl, :sm)),
      tgt=vcat(subpart(cl, :tm), subpart(cl, :tp)))
+    c
 end
 
 """
@@ -437,9 +442,9 @@ epol(c::CausalLoopPol,e) = subpart(c,e,:epol)
 epols(c::CausalLoopPol) = Vector{Polarity}([epol(c, n) for n in 1:nedges(c)])
 
 """ CausalLoopPol, indices of all edges with src vertex with index n. """
-outgoing_edges(c::CausalLoopPol, n) = collect(filter(i -> sedge(c,i) == n, 1:ne(c)))
+outgoing_edges(c::Union{CausalLoopPol, CausalLoopPM, CausalLoop}, n) = Vector{Int}(collect(filter(i -> sedge(c,i) == n, 1:nedges(c))))
 """ CausalLoopPol, indices of all edges with tgt vertex with index n. """
-incoming_edges(c::CausalLoopPol, n) = collect(filter(i -> tedge(c,i) == n, 1:ne(c)))
+incoming_edges(c::Union{CausalLoopPol,CausalLoopPM, CausalLoop}, n) = Vector{Int}(collect(filter(i -> tedge(c,i) == n, 1:nedges(c))))
 
 """ CausalLoopPM, used for composition. """
 leg(a::CausalLoopPM, x::CausalLoopPM) = OpenACSetLeg(a, P=ntcomponent(pnames(a), pnames(x)),  M=ntcomponent(mnames(a), mnames(x)), V=ntcomponent(vnames(a), vnames(x)))
@@ -453,8 +458,9 @@ end
 
 
 """ Convert a CausalLoopPol to a Graphs package Graph. """
-function to_graphs_graph(cl::CausalLoopPol)
+function to_graphs_graph(cl::Union{CausalLoopPol, CausalLoop})
   g = SimpleDiGraph(SimpleEdge.(zip(subpart(cl, :src), subpart(cl, :tgt))))
+  Graphs.add_vertices!(g, nvert(cl) - Graphs.nv(g))
   g
 end
 
@@ -506,7 +512,6 @@ function cl_cycles(cl::CausalLoopPol)
 end
 
 
-
 """
 Return dict of pairs of edges => polarity.
 """
@@ -520,6 +525,11 @@ epol(cl::CausalLoopPM, e) = begin
   @assert e <= nedges(cl)
   e <= np(cl) ? POL_POSITIVE : POL_NEGATIVE
 end
+
+"""
+CausalLoopPM, polarities of edges.
+"""
+epols(cl::CausalLoopPM) = vcat(repeat([POL_POSITIVE], np(cl)), repeat([POL_NEGATIVE], nm(cl)))
 
 """ Return polarity of walk.  Empty walk is positive. """
 function walk_polarity(cl::K, edges::Vector{Int}) where K <: Union{AbstractCausalLoop, CausalLoopPol}
@@ -540,13 +550,20 @@ function extract_all_nonduplicate_paths(clp::CausalLoopPol)
 
     for o in outgoing
       outgoing_tgt = tedge(clp, o) # note, clp is defined in outer func
+      new_path = [path..., o]
       if outgoing_tgt ∈ nodes
+	# If this path is a cycle, we may already have it with a different start.
+	# In that case, don't add this one.
+	# That is, only add this path if there does not already exist a path with all the same edges.
+	if !(any(k -> all(∈(k), new_path), keys(paths)))
+	  push!(paths, new_path => paths[path] * epol(clp, o))
+        end
         continue
       end
 
       new_nodes = Set{Int}([nodes..., outgoing_tgt])
 
-      new_path = [path..., o]
+
       push!(paths, new_path => paths[path] * epol(clp, o))
       rec_search!(new_path, new_nodes, paths)
     end
@@ -606,11 +623,44 @@ end
 """
 Calculate betweenness centrality.
 """
-function betweenness(cl::Union{AbstractCausalLoop, CausalLoopPol})
-  g = to_graphs_graph(cl)
-  betweenness_centrality(g)
+function betweenness(cl::CausalLoop)
+  @assert allunique(vnames(cl))
+  if nvert(cl) == 0
+    # Just deal with this edge case right here.
+    Array{Int}(undef, 1, 0)
+  end
+
+  betweenness_cent = fill(0.0, 1, nvert(cl))
+
+  sp = all_shortest_paths(cl)
+  # Technically, we should probably also be mapping empty lists to that particular node, but it doesn't affect betweenness
+  sp_nodes = map(paths -> (map(path -> (length(path) == 0 ? Vector{Int}() : vcat([sedge(cl, path[1])], (x -> tedge(cl, x)).(path))), paths)), sp) 
+
+  σₛₜ = Matrix{Int}(map(x -> length(x), sp))
+
+  for i in 1:(nvert(cl))
+    for j in 1:(nvert(cl))
+      if length(sp[i,j]) > 0 && length(sp_nodes[i,j][1]) <= 2 # We don't care about start or end.
+        continue
+      end
+      for path in sp_nodes[i,j]
+        for node in path[2:end-1]
+          betweenness_cent[node] += (1 / σₛₜ[i,j])
+        end
+      end
+    end
+  end
+
+  betweenness_cent
+  
 end
 
+"""
+Calculate betweenness centrality.
+"""
+function betweenness(cl::Union{CausalLoopPM, CausalLoopPol})
+  betweenness(to_simple_cl(cl))
+end
 
 
 """
@@ -619,6 +669,8 @@ Convert CausalLoopPM to a Graphs' library graph.
 function to_graphs_graph(cl::AbstractCausalLoop)
   to_graphs_graph(to_clp(cl))
 end
+
+
 
 """
 Count how many loops a variable is on.
@@ -701,10 +753,132 @@ function num_inputs_outputs_pols(cl::CausalLoopPM)
 end
 
 """
-Return a shortest path using a_star.
+Return vector of all shortest paths between two nodes.  Takes node names as args.
 """
-function shortest_path(cl::Union{CausalLoopPol, CausalLoopPM}, s, d) # finds a shortest path, not all
-  map(e -> (e.src => e.dst), a_star(to_graphs_graph(cl), s, d))
+function shortest_paths(cl::Union{CausalLoopPM, CausalLoopPol, CausalLoop}, s::Symbol, d::Symbol)
+  @assert allunique(vnames(cl))
+  sindex = only(incident(cl, s, :vname))
+  dindex = only(incident(cl, d, :vname))
+  shortest_paths(to_simple_cl(cl), sindex, dindex)
+end
+
+"""
+Return vector of all shortest paths between two nodes.  Takes node indices as args.
+"""
+function shortest_paths(cl::CausalLoop, s::Int, d::Int)
+  paths = Vector{Vector{Int}}()
+  minimum = Inf
+ 
+  function rec_search!(path, nodes)
+    if length(path) >= minimum
+      return
+    end
+
+    outgoing = outgoing_edges(cl, nodes[end])
+    for o in outgoing
+      new_path = [path..., o]
+      if tedge(cl, o) == d
+        if length(new_path) == minimum
+          push!(paths, new_path)
+        else # must be shorter
+          paths = [new_path]
+          minimum = length(new_path)
+        end
+      else
+        rec_search!(new_path, [nodes..., tedge(cl, o)])
+      end
+    end
+  end
+
+
+  if s == d
+    return [Vector{Int}()]
+  end
+
+
+  rec_search!(Vector{Int}(), [s])
+
+  paths
+
+end
+
+
+"""
+Return Matrix{Vector{Vector{Int}}} of all shortest paths.
+First index is src, second is tgt, and it points to a vector of all shortest paths,
+represented as a sequence of edge indices.
+
+Shortest path to self is empty.  [Vector{Int}()]
+
+An empty Vector at i, j represents there being no path i -> j.
+"""
+function all_shortest_paths(cl::Union{CausalLoopPM, CausalLoopPol})
+  all_shortest_paths(to_simple_cl(cl))
+end
+
+"""
+Return Matrix{Vector{Vector{Int}}} of all shortest paths.
+First index is src, second is tgt, and it points to a vector of all shortest paths,
+represented as a sequence of edge indices.
+
+Shortest path to self is empty.  [Vector{Int}()]
+
+An empty Vector at i, j represents there being no path i -> j.
+"""
+function all_shortest_paths(cl::CausalLoop)
+
+  current_paths = nothing
+  # dest = 0
+  minimum = nothing
+  function rec_search!(path, nodes)
+    # Each subpath must be equal to the length of the shortest paths between those two nodes
+    # Else, each subsequent path will not be shortest length.
+    outgoing = outgoing_edges(cl, nodes[end])
+
+    for o in outgoing
+      target = tedge(cl, o)
+
+      if length(path) >= minimum[target] # this is not shortest path to target.
+        continue
+      end
+      new_path = [path..., o]
+      if length(new_path) == minimum[target]
+        push!(current_paths[target], new_path)
+        # Still need to recurse to find other nodes!
+      else # again, must be smaller.
+        current_paths[target] = [new_path]
+        minimum[target] = length(new_path)
+        # and here too, need to recurse.
+      end
+
+      rec_search!(new_path, [nodes..., target])
+
+    end
+
+  end
+
+  
+
+  # src -> tgt -> [sp1, sp2, ...]
+  all_paths = Matrix{Vector{Vector{Int}}}(undef, (nvert(cl), nvert(cl)))
+  for i in 1:(nvert(cl))
+    for j in 1:(nvert(cl))
+      all_paths[i,j] = Vector{Vector{Int}}()
+    end
+  end
+  for i in 1:(nvert(cl))
+    minimum = fill(Inf, 1, nvert(cl))
+    minimum[i] = 0 # distance to self is 0.
+    all_paths[i,i] = Vector{Vector{Int}}([[]]) # [[]]
+    current_paths = fill(Vector{Vector{Int}}(), 1, nvert(cl))
+    rec_search!(Vector{Int}(), [i])
+    for (j, p) in enumerate(current_paths)
+      all_paths[i, j] = p
+    end
+  end
+
+  all_paths
+
 end
 
 

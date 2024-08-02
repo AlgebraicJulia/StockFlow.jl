@@ -1283,25 +1283,33 @@ NothingFunction(x...)::Nothing = nothing;
 
 function match_cl_format(statement, nodes, edges, polarities)
     @match statement begin
-            :($A => - $B) => begin
-              push!(nodes, A, B)
-              push!(edges, A => B)
-              push!(polarities, POL_NEGATIVE)
-            end
-            :($A => + $B) => begin
-              push!(nodes, A, B)
-              push!(edges, A => B)
-              push!(polarities, POL_POSITIVE)
-            end
-            :($A) => begin
+        :($A => - $B) => begin
+            push!(nodes, A, B)
+            push!(edges, A => B)
+            push!(polarities, POL_NEGATIVE)
+        end
+        :($A => + $B) => begin
+            push!(nodes, A, B)
+            push!(edges, A => B)
+            push!(polarities, POL_POSITIVE)
+        end
+        :($A => $B) => begin
+            push!(nodes, A, B)
+            push!(edges, A => B)
+            push!(polarities, nothing)
+        end
+        :($A) => begin
             push!(nodes, A)
         end
+ 
     end
 end
 
 """
 Create a causal loop with polarities with a block of statements in a tuple, consisting of A => +B,
 A => -B and A.
+
+Will create a causal loop without polarities if you use A => B without a + or -.
 """
 function cl_macro(block)
 
@@ -1312,7 +1320,7 @@ function cl_macro(block)
 
     edges = Vector{Pair{Symbol, Symbol}}()
     nodes = Vector{Symbol}()
-    polarities = Vector{Polarity}()
+    polarities = Vector{Union{Polarity, Nothing}}()
 
     @match block.head begin
         :tuple => begin
@@ -1322,8 +1330,11 @@ function cl_macro(block)
         end
         :call => match_cl_format(block, nodes, edges, polarities)
     end
-        
-    return CausalLoopPM(unique(nodes), edges, polarities)
+    if nothing in polarities
+        return CausalLoop(unique(nodes), edges)
+    else
+        return CausalLoopPM(unique(nodes), edges, Vector{Polarity}(polarities))
+    end
 
 end
 
@@ -1443,7 +1454,7 @@ end
 
 
 """
-Compressed notation to create causal loop with polarities.
+Compressed notation to create causal loop.  Using A => B without a + or - creates a CausalLoop without polarities.
 
 ```julia-repl
 julia> (@cl A => +B, C => -D) == CausalLoopPM([:A, :B, :C, :D], [:A => :B, :C => :D], [POL_POSITIVE, POL_NEGATIVE])
