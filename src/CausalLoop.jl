@@ -627,7 +627,7 @@ function betweenness(cl::CausalLoop)
   @assert allunique(vnames(cl))
   if nvert(cl) == 0
     # Just deal with this edge case right here.
-    Array{Int}(undef, 1, 0)
+    Array{Int}(undef, 0, 0) # tried doing undef, 1, 0, but seemed to turn into 0, 0
   end
 
   betweenness_cent = fill(0.0, 1, nvert(cl))
@@ -877,8 +877,13 @@ function all_shortest_paths(cl::CausalLoop)
     minimum[i] = 0 # distance to self is 0.
     all_paths[i,i] = Vector{Vector{Int}}([[]]) # [[]]
     current_paths = fill(Vector{Vector{Int}}(), 1, nvert(cl))
+    current_paths .= copy.((Vector{Int}(),)); # fill wouldn't duplicate.  This *might* not be necessary.
+
     rec_search!(Vector{Int}(), [i])
     for (j, p) in enumerate(current_paths)
+      if j == i
+        continue
+      end
       all_paths[i, j] = p
     end
   end

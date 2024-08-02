@@ -206,4 +206,60 @@ end
 
     end
 
+    @testset "All shortest paths" begin
+
+        vvi = Vector{Vector{Int}}()
+        vve = Vector{Vector{Int}}([[]])
+
+        @test (all_shortest_paths(@cl) == Matrix{Vector{Vector{Int}}}(undef, 0, 0))
+        @test (all_shortest_paths(@cl A => A) == fill(vve, (1,1)))
+        @test (all_shortest_paths(@cl A => B, B => C)
+        == permutedims(stack(
+            [[vve, [[1]], [[1,2]]],
+             [vvi, vve, [[2]]],
+             [vvi,  vvi,    vve]])
+        ))
+
+        @test (all_shortest_paths(@cl A => B, B => C, C => A, D) 
+        == permutedims(stack(
+            [
+                [vve, [[1]], [[1,2]], vvi],
+                [[[2,3]], vve, [[2]], vvi ],
+                [[[3]], [[3,1]], vve, vvi],
+                [vvi, vvi, vvi, vve]
+            ]
+
+        ))
+        )
+
+
+        @test (all_shortest_paths(@cl A => B, A => C, B => A, B => C, C => A, C => B)
+        == permutedims(stack(
+            [
+                [vve, [[1]], [[2]]],
+                [[[3]], vve, [[4]]],
+                [[[5]], [[6]], vve]
+            ]
+ 
+
+        )))
+
+
+
+        multi = Matrix{Vector{Vector{Int}}}(undef, 2, 2)
+        multi[1,1] = vve
+        multi[1,2] = [[1],[2]]
+        multi[2,1] = [[4]]
+        multi[2,2] = vve
+
+
+        @test (all_shortest_paths(@cl A => B, A => B, B => B, B => A)
+        == multi
+        )
+
+
+        
+    end
+
+
 end
