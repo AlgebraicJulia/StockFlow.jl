@@ -630,7 +630,7 @@ function betweenness(cl::CausalLoop)
     Array{Float64}(undef, 0) # tried doing undef, 1, 0, but seemed to turn into 0, 0
   end
 
-  betweenness_cent = fill(0.0, nvert(cl))
+  betweenness_cent = fill(0//1, nvert(cl))
 
   sp = all_shortest_paths(cl)
   # Technically, we should probably also be mapping empty lists to that particular node, but it doesn't affect betweenness
@@ -645,7 +645,7 @@ function betweenness(cl::CausalLoop)
       end
       for path in sp_nodes[i,j]
         for node in path[2:end-1]
-          betweenness_cent[node] += (1 / σₛₜ[i,j])
+          betweenness_cent[node] += (1 // σₛₜ[i,j])
         end
       end
     end

@@ -292,7 +292,7 @@ end
         # EG: C′ is on both A => B′ => C′ => D, both B′ => C′ => D
         # A has 3 shortest paths to D, B′ has 2 shortest paths to D.
         # bet(C′) == 2/3 + 2/2 = 5/3
-        @test betweenness(@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D, C′ => D) == [0.0, 4/3, 4/3, 0.0, 5/3, 5/3]
+        @test betweenness(@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D, C′ => D) == [0, 4//3, 4//3, 0, 5//3, 5//3]
 
     end
 
