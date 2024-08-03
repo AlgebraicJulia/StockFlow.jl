@@ -257,8 +257,16 @@ end
         == multi
         )
 
+    end
 
+
+    @testset "Betweenness" begin
         
+        @test betweenness(@cl) == Vector{Float64}()
+        @test betweenness(@cl A => B) == [0.0, 0.0]
+        @test betweenness(@cl A => B, B => C) == [0.0, 1.0, 0.0]
+
+
     end
 
 

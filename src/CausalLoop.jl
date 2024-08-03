@@ -7,7 +7,7 @@ outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarit
 CausalLoopPol, to_clp, from_clp, CausalLoopPM, leg,
 extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
 betweenness, to_simple_cl, num_inputs_outputs, num_inputs_outputs_pols,
-shortest_path, to_graphs_graph, shortest_paths, all_shortest_paths
+to_graphs_graph, shortest_paths, all_shortest_paths
 
 
 using MLStyle
@@ -627,10 +627,10 @@ function betweenness(cl::CausalLoop)
   @assert allunique(vnames(cl))
   if nvert(cl) == 0
     # Just deal with this edge case right here.
-    Array{Int}(undef, 0, 0) # tried doing undef, 1, 0, but seemed to turn into 0, 0
+    Array{Float64}(undef, 0) # tried doing undef, 1, 0, but seemed to turn into 0, 0
   end
 
-  betweenness_cent = fill(0.0, 1, nvert(cl))
+  betweenness_cent = fill(0.0, nvert(cl))
 
   sp = all_shortest_paths(cl)
   # Technically, we should probably also be mapping empty lists to that particular node, but it doesn't affect betweenness
