@@ -267,6 +267,33 @@ end
         @test betweenness(@cl A => B, B => C) == [0.0, 1.0, 0.0]
 
 
+        @test betweenness(@cl A => B, A => B, B => C, B => C) == [0.0, 1.0, 0.0]
+        
+        # Shortest paths of len > 2:
+        # A => B => C
+        # A => B => C => D
+        # B => C => D
+        # A => B′ => C′
+        # A => B′ => C′ => D
+        # B′ => C′ => D
+
+        # No shortest paths have A or D as non source or target
+        # EG: There is one shortest path from A => C, and 2 shortest paths A => D.
+        # These are the two paths with B as non source or target.
+        # bet(B) == 1 + 1/2 == 1.5
+
+        @test betweenness(@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D) == [0.0, 1.5, 1.5, 0.0, 1.5, 1.5]
+
+
+        # Shortest paths of len > 2 are the above, with the addition of duplicates of:
+        # A => B′ => C′ => D
+        # B′ => C′ => D
+
+        # EG: C′ is on both A => B′ => C′ => D, both B′ => C′ => D
+        # A has 3 shortest paths to D, B′ has 2 shortest paths to D.
+        # bet(C′) == 2/3 + 2/2 = 5/3
+        @test betweenness(@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D, C′ => D) == [0.0, 4/3, 4/3, 0.0, 5/3, 5/3]
+
     end
 
 
