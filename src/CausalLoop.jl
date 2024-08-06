@@ -848,9 +848,6 @@ function all_shortest_paths(cl::CausalLoop)
       push!(all_paths[node, target], [o])
     end
   end
-
-  @show all_paths
-
   made_change = true
   while made_change
     made_change = false
