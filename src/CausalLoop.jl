@@ -189,7 +189,7 @@ function to_simple_cl(cl::CausalLoopPM)
     c = CausalLoop()
     add_parts!(c, :V, length(vnames(cl)) ; vname = vnames(cl))
     add_parts!(c, :E, nedges(cl) ; src=vcat(subpart(cl, :sp), subpart(cl, :sm)),
-     tgt=vcat(subpart(cl, :tm), subpart(cl, :tp)))
+     tgt=vcat(subpart(cl, :tp), subpart(cl, :tm)))
     c
 end
 
@@ -665,6 +665,7 @@ end
 
 """
 Convert CausalLoopPM to a Graphs' library graph.
+Note, this removes duplicate edges!
 """
 function to_graphs_graph(cl::AbstractCausalLoop)
   to_graphs_graph(to_clp(cl))
@@ -829,62 +830,62 @@ Shortest path to self is empty.  [Vector{Int}()]
 An empty Vector at i, j represents there being no path i -> j.
 """
 function all_shortest_paths(cl::CausalLoop)
-
-  current_paths = nothing
-  # dest = 0
-  minimum = nothing
-  function rec_search!(path, nodes)
-    # Each subpath must be equal to the length of the shortest paths between those two nodes
-    # Else, each subsequent path will not be shortest length.
-    outgoing = outgoing_edges(cl, nodes[end])
-
-    for o in outgoing
-      target = tedge(cl, o)
-
-      if length(path) >= minimum[target] # this is not shortest path to target.
-        continue
-      end
-      if target in nodes
-        continue
-      end
-      new_path = [path..., o]
-      if length(new_path) == minimum[target]
-        push!(current_paths[target], new_path)
-        # Still need to recurse to find other nodes!
-      else # again, must be smaller.
-        current_paths[target] = [new_path]
-        minimum[target] = length(new_path)
-        # and here too, need to recurse.
-      end
-
-      rec_search!(new_path, [nodes..., target])
-
-    end
-
-  end
-
-  
-
-  # src -> tgt -> [sp1, sp2, ...]
   all_paths = Matrix{Vector{Vector{Int}}}(undef, (nvert(cl), nvert(cl)))
   for i in 1:(nvert(cl))
     for j in 1:(nvert(cl))
       all_paths[i,j] = Vector{Vector{Int}}()
     end
+    push!(all_paths[i,i], Vector{Int}()) # length 0
   end
-  for i in 1:(nvert(cl))
-    minimum = fill(Inf, 1, nvert(cl))
-    minimum[i] = 0 # distance to self is 0.
-    all_paths[i,i] = Vector{Vector{Int}}([[]]) # [[]]
-    current_paths = fill(Vector{Vector{Int}}(), 1, nvert(cl))
-    current_paths .= copy.((Vector{Int}(),)); # fill wouldn't duplicate.  This *might* not be necessary.
 
-    rec_search!(Vector{Int}(), [i])
-    for (j, p) in enumerate(current_paths)
-      if j == i
+  for node in 1:nvert(cl) # length 1
+    outgoing = outgoing_edges(cl, node)
+    for o in outgoing
+      target = tedge(cl, o)
+      if target == node
         continue
       end
-      all_paths[i, j] = p
+      push!(all_paths[node, target], [o])
+    end
+  end
+
+  @show all_paths
+
+  made_change = true
+  while made_change
+    made_change = false
+    for node in 1:nvert(cl)
+      for target in 1:nvert(cl)
+        if isempty(all_paths[node,target])
+          continue
+        end
+        for tdest in 1:nvert(cl) # O(V^3) but who cares
+          if isempty(all_paths[target, tdest])
+            continue
+          end
+          if isempty(all_paths[node, tdest]) || length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
+            empty!(all_paths[node, tdest])
+            made_change = true
+            for p1 in all_paths[node, target]
+              for p2 in all_paths[target, tdest]
+                push!(all_paths[node, tdest], vcat(p1, p2))
+              end
+            end
+          elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[node, tdest][1])
+            test_path = vcat(all_paths[node, target][1], all_paths[target, tdest][1])
+            if test_path in all_paths[node, tdest]
+              continue
+            end
+            made_change = true
+            for p1 in all_paths[node, target]
+              for p2 in all_paths[target, tdest]
+                new_path = vcat(p1, p2)
+                push!(all_paths[node, tdest], new_path)
+              end
+            end
+          end # the other case is len(A -> B -> C) > len(A -> C), so we don't care.
+        end
+      end
     end
   end
 
@@ -892,6 +893,4 @@ function all_shortest_paths(cl::CausalLoop)
 
 end
 
-
-
-
+    
