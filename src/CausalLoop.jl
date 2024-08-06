@@ -821,6 +821,23 @@ function all_shortest_paths(cl::Union{CausalLoopPM, CausalLoopPol})
 end
 
 """
+CausalLoop to adjacency matrix representation; matrix of vectors of edges between vertices.
+
+Helper function for shortest paths.
+"""
+function to_adjacency_matrix(cl::CausalLoop)
+  mat = [Vector{Int}() for _ in 1:nvert(cl), _ in 1:nvert(cl)]
+  for src in 1:nvert(cl)
+    outgoing = outgoing_edges(cl, src)
+    for o in outgoing
+      tgt = tedge(cl, o)
+      push!(mat[src, tgt], o)
+    end
+  end
+  mat
+end
+
+"""
 Return Matrix{Vector{Vector{Int}}} of all shortest paths.
 First index is src, second is tgt, and it points to a vector of all shortest paths,
 represented as a sequence of edge indices.
@@ -830,91 +847,160 @@ Shortest path to self is empty.  [Vector{Int}()]
 An empty Vector at i, j represents there being no path i -> j.
 """
 function all_shortest_paths(cl::CausalLoop)
-  all_paths = Matrix{Vector{Vector{Int}}}(undef, (nvert(cl), nvert(cl)))
-  for i in 1:(nvert(cl))
-    for j in 1:(nvert(cl))
-      all_paths[i,j] = Vector{Vector{Int}}()
-    end
-    push!(all_paths[i,i], Vector{Int}()) # length 0
-  end
+  adj = to_adjacency_matrix(cl)
+  adj = map(x -> [[y] for y in x], adj)
 
-  for node in 1:nvert(cl) # length 1
-    outgoing = outgoing_edges(cl, node)
-    for o in outgoing
-      target = tedge(cl, o)
-      if target == node
-        continue
-      end
-      push!(all_paths[node, target], [o])
-    end
-  end
-  made_change = true
-  while made_change
-    made_change = false
+
+  A = deepcopy(adj)
+  B = deepcopy(adj)
+
+
+
+  while true
+    no_path_targets = Vector{Pair{Int, Int}}()
     for node in 1:nvert(cl)
       for target in 1:nvert(cl)
-        if node == target || isempty(all_paths[node,target]) 
+        if node == target
           continue
         end
-        outgoing = outgoing_edges(cl, target)
+        if isempty(B[node, target])
+          push!(no_path_targets, node => target)
+        end
+      end
+    end
 
-        for o in outgoing
-          tdest = tedge(cl, o)
-          if isempty(all_paths[node, tdest]) || (length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + 1)
-            empty!(all_paths[node, tdest])
-            for p1 in all_paths[node, target]
-              push!(all_paths[node, tdest], [p1..., o])
-            end
-            made_change = true
-          elseif (length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + 1)
-            test_path = vcat(all_paths[node, target][1], [o])
-            if test_path in all_paths[node, tdest]
-              continue
-            end
-            for p1 in all_paths[node, target]
-              push!(all_paths[node, tdest], [p1..., o])
-            end
-            made_change = true
+    if isempty(no_path_targets) # no updates; we're done
+      break
+    end
+
+
+    A′ = Matrix{Vector{Vector{Int}}}(undef, nvert(cl), nvert(cl)) 
+    for i in 1:nvert(cl)
+      for j in 1:nvert(cl)
+        A′[i,j] = Vector{Vector{Int}}()
+      end
+    end
+    # empty matrix
+    
+    for (s, t) in no_path_targets
+      V₁ = [x for (x,targs) in enumerate(A[s,:]) if !isempty(targs)]
+      V₂ = [x for (x,srcs) in enumerate(adj[:, t]) if !isempty(srcs)]
+      inter = intersect(V₁, V₂) # nonempty paths i -> k and k -> j 
+
+      for k in inter
+        for p1 in A[s, k]
+          for p2 in adj[k,t]
+            push!(A′[s, t], vcat(p1, p2))
           end
         end
       end
+      B[s, t] = A′[s, t]
+
+    end
+    if A == A′ # case with disconnected components
+      break
     end
 
+    A = A′
 
-      #   for tdest in 1:nvert(cl) # O(V^3) but who cares
-      #     if isempty(all_paths[target, tdest])
-      #       continue
-      #     end
-
-      #     if isempty(all_paths[node, tdest]) || length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
-      #       empty!(all_paths[node, tdest])
-      #       made_change = true
-      #       for p1 in all_paths[node, target]
-      #         for p2 in all_paths[target, tdest]
-      #           push!(all_paths[node, tdest], vcat(p1, p2))
-      #         end
-      #       end
-      #     elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
-      #       test_path = vcat(all_paths[node, target][1], all_paths[target, tdest][1])
-      #       if test_path in all_paths[node, tdest]
-      #         continue
-      #       end
-      #       made_change = true
-      #       for p1 in all_paths[node, target]
-      #         for p2 in all_paths[target, tdest]
-      #           new_path = vcat(p1, p2)
-      #           push!(all_paths[node, tdest], new_path)
-      #         end
-      #       end
-      #     end # the other case is len(A -> B -> C) > len(A -> C), so we don't care.
-      #   end
-      # end
-    end
-    all_paths
   end
+
+  for i in 1:nvert(cl)
+    B[i,i] = Vector{Vector{Int}}([[]])
+  end
+
+  B
+
+      
+end
+
+
+# function all_shortest_paths(cl::CausalLoop)
+#   all_paths = Matrix{Vector{Vector{Int}}}(undef, (nvert(cl), nvert(cl)))
+#   for i in 1:(nvert(cl))
+#     for j in 1:(nvert(cl))
+#       all_paths[i,j] = Vector{Vector{Int}}()
+#     end
+#     push!(all_paths[i,i], Vector{Int}()) # length 0
+#   end
+
+#   for node in 1:nvert(cl) # length 1
+#     outgoing = outgoing_edges(cl, node)
+#     for o in outgoing
+#       target = tedge(cl, o)
+#       if target == node
+#         continue
+#       end
+#       push!(all_paths[node, target], [o])
+#     end
+#   end
+#   made_change = true
+#   while made_change
+#     made_change = false
+#     for node in 1:nvert(cl)
+#       for target in 1:nvert(cl)
+#         if node == target || isempty(all_paths[node,target]) 
+#           continue
+#         end
+#         outgoing = outgoing_edges(cl, target)
+
+#         for o in outgoing
+#           tdest = tedge(cl, o)
+#           if isempty(all_paths[node, tdest]) || (length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + 1)
+#             empty!(all_paths[node, tdest])
+#             for p1 in all_paths[node, target]
+#               push!(all_paths[node, tdest], [p1..., o])
+#             end
+#             made_change = true
+#           elseif (length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + 1)
+#             test_path = vcat(all_paths[node, target][1], [o])
+#             if test_path in all_paths[node, tdest]
+#               continue
+#             end
+#             for p1 in all_paths[node, target]
+#               push!(all_paths[node, tdest], [p1..., o])
+#             end
+#             made_change = true
+#           end
+#         end
+#       end
+#     end
+
+
+#       #   for tdest in 1:nvert(cl) # O(V^3) but who cares
+#       #     if isempty(all_paths[target, tdest])
+#       #       continue
+#       #     end
+
+#       #     if isempty(all_paths[node, tdest]) || length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
+#       #       empty!(all_paths[node, tdest])
+#       #       made_change = true
+#       #       for p1 in all_paths[node, target]
+#       #         for p2 in all_paths[target, tdest]
+#       #           push!(all_paths[node, tdest], vcat(p1, p2))
+#       #         end
+#       #       end
+#       #     elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
+#       #       test_path = vcat(all_paths[node, target][1], all_paths[target, tdest][1])
+#       #       if test_path in all_paths[node, tdest]
+#       #         continue
+#       #       end
+#       #       made_change = true
+#       #       for p1 in all_paths[node, target]
+#       #         for p2 in all_paths[target, tdest]
+#       #           new_path = vcat(p1, p2)
+#       #           push!(all_paths[node, tdest], new_path)
+#       #         end
+#       #       end
+#       #     end # the other case is len(A -> B -> C) > len(A -> C), so we don't care.
+#       #   end
+#       # end
+#     end
+#     all_paths
+#   end
 
   
 
-# end
+# # end
 
     
