@@ -856,39 +856,65 @@ function all_shortest_paths(cl::CausalLoop)
         if node == target || isempty(all_paths[node,target]) 
           continue
         end
-        for tdest in 1:nvert(cl) # O(V^3) but who cares
-          if isempty(all_paths[target, tdest])
-            continue
-          end
+        outgoing = outgoing_edges(cl, target)
 
-          if isempty(all_paths[node, tdest]) || length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
+        for o in outgoing
+          tdest = tedge(cl, o)
+          if isempty(all_paths[node, tdest]) || (length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + 1)
             empty!(all_paths[node, tdest])
-            made_change = true
             for p1 in all_paths[node, target]
-              for p2 in all_paths[target, tdest]
-                push!(all_paths[node, tdest], vcat(p1, p2))
-              end
+              push!(all_paths[node, tdest], [p1..., o])
             end
-          elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
-            test_path = vcat(all_paths[node, target][1], all_paths[target, tdest][1])
+            made_change = true
+          elseif (length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + 1)
+            test_path = vcat(all_paths[node, target][1], [o])
             if test_path in all_paths[node, tdest]
               continue
             end
-            made_change = true
             for p1 in all_paths[node, target]
-              for p2 in all_paths[target, tdest]
-                new_path = vcat(p1, p2)
-                push!(all_paths[node, tdest], new_path)
-              end
+              push!(all_paths[node, tdest], [p1..., o])
             end
-          end # the other case is len(A -> B -> C) > len(A -> C), so we don't care.
+            made_change = true
+          end
         end
       end
     end
+
+
+      #   for tdest in 1:nvert(cl) # O(V^3) but who cares
+      #     if isempty(all_paths[target, tdest])
+      #       continue
+      #     end
+
+      #     if isempty(all_paths[node, tdest]) || length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
+      #       empty!(all_paths[node, tdest])
+      #       made_change = true
+      #       for p1 in all_paths[node, target]
+      #         for p2 in all_paths[target, tdest]
+      #           push!(all_paths[node, tdest], vcat(p1, p2))
+      #         end
+      #       end
+      #     elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
+      #       test_path = vcat(all_paths[node, target][1], all_paths[target, tdest][1])
+      #       if test_path in all_paths[node, tdest]
+      #         continue
+      #       end
+      #       made_change = true
+      #       for p1 in all_paths[node, target]
+      #         for p2 in all_paths[target, tdest]
+      #           new_path = vcat(p1, p2)
+      #           push!(all_paths[node, tdest], new_path)
+      #         end
+      #       end
+      #     end # the other case is len(A -> B -> C) > len(A -> C), so we don't care.
+      #   end
+      # end
+    end
+    all_paths
   end
 
-  all_paths
+  
 
-end
+# end
 
     
