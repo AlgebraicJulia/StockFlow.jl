@@ -853,13 +853,14 @@ function all_shortest_paths(cl::CausalLoop)
     made_change = false
     for node in 1:nvert(cl)
       for target in 1:nvert(cl)
-        if isempty(all_paths[node,target])
+        if node == target || isempty(all_paths[node,target]) 
           continue
         end
         for tdest in 1:nvert(cl) # O(V^3) but who cares
           if isempty(all_paths[target, tdest])
             continue
           end
+
           if isempty(all_paths[node, tdest]) || length(all_paths[node, tdest][1]) > length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
             empty!(all_paths[node, tdest])
             made_change = true
@@ -868,7 +869,7 @@ function all_shortest_paths(cl::CausalLoop)
                 push!(all_paths[node, tdest], vcat(p1, p2))
               end
             end
-          elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[node, tdest][1])
+          elseif length(all_paths[node, tdest][1]) == length(all_paths[node, target][1]) + length(all_paths[target, tdest][1])
             test_path = vcat(all_paths[node, target][1], all_paths[target, tdest][1])
             if test_path in all_paths[node, tdest]
               continue
