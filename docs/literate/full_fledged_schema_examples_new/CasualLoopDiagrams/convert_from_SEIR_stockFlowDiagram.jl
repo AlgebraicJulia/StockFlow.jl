@@ -50,6 +50,6 @@ GraphF(seir)
 
 seir_causalLoop = convertToCausalLoop(seir)
 
-Graph(seir_causalLoop)
+GraphCL(seir_causalLoop)
 
 

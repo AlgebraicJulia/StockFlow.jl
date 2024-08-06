@@ -103,7 +103,7 @@ end
 ```
 """
 module Syntax
-export @stock_and_flow, @foot, @feet, infer_links, @causal_loop
+export @stock_and_flow, @foot, @feet, infer_links, @causal_loop, @cl, create_foot, cl_macro
 
 using ..StockFlow
 using MLStyle
@@ -1281,17 +1281,69 @@ Used so we can maintain equality when making ACSetTransformations.
 """
 NothingFunction(x...)::Nothing = nothing;
 
+function match_cl_format(statement, nodes, edges, polarities)
+    @match statement begin
+        :($A => - $B) => begin
+            push!(nodes, A, B)
+            push!(edges, A => B)
+            push!(polarities, POL_NEGATIVE)
+        end
+        :($A => + $B) => begin
+            push!(nodes, A, B)
+            push!(edges, A => B)
+            push!(polarities, POL_POSITIVE)
+        end
+        :($A => $B) => begin
+            push!(nodes, A, B)
+            push!(edges, A => B)
+            push!(polarities, nothing)
+        end
+        :($A) => begin
+            push!(nodes, A)
+        end
+ 
+    end
+end
+
+"""
+Create a causal loop with polarities with a block of statements in a tuple, consisting of A => +B,
+A => -B and A.
+
+Will create a causal loop without polarities if you use A => B without a + or -.
+"""
+function cl_macro(block)
+
+    if block isa Symbol
+        return CausalLoopPM(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
+    end
 
 
+    edges = Vector{Pair{Symbol, Symbol}}()
+    nodes = Vector{Symbol}()
+    polarities = Vector{Union{Polarity, Nothing}}()
 
+    @match block.head begin
+        :tuple => begin
+            for statement in block.args
+                match_cl_format(statement, nodes, edges, polarities)
+            end
+        end
+        :call => match_cl_format(block, nodes, edges, polarities)
+    end
+    if nothing in polarities
+        return CausalLoop(unique(nodes), edges)
+    else
+        return CausalLoopPM(unique(nodes), edges, Vector{Polarity}(polarities))
+    end
 
+end
 
 
 function causal_loop_macro(block)
   Base.remove_linenums!(block)
   edges = Vector{Pair{Symbol, Symbol}}()
   nodes = Vector{Symbol}()
-  polarities = Vector{Polarity}()
+  polarities = Vector{Union{Polarity, Nothing}}()
 
   current_phase = (_, _) -> ()
   for statement in block.args
@@ -1302,25 +1354,17 @@ function causal_loop_macro(block)
       QuoteNode(:edges) => begin
         current_phase = e -> begin
           @match e begin
-            :($A = $B) => begin
+            :($A => - $B) => begin
               push!(edges, A => B)
-              push!(polarities, POL_ZERO)
+              push!(polarities, POL_NEGATIVE)
             end
-            :($A > $B) => begin
+            :($A => + $B) => begin
               push!(edges, A => B)
-              push!(polarities, POL_BALANCING)
+              push!(polarities, POL_POSITIVE)
             end
-            :($A < $B) => begin
-              push!(edges, A => B)
-              push!(polarities, POL_REINFORCING)
-            end
-            :($A ~ $B) => begin
-              push!(edges, A => B)
-              push!(polarities, POL_UNKNOWN)
-            end
-            :($A ^ $B) => begin
-              push!(edges, A => B)
-              push!(polarities, POL_NOT_WELL_DEFINED)
+            :($A => $B)=> begin
+                push!(edges, A => B)
+                push!(polarities, nothing)
             end
             _ =>
               return error("Unknown syntax type for causal loop edge: " * string(e))
@@ -1333,11 +1377,57 @@ function causal_loop_macro(block)
     end
     
   end
-
-  return CausalLoopF(nodes, edges, polarities)
+  if nothing in polarities
+    return CausalLoop(nodes, edges)
+  else
+    return CausalLoopPM(nodes, edges, Vector{Polarity}(polarities))
+  end
 
 end
 
+
+"""
+Create a causal loop diagram, with or without Polarities.
+X => +Y creates a positive edge, X => -Y a negative, and
+X => Y creates a causal loop without polarities.  Defaults
+to creating with polarities, if there are no edges.
+
+```julia-repl
+
+julia> (@causal_loop begin
+       :nodes
+       A
+       B
+
+       :edges
+       A => +B
+
+       end) == CausalLoopPM([:A,:B], [:A => :B], [POL_POSITIVE])
+true
+
+julia> ((@causal_loop begin
+       :nodes
+       λ
+       β
+       :edges
+       λ => β
+       β => -λ
+       end) ==
+       (@causal_loop begin
+       :nodes
+       λ
+       β
+       :edges
+       λ => β
+       β => λ
+       end) ==
+       CausalLoop([:λ, :β], [:λ => :β, :β => :λ]))
+true
+
+julia> (@causal_loop begin end) == CausalLoopPM()
+true
+```
+"""
 macro causal_loop(block)
   escaped_block = Expr(:quote, block)
   quote
@@ -1346,7 +1436,40 @@ macro causal_loop(block)
 end
 
 
+"""
+Compressed notation to create causal loop with polarities.
 
+No argument function for empty causal loop.
+
+```julia-repl
+julia> @cl
+CausalLoopPM {V:0, P:0, M:0, Name:0}
+```
+"""
+macro cl()
+    quote
+        CausalLoopPM()  
+    end
+end
+
+
+"""
+Compressed notation to create causal loop.  Using A => B without a + or - creates a CausalLoop without polarities.
+
+```julia-repl
+julia> (@cl A => +B, C => -D) == CausalLoopPM([:A, :B, :C, :D], [:A => :B, :C => :D], [POL_POSITIVE, POL_NEGATIVE])
+true
+
+julia> (@cl A, B, C => -A, C => +B, D) == CausalLoopPM([:A, :B, :C, :D], [:C => :A, :C => :B], [POL_NEGATIVE, POL_POSITIVE])
+true
+```
+"""
+macro cl(block)
+    escaped_block = Expr(:quote, block)
+    quote
+      cl_macro($(esc(escaped_block)))
+    end
+end
 
 
 
