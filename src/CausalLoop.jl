@@ -13,7 +13,7 @@ to_graphs_graph, shortest_paths, all_shortest_paths
 using MLStyle
 
 import Graphs
-import Graphs: SimpleDiGraph, simplecycles, SimpleEdge, betweenness_centrality, a_star
+import Graphs: SimpleDiGraph, simplecycles, SimpleEdge
 
 
 import Base: *
@@ -106,6 +106,7 @@ const CausalLoop = CausalLoopUntyped{Symbol}
 const CausalLoopPol = CausalLoopPolUntyped{Symbol, Polarity}
 
 const OpenCausalLoopPolOb, OpenCausalLoopPol = OpenACSetTypes(CausalLoopPolUntyped, CausalLoopPolUntyped)
+const OpenCausalLoopOb, OpenCausalLoop = OpenACSetTypes(CausalLoopUntyped, CausalLoopUntyped)
 
 
 vname(c::AbstractSimpleCausalLoop,n) = subpart(c,n,:vname)
@@ -117,11 +118,22 @@ vnames(c::CausalLoopPM) = subpart(c, :vname)
 ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
 enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
 
+ename(c::CausalLoop, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)))
+enames(c::CausalLoop) = [ename(c,e) for e in 1:nedges(c)]
+
+
 leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
 Open(p::CausalLoopPol, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenCausalLoopPol{Symbol,Polarity}(p, legs...)
 end
+
+leg(a::CausalLoop, x::CausalLoop) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
+Open(p::CausalLoop, feet...) = begin
+  legs = map(x->leg(x, p), feet)
+  OpenCausalLoop{Symbol}(p, legs...)
+end
+
 
 """
 Create a CausalLoop (Graph with named vertices) with a vector of vertices, and

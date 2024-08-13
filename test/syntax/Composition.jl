@@ -163,4 +163,21 @@ end
         (CA, AB) ^ A
     end) ≅ ABC
 
+    # no polarities
+    ABC = (@cl A => B, B => C)
+    BCD = (@cl B => C, C => D)
+    ABCD = (@cl A => B, B => C, C => D)
+    
+    @test (@compose ABC BCD begin
+        (bc, cd)
+        (bc, cd) ^ B => C
+    end) == ABCD
+
+    @test (@compose ABC ABC begin
+        (abc1, abc2)
+        (abc1, abc2) ^ A => B, B => C
+    end) == ABC
+    
+      
+
 end

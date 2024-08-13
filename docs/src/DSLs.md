@@ -355,6 +355,10 @@ and sums which are in the corresponding foot.
 
 Composition with no stockflows given as argument returns an empty stockflow.
 
+Composition also works with causal loop diagrams.  If using causal loop with
+polarities, the edges you compose on must have the same polarities; you
+cannot compose A => +B with A => -B.
+
 ```julia
 (@compose begin 
     ()
@@ -381,6 +385,15 @@ Diabetes_Model = @compose Model_Normoglycemic Model_Hyperglycemic Model_Norm_Hyp
     (Hyper, NH) ^ Prediabetic_U => N
     (Hyper, NH) ^ Prediabetic_D => N
 end
+
+ABC = (@cl A => B, B => C)
+BCD = (@cl B => C, C => D)
+
+ABCD = @compose ABC BCD begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => C
+end
+
 ```
 
 ---

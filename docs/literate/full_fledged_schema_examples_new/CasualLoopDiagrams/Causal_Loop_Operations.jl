@@ -155,3 +155,20 @@ epols(cl_small)
 to_simple_cl(cl_small) == (@cl A, B => C, A => B) # Note the order!
 
 to_simple_cl(cl_small)
+
+using StockFlow.Syntax.Composition
+
+ABC = (@cl A => B, B => C)
+BCD = (@cl B => C, C => D)
+@compose ABC BCD begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => C
+end
+
+ABC_pol = (@cl A => +B, B => -C)
+BCD_pol = (@cl B => -C, C => +D)
+@compose ABC_pol BCD_pol begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => -C
+end
+

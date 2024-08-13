@@ -160,7 +160,30 @@ end
 
 
 """
-Compose models.
+Compose models.  Works with Stockflow and Causal Loop, but not together.
+
+Cannot use () => () as a foot.
+
+```julia
+# Stockflow
+sirv = @compose sir svi begin
+    (sr, sv)
+    (sr, sv) ^ S => N, I => N
+end
+
+# Causal Loop with polarities
+ABCD = @compose ABC BCD begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => -C
+end
+
+# Causal Loop without polarities
+ABCD2 = @compose ABC2 BCD2 begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => C
+end
+```
+
 """
 macro compose(args...)
     if length(args) == 0
@@ -185,8 +208,10 @@ macro compose(args...)
                 sfcompose([$(sfs...)], $escaped_block, CausalLoopPol, CausalLoopPol, x -> to_clp(cl_macro(x)))
             elseif model_type <: CausalLoopPM
                 sfcompose([$(sfs...)], $escaped_block, CausalLoopPM, CausalLoopPM, cl_macro)
+            elseif model_type <: CausalLoop
+                sfcompose([$(sfs...)], $escaped_block, CausalLoop, CausalLoop, (x -> (cl_macro(x, true))))
             else
-                :(MethodError("Invalid type $($(model_type)) for composition syntax."))
+                :(MethodError("Invalid type $(model_type) for composition syntax."))
             end
         end
     end

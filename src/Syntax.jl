@@ -1311,10 +1311,14 @@ A => -B and A.
 
 Will create a causal loop without polarities if you use A => B without a + or -.
 """
-function cl_macro(block)
+function cl_macro(block, force_nonpol=false)
 
     if block isa Symbol
-        return CausalLoopPM(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
+        if force_nonpol
+            return CausalLoop()
+        else
+            return CausalLoopPM(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
+        end
     end
 
 
@@ -1330,7 +1334,7 @@ function cl_macro(block)
         end
         :call => match_cl_format(block, nodes, edges, polarities)
     end
-    if nothing in polarities
+    if nothing in polarities || force_nonpol
         return CausalLoop(unique(nodes), edges)
     else
         return CausalLoopPM(unique(nodes), edges, Vector{Polarity}(polarities))
