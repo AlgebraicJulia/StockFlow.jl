@@ -126,6 +126,100 @@ end) == ([StockAndFlow0([:A, :AA],[:B],[:A => :B, :AA => :B]),
 
 ---
 
+---
+
+## @causal_loop
+
+Create a causal loop, with or without polarities.  X => +Y indicates a positive
+polarity, X => -Y indicates a negative polarity, and if there are any edges
+X => Y without polarities, the ultimate causal loop diagram will be without
+polarities.
+
+Use :nodes to indicate nodes, and :edges to indicate edges.
+
+If there are no edges, will default to a causal loop with polarities.
+
+Note, for functions which return indices for edges, negative edges come
+after positive edges.
+
+Avoid using nodes with the same name.
+
+```julia
+
+# Triangle, without polarities.
+@causal_loop begin
+    :nodes
+    A
+    B
+    C
+    
+    :edges
+    A => B
+    B => C
+    C => A
+end
+
+# Triangle, with polarities, creating a balancing loop.
+@causal_loop begin
+    :nodes
+    A
+    B
+    C
+    
+    :edges
+    A => -B
+    B => +C
+    C => +A
+end
+
+# Causal loop with two nodes and three edges;
+# A has a positive self edge, and A has two edges to B, one positive, one negative.
+@causal_loop begin
+    :nodes
+    A
+    B
+    
+    :edges
+    A => +A
+    A => +B
+    A => -B
+end
+
+# Empty causal loop, treated with polarities.
+@causal_loop begin end 
+
+```
+
+---
+
+## @cl
+
+Compressed syntax for creating a causal loop diagram.  Similar to above.
+
+Separate statements with commas, and use a symbol on its own to indicate a
+node without an edge.  Nodes will be ordered in the order they're encountered.
+
+```julia
+# Triangle, without polarities.
+(@cl A => B, B => C, C => A)
+# Triangle, with polarities, creating a balancing loop.
+(@cl A => -B, B => +C C => +A)
+
+# No edges between nodes, treated as a causal loop with polarities.
+(@cl A, B, C)
+
+# Same as first, but now C is node 1, B is node 2, and A is node 3.
+(@cl C, B, A => B, B => C, C => A)
+
+# Empty causal loop, treated as with polarities.
+(@cl)
+
+```
+
+
+
+---
+
 # Stratification
 
 ## @stratify
@@ -306,10 +400,10 @@ Rewrite has 8 headers, :stocks, :flows, :sums, :dynamic\_variables, :redefs, :re
 and :dyvar\_swaps
 
 The first five are used to indicate if an instance of that type is being
-added.  Use the same definition syntax as in @stock_and_flow.
+added.  Use the same definition syntax as in @stock\_and\_flow.
 
 :redefs is used to change the definition of a dynamic variable, flow or
-sum.  Again, use the same syntax as in @stock_and_flow.
+sum.  Again, use the same syntax as in @stock\_and\_flow.
 
 :removes indicates that an object should be deleted.  You just need the name of it in the original.
 
@@ -370,39 +464,8 @@ end
 
 ---
 
-# Homomorphism
 
-## @hom
 
-Using two stockflows and a block with the same headers as @stratify, define an ACSetTransformation from the first stockflow to another.
 
-Half of a stratify.  Rather than creating two homomorphisms and taking the pullback, creates one homomorphism.
 
-```julia
-@hom WeightModel l_type begin
-  :stocks
-  NormalWeight => pop
-  OverWeight => pop
-  Obese => pop
 
-  :parameters
-  μ => μ
-  ~δ => δ
-  rage => rage
-  _ => rFstOrder
-
-  :dynamic_variables
-  v_NewBorn => v_birth
-  ~Becoming => v_fstOrder
-  ~Death => v_death
-  _ => v_aging
-
-  :flows
-  f_NewBorn => f_birth
-  ~Becoming => f_fstOrder
-  ~Death => f_death
-  ~id => f_aging
-  _ => f_death
-
-end
-```
