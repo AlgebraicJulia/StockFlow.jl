@@ -158,6 +158,18 @@ function sfcompose(sfs::Vector, block::Expr, main_type, foot_type, create_foot_f
 
 end
 
+""" Composition function for StockAndFlowF """
+sfcompose(sfs::Vector{StockAndFlowF}, block::Expr) = sfcompose(sfs, block, StockAndFlowF, StockAndFlow0, create_foot)
+""" Composition function for CausalLoopPol """
+sfcompose(sfs::Vector{CausalLoopPol}, block::Expr) = sfcompose(sfs, block, CausalLoopPol, CausalLoopPol, x -> to_clp(cl_macro(x)))
+""" Composition function for CausalLoopPM """
+sfcompose(sfs::Vector{CausalLoopPM}, block::Expr) = sfcompose(sfs, block, CausalLoopPM, CausalLoopPM, cl_macro)
+""" Composition function for CausalLoop """
+sfcompose(sfs::Vector{CausalLoop}, block::Expr) = sfcompose(sfs, block, CausalLoop, CausalLoop, (x -> (cl_macro(x, true))))
+
+
+""" Error composition function """
+sfcompose(_::Vector, _::Expr) = MethodError("Unrecognized type to compose on.")
 
 """
 Compose models.  Works with Stockflow and Causal Loop, but not together.
@@ -187,35 +199,21 @@ end
 """
 macro compose(args...)
     if length(args) == 0
-        return :(MethodError("No arguments provided!  Please provide some \
+        return :(error("No arguments provided!  Please provide some \
         number of stockflows, then a quote block."))
     end
     escaped_block = Expr(:quote, args[end])
     sfs = esc.(args[1:end-1])
     quote
         if length($sfs) == 0
-            :(MethodError("Could not infer type given no arguments.  Please provide at \
+            :(error("Could not infer type given no arguments.  Please provide at \
             least one stockflow or causal loop diagram"))
         else
-            local model_type = typeof($(sfs[1]))
-            if !(all(x -> typeof(x) == model_type, $(sfs)))
-                :(MethodError("Arguments to composition have inconsistent types."))
-            end
-
-            if model_type <: AbstractStockAndFlowF
-                sfcompose([$(sfs...)], $escaped_block, StockAndFlowF, StockAndFlow0, create_foot)
-            elseif model_type <: CausalLoopPol
-                sfcompose([$(sfs...)], $escaped_block, CausalLoopPol, CausalLoopPol, x -> to_clp(cl_macro(x)))
-            elseif model_type <: CausalLoopPM
-                sfcompose([$(sfs...)], $escaped_block, CausalLoopPM, CausalLoopPM, cl_macro)
-            elseif model_type <: CausalLoop
-                sfcompose([$(sfs...)], $escaped_block, CausalLoop, CausalLoop, (x -> (cl_macro(x, true))))
-            else
-                :(MethodError("Invalid type $(model_type) for composition syntax."))
-            end
+            sfcompose([$(sfs...)], $escaped_block)
         end
     end
 end
+
 
 
 
