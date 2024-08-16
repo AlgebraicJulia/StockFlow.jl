@@ -887,7 +887,7 @@ Check if a Julia expression is a call of the form `op(a, b)` or `a op b`, where 
 - `e` -- a Julia expression
 
 ### Output
-A boolean indicating if the given julia expression is a function call of two non-expression parameters.
+A boolean indicating if the given julia expression is a function call of non-expression parameter(s).
 
 ### Examples
 ```julia-repl
@@ -900,6 +900,8 @@ true
 julia> is_simple_dyvar(:(a * b))
 true
 julia> is_simple_dyvar(:(f(a, b, c)))
+false
+julia> is_simple_dyvar(:f(a + b, c + d))
 false
 ```
 """
