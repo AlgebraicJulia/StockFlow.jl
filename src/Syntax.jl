@@ -373,7 +373,7 @@ None. This mutates the given dyvars vector.
 function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
     push!(dyvars, parse_dyvar(dyvar))
  end
- 
+
  function parse_dyvar(dyvar::Expr)
      @match dyvar begin
          :($dyvar_name = $dyvar_def) =>
@@ -582,7 +582,7 @@ A vector of dynamic variable definitions suitable for input to StockAndFlowF.
 function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
     syms::Vector{Pair{Symbol,DyvarExprT}} = []
     for (dyvar_name, dyvar_definition) in dyvars
-        if is_binop_or_unary(dyvar_definition)
+        if is_simple_dyvar(dyvar_definition)
             @match dyvar_definition begin
                 Expr(:call, op, a) => push!(syms, (dyvar_name => Ref(a => op)))
                 Expr(:call, op, a, b) => begin
@@ -879,34 +879,36 @@ sum_variables(sum_syntax_elements) =
 
 
 """
-    is_binop_or_unary(e :: Expr)
+    is_simple_dyvar(e :: Expr)
 
-Check if a Julia expression is a call of the form `op(a, b)` or `a op b`
+Check if a Julia expression is a call of the form `op(a, b)` or `a op b`, where `a` and `b` are values, not expressions
 
 ### Input
 - `e` -- a Julia expression
 
 ### Output
-A boolean indicating if the given julia expression is a function call of two parameters.
+A boolean indicating if the given julia expression is a function call of non-expression parameter(s).
 
 ### Examples
 ```julia-repl
-julia> is_binop_or_unary(:(f()))
+julia> is_simple_dyvar(:(f()))
 false
-julia> is_binop_or_unary(:(f(a)))
+julia> is_simple_dyvar(:(f(a)))
 true
-julia> is_binop_or_unary(:(f(a, b)))
+julia> is_simple_dyvar(:(f(a, b)))
 true
-julia> is_binop_or_unary(:(a * b))
+julia> is_simple_dyvar(:(a * b))
 true
-julia> is_binop_or_unary(:(f(a, b, c)))
+julia> is_simple_dyvar(:(f(a, b, c)))
+false
+julia> is_simple_dyvar(:f(a + b, c + d))
 false
 ```
 """
-function is_binop_or_unary(e::Expr)
+function is_simple_dyvar(e::Expr)
     @match e begin
-        Expr(:call, f::Symbol, a) => true
-        Expr(:call, f::Symbol, a, b) => true
+        Expr(:call, f::Symbol, a) => !(typeof(a) <: Expr)
+        Expr(:call, f::Symbol, a, b) => !(typeof(a) <: Expr) && !(typeof(b) <: Expr)
         _ => false
     end
 end
@@ -1077,7 +1079,7 @@ We have a few options, on how we want to distribute mappings.  Way it's done her
 
 """
 function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_vector)
-        
+
     hom1′_mappings = f1(sftgt)
     hom2′_mappings = f2(sftgt)
 
@@ -1089,7 +1091,7 @@ function infer_particular_link!(sfsrc, sftgt, f1, f2, map1, map2, destination_ve
 
         linkmap = tgt[(mapped_index1, mapped_index2)]
 
-        
+
 
         destination_vector[i] = linkmap # updated
     end
@@ -1213,7 +1215,7 @@ function apply_flags(key::Symbol, flags::Set{Symbol}, s::Vector{Symbol})::Vector
         matches = collect(substring_matches(s, string(key)))
 
         new_flags = copy(flags) # copy isn't necessary, probably
-        pop!(new_flags, :~) 
+        pop!(new_flags, :~)
 
         return collect(flatmap(x -> apply_flags(x, new_flags, s), matches)) # this is just in case we add additional flags.  As is, the recursion is unnecessary.
     else
@@ -1379,7 +1381,7 @@ function causal_loop_macro(block)
         return error("Unknown block type for causal loop syntax: " * String(kw))
       _ => current_phase(statement)
     end
-    
+
   end
   if nothing in polarities
     return CausalLoop(nodes, edges)
@@ -1491,8 +1493,3 @@ include("syntax/Stratification.jl")
 include("syntax/Rewrite.jl")
 
 end
- 
-
-
-
-
