@@ -2,9 +2,9 @@ using Base: is_unary_and_binary_operator
 using Test
 using StockFlow
 using StockFlow.Syntax
-using StockFlow.Syntax: is_binop_or_unary, sum_variables, 
-infix_expression_to_binops, fnone_value_or_vector, 
-extract_function_name_and_args_expr, is_recursive_dyvar, create_foot, 
+using StockFlow.Syntax: is_simple_dyvar, sum_variables,
+infix_expression_to_binops, fnone_value_or_vector,
+extract_function_name_and_args_expr, is_recursive_dyvar, create_foot,
 apply_flags, substitute_symbols, DSLArgument
 
 
@@ -20,15 +20,18 @@ end
     include("syntax/Rewrite.jl")
 end
 
-@testset "is_binop_or_unary recognises binops" begin
-    @test is_binop_or_unary(:(a + b))
-    @test is_binop_or_unary(:(f(a, b)))
-    @test is_binop_or_unary(:(1.0 + x))
+@testset "is_simple_dyvar recognises simple expressions" begin
+    @test is_simple_dyvar(:(exp(a)))
+    @test is_simple_dyvar(:(a + b))
+    @test is_simple_dyvar(:(f(a, b)))
+    @test is_simple_dyvar(:(1.0 + x))
 end
-@testset "is_binop_or_unary recognises non-binops as non-binops" begin
-    @test !is_binop_or_unary(:(f()))
-    @test !is_binop_or_unary(:(a + b + c))
-    @test !is_binop_or_unary(:(f(a, b, c)))
+
+@testset "is_simple_dyvar recognises complex expressions as non-simple" begin
+    @test !is_simple_dyvar(:(exp(a + b + c)))
+    @test !is_simple_dyvar(:(f()))
+    @test !is_simple_dyvar(:(a + b + c))
+    @test !is_simple_dyvar(:(f(a, b, c)))
 end
 
 @testset "sum_variables" begin
@@ -369,7 +372,7 @@ end
 
     # S: 1 -> 1 and SV: 1 -> 1 implies LS: 1 -> 1
     @test (infer_links(
-        (@stock_and_flow begin; :stocks; A; :sums; NA = [A]; end), 
+        (@stock_and_flow begin; :stocks; A; :sums; NA = [A]; end),
         (@stock_and_flow begin; :stocks; B; :sums; NB = [B]; end),
         Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [1], :P => [], :V => []))
     == Dict(:LS => [1], :LSV => [], :LV => [], :I => [], :O => [], :LPV => [], :LVV => []))
@@ -378,18 +381,18 @@ end
     # that is, vA = A + A, vA -> vB, A -> implies that the As in the vA definition map to the Bs in the vB definition
     # But both As link to the same stock and dynamic variable so just looking at those isn't enough to figure out what it maps to.
     # There will exist cases where it's impossible to tell - eg, when there exist multiple duplicate links, and some positions don't match up.
-   
+
     # It does not currently look at the operator.  You could therefore map vA = A + A -> vB = B * B
     # I can see this being useful, actually, specifically when mapping between + and -, * and /, etc.  Probably logs and powers too.
     # Just need to be aware that it won't say it's invalid.
     @test (infer_links(
-        (@stock_and_flow begin; :stocks; A; :dynamic_variables; vA = A + A; end), 
+        (@stock_and_flow begin; :stocks; A; :dynamic_variables; vA = A + A; end),
         (@stock_and_flow begin; :stocks; B; :dynamic_variables; vB = B + B; end),
         Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [], :P => [], :V => [1]))
     == Dict(:LS => [], :LSV => [], :LV => [2,2], :I => [], :O => [], :LPV => [], :LVV => [])) # If duplicate values, always map to end.
 
     @test (infer_links(
-        (@stock_and_flow begin; :stocks; A; :parameters; pA; :dynamic_variables; vA = A + pA; end), 
+        (@stock_and_flow begin; :stocks; A; :parameters; pA; :dynamic_variables; vA = A + pA; end),
         (@stock_and_flow begin; :stocks; B; :parameters; pB; :dynamic_variables; vB = pB + B; end),
         Dict{Symbol, Vector{Int64}}(:S => [1], :F => [], :SV => [], :P => [1], :V => [1]))
     == Dict(:LS => [], :LSV => [], :LV => [1], :I => [], :O => [], :LPV => [1], :LVV => []))
@@ -435,15 +438,15 @@ end
         Dict{Symbol, Vector{Int64}}(:S => [1,1,1], :F => [1,1], :SV => [1,2,3], :P => [1,1], :V => [1,1]))
     == Dict(:LS => [1,3,1,2,3,1,3], :LSV => [], :LV => [1,1], :I => [1,1], :O => [1,1], :LPV => [1,1], :LVV => []))
 
- 
+
 end
 
 
 @testset "Applying flags can correctly find substring matches" begin
-    @test apply_flags(:f_, Set([:~]), Vector{Symbol}()) == [] 
-    @test apply_flags(:f_, Set([:~]), [:f_death, :f_birth]) == [:f_death, :f_birth] 
-    @test apply_flags(:NOMATCH, Set([:~]), [:f_death, :f_birth]) == [] 
-    @test apply_flags(:f_birth, Set([:~]), [:f_death, :f_birth]) == [:f_birth] 
+    @test apply_flags(:f_, Set([:~]), Vector{Symbol}()) == []
+    @test apply_flags(:f_, Set([:~]), [:f_death, :f_birth]) == [:f_death, :f_birth]
+    @test apply_flags(:NOMATCH, Set([:~]), [:f_death, :f_birth]) == []
+    @test apply_flags(:f_birth, Set([:~]), [:f_death, :f_birth]) == [:f_birth]
     @test apply_flags(:f_birth, Set{Symbol}(), [:f_death, :f_birth]) == [:f_birth]
 
     # Note, apply_flags is specifically meant to work on vectors without duplicates; the vector which is input are the keys of a dictionary.
@@ -502,13 +505,13 @@ end
     (@stock_and_flow begin
         :stocks
         A
-        
+
         :dynamic_variables
         v1 = A + A
-    end), 
+    end),
     Dict{Symbol, Vector{Int64}}(:S => [1], :V => [1,1])))
 
-    
+
 
     # Mapping it all to I
 
@@ -587,7 +590,7 @@ end
        :nodes
        A
        B
-       
+
        :edges
        A => -B
        B => +A
