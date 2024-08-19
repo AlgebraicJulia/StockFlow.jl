@@ -1,60 +1,300 @@
-using Catlab.CategoricalAlgebra
+using StockFlow
+using StockFlow.Syntax
+using StockFlow.PremadeModels
 
-nn = StockFlow.nn
-ne = StockFlow.ne
+using Catlab.CategoricalAlgebra    
 
-@testset "Empty CausalLoopF" begin
-  empty = CausalLoopF()
-  @test ( nn(empty) == 0 
-    && ne(empty) == 0 
-    && isempty(subpart(empty, :epolarity)) )
+
+@testset "Empty CausalLoop" begin
+    
+    e = CausalLoop() # Graph with names
+    @test (nvert(e) == 0
+           && nedges(e) == 0)
+
+    e2 = CausalLoopPol()
+    @test (nvert(e2) == 0
+           && nedges(e2) == 0
+           && epols(e2) == Vector{Polarity}())
+
+
+    empty = CausalLoopPM() # CausalLoopPM
+    @test (nvert(empty) == 0
+           && np(empty) == 0
+           && nm(empty) == 0)
+
+    @test from_clp(to_clp(empty)) == empty
+
 end
 
-@testset "Helper functions" begin
-  cl0 = CausalLoopF([:A, :B], [:A => :B, :B => :A], [POL_BALANCING, POL_BALANCING])
-  @test epol(cl0, 1) == POL_BALANCING 
-  @test epols(cl0)[1] == POL_BALANCING
-  @test outgoing_edges(cl0, 1) == [1] && outgoing_edges(cl0, 2) == [2]
-  @test incoming_edges(cl0, 1) == [2] && incoming_edges(cl0, 2) == [1]
+
+
+@testset "sf to causal loop" begin
+    @test (convertToCausalLoop(seir()) 
+           == (@causal_loop begin
+            :nodes
+            S; E; I; R; f_birth; f_incid; f_deathS; f_inf; f_deathE; f_rec; f_deathI; f_deathR; N; NI; NS; v_prevalence; v_meanInfectiousContactsPerS; v_perSIncidenceRate; μ; β; tlatent; trecovery; δ; c;
+            :edges
+             S => N
+             S => NS
+             E => N
+             E => NS
+             I => N
+             I => NI
+             I => NS
+             R => N
+             R => NS
+             
+             NI => v_prevalence
+             NS => v_prevalence
+             N => f_birth
+             
+             S => f_incid
+             E => f_inf
+             I => f_rec
+             
+             S => f_deathS
+             E => f_deathE
+             I => f_deathI
+             R => f_deathR
+             f_birth => S
+             f_incid => E
+             f_inf => I
+             f_rec => R
+             f_incid => S 
+             f_deathS => S
+             f_inf => E
+             f_deathE => E
+             f_rec => I
+             f_deathI => I
+             f_deathR => R
+ 
+             c => v_meanInfectiousContactsPerS
+             β => v_perSIncidenceRate
+             μ => f_birth
+             tlatent => f_inf
+             trecovery => f_rec
+             δ => f_deathS
+             δ => f_deathE
+             δ => f_deathI
+             δ => f_deathR
+             
+             v_prevalence => v_meanInfectiousContactsPerS
+             v_meanInfectiousContactsPerS => v_perSIncidenceRate
+             v_perSIncidenceRate => f_incid
+ 
+         
+            end)
+
+          )
 end
 
-@testset "Simple CausalLoopF" begin
-  cl1 = CausalLoopF([:A, :B], [:A => :B], [POL_BALANCING])
-  @test nnames(cl1) == [:A, :B] && ne(cl1) == 1 && epol(cl1, 1) == POL_BALANCING
-  
-  cl2 = CausalLoopF([:A, :B, :C], [:A => :B, :B => :C, :C => :A], [POL_REINFORCING, POL_NOT_WELL_DEFINED, POL_ZERO])
-  @test nnames(cl2) == [:A, :B, :C] && ne(cl2) == 3 && epols(cl2) == [POL_REINFORCING, POL_NOT_WELL_DEFINED, POL_ZERO]
 
-  cl3 = CausalLoopF([:A], [:A => :A for _ in 1:5], [POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_ZERO, POL_NOT_WELL_DEFINED])
-  @test nnames(cl3) == [:A] && ne(cl3) == 5 && epols(cl3) == [POL_REINFORCING, POL_BALANCING, POL_UNKNOWN, POL_ZERO, POL_NOT_WELL_DEFINED]
+
+
+@testset "Basic CausalLoop Creation" begin
+    cl1 = (@cl A => +B, B => -C, D, C => -A)
+    cl2 = (@causal_loop begin
+               :nodes #TODO: rename to vertices
+               A
+               B
+               C
+               D
+
+               :edges
+               A => +B
+               B => -C
+               C => -A
+           end)
+    cl3 = CausalLoopPM([:A,:B,:C,:D], [:A => :B, :B => :C, :C => :A], [POL_POSITIVE, POL_NEGATIVE, POL_NEGATIVE])
+    
+    @test cl1 == cl2
+    @test cl2 == cl3
+    @test cl3 == cl1
+
+    @test from_clp(to_clp(cl1)) == cl1
+
 end
 
-@testset "Extract Loops" begin
-  cl4 = CausalLoopF([:A], [:A => :A], [POL_UNKNOWN])
-  @test extract_loops(cl4) == [[1] => POL_UNKNOWN]
 
-  # 2 balancing make a reinforcing
-  cl5 = CausalLoopF([:A, :B], [:A => :A, :A => :B, :B => :A], [POL_BALANCING, POL_BALANCING, POL_BALANCING])
-  @test extract_loops(cl5) == [[1] => POL_BALANCING, [2, 3] => POL_REINFORCING]
+@testset "Cycles" begin
+    clc = (@cl A => +B, A => -B, B => -B, B => -A)
+    
+    @test cl_cycles(CausalLoopPM()) == Vector{Vector{Int}}()
+    @test cl_cycles(clc) == [[1, 4], [2, 4], [3]]
 
-  # A -> B -> C -> D -> E
-  # ^ - - - - |    |    |
-  #^ - - - - - - - -    |
-  #^ - - - - - - - - - - 
+    cl = (@cl A => +B, C => -D, D => -C, E => +E)
+    
+    # Unfortunately, this is pretty non-indicative of what they actually are.
+    # Edges are ordered first by pos > neg > zero > nwd > unknown, then by order in which they appear.
+    # So, the order of edges here is A => +B == 1, E => +E == 2, C => -D == 3,
+    # D => -C == 4
+    @test cl_cycles(cl) == [[3,4], [2]] 
 
-  # B -> C is not well defined, C -> D is unknown, D -> E is zero.
-  cl6 = CausalLoopF([:A, :B, :C, :D, :E], 
-    [:A => :B, :B => :C, :C => :A, :C => :D, :D => :A, :D => :E, :E => :A], 
-    [POL_BALANCING, POL_NOT_WELL_DEFINED, POL_BALANCING, POL_UNKNOWN, POL_BALANCING, POL_ZERO, POL_BALANCING])
-  
-  # shows that not well defined < unknown < zero
-  # run Graph_RB(cl6) to see the cycles
-  @test extract_loops(cl6) == [[1,2,3] => POL_NOT_WELL_DEFINED, [1,2,4,5] => POL_UNKNOWN, [1,2,4,6,7] => POL_ZERO]
+    @test extract_loops(CausalLoopPM()) == Dict{Vector{Int}, Polarity}()
+    @test extract_loops(clc) == Dict([[1,4] => POL_NEGATIVE, [2, 4] => POL_POSITIVE, [3] => POL_NEGATIVE])
+
 end
 
-@testset "Discard Zero Pol" begin
-  cl_disc_zero = CausalLoopF([:A], [:A => :A for _ in 1:10], [POL_ZERO for _ in 1:10])
-  cl_disc_zero′ = discard_zero_pol(cl_disc_zero)
-  @test nnames(cl_disc_zero′) == [:A] && ne(cl_disc_zero′) == 0 && epols(cl_disc_zero′) == []
+@testset "Walk polarity" begin
+    @test is_walk(CausalLoopPM(), Vector{Int}())
+    @test !is_walk((@cl A => +B, B => +C), [2, 1])
+    @test !is_walk(CausalLoopPM(), [1])
+
+    @test is_circuit((@cl A => +B, B => -A), [1,2])
+    @test !is_circuit((@cl A => +B, B => -A), [1])
+    @test !is_circuit((@cl A => +B), Vector{Int}())
+    @test !is_circuit((@cl A => +B), [2])
+
+    @test walk_polarity(CausalLoopPM(), Vector{Int}()) == POL_POSITIVE
+    @test walk_polarity((@cl A => -B), [1]) == POL_NEGATIVE 
+    @test walk_polarity((@cl A => -B, B => -A), [1,2]) == POL_POSITIVE
+    @test walk_polarity((@cl A => -B, B => -A), [1,2,1]) == POL_NEGATIVE
 end
 
+
+@testset "Count of loops a variable is on" begin
+    cll = (@cl A => +B, B => +C, C => -D, D => +A, D => -A, E => +E, E => -E, F => +F, G)
+
+    @test num_loops_var_on(cll, :A) == 2
+    @test num_indep_loops_var_on(cll, :A) == 1
+    @test num_loops_var_on(cll, :G) == num_indep_loops_var_on(cll, :G) == 0
+    @test num_loops_var_on(cll, :E) == 2
+    @test num_indep_loops_var_on(cll, :E) == 1
+
+    @test_throws ArgumentError num_loops_var_on(cll, :H)
+end
+
+
+@testset "all paths" begin
+    # Won't hit same node twice
+    @test extract_all_nonduplicate_paths( (@cl )) == Dict([Vector{Int}() => POL_POSITIVE])
+    @test extract_all_nonduplicate_paths((@cl A => +B)) == Dict([Vector{Int}() => POL_POSITIVE,
+                                                                 [1] => POL_POSITIVE])
+    @test (extract_all_nonduplicate_paths((@cl A => +B, A => -C, A => +C, B => -C))
+      == Dict([Vector{Int}() => POL_POSITIVE, [1] => POL_POSITIVE, [1, 4] => POL_NEGATIVE, [2] => POL_POSITIVE, [3] => POL_NEGATIVE, [4] => POL_NEGATIVE ]))
+
+end
+
+@testset "Number of Outputs" begin
+    @test num_inputs_outputs(@cl ) == Dict{Symbol, Tuple{Int, Int}}()
+    @test num_inputs_outputs(@cl A) == Dict([:A => (0, 0)])
+    @test num_inputs_outputs(@cl A => +B, B => +C, C => -D) == Dict([:A => (0, 1), :B => (1, 1), :C => (1, 1), :D => (1, 0)])
+
+    @test (num_inputs_outputs_pols(@cl A => +B, A => -C, A => +D, A => -E, A => -B) == 
+    Dict([:A => (0, 2, 0, 3), :B => (1, 0, 1, 0),
+     :C => (0, 0, 1, 0), :D => (1, 0, 0, 0), :E => (0, 0, 1, 0)    
+    ]))
+
+end
+
+@testset "Shortest path functions" begin
+
+    @testset "Shortest paths" begin
+        @test shortest_paths((@cl A), :A, :A) == Vector{Int}[[]] # trivial path
+        @test shortest_paths((@cl A => A), :A, :A) == Vector{Int}[[]]
+        @test shortest_paths((@cl A => B), :A, :A) == Vector{Int}[[]]
+        @test shortest_paths((@cl A => B), :A, :B) == Vector{Int}[[1]]
+        @test shortest_paths((@cl A => B), :B, :A) == Vector{Int}[] # no path
+
+        @test shortest_paths((@cl A => B, B => C), :A, :C) == Vector{Int}[[1,2]]
+        @test shortest_paths((@cl A => B, B => C, A => C), :A, :C) == Vector{Int}[[3]]
+
+        @test shortest_paths((@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D), :A, :D) == Vector{Int}[[1, 2, 3], [4,5,6]]
+        @test shortest_paths((@cl A => B, A => B), :A, :B) == Vector{Int}[[1], [2]]
+
+        @test shortest_paths(convertToCausalLoop(seir()), :S, :E) ==  Vector{Int}[[13, 21]] #  S => f_incid => E
+
+    end
+
+    @testset "All shortest paths" begin
+
+        vvi = Vector{Vector{Int}}()
+        vve = Vector{Vector{Int}}([[]])
+
+        @test (all_shortest_paths(@cl) == Matrix{Vector{Vector{Int}}}(undef, 0, 0))
+        @test (all_shortest_paths(@cl A => A) == fill(vve, (1,1)))
+        @test (all_shortest_paths(@cl A => B, B => C)
+        == permutedims(stack(
+            [[vve, [[1]], [[1,2]]],
+             [vvi, vve, [[2]]],
+             [vvi,  vvi,    vve]])
+        ))
+
+        @test (all_shortest_paths(@cl A => B, B => C, C => A, D) 
+        == permutedims(stack(
+            [
+                [vve, [[1]], [[1,2]], vvi],
+                [[[2,3]], vve, [[2]], vvi ],
+                [[[3]], [[3,1]], vve, vvi],
+                [vvi, vvi, vvi, vve]
+            ]
+
+        ))
+        )
+
+
+        @test (all_shortest_paths(@cl A => B, A => C, B => A, B => C, C => A, C => B)
+        == permutedims(stack(
+            [
+                [vve, [[1]], [[2]]],
+                [[[3]], vve, [[4]]],
+                [[[5]], [[6]], vve]
+            ]
+ 
+
+        )))
+
+
+
+        multi = Matrix{Vector{Vector{Int}}}(undef, 2, 2)
+        multi[1,1] = vve
+        multi[1,2] = [[1],[2]]
+        multi[2,1] = [[4]]
+        multi[2,2] = vve
+
+
+        @test (all_shortest_paths(@cl A => B, A => B, B => B, B => A)
+        == multi
+        )
+
+    end
+
+
+    @testset "Betweenness" begin
+        
+        @test betweenness(@cl) == Vector{Float64}()
+        @test betweenness(@cl A => B) == [0.0, 0.0]
+        @test betweenness(@cl A => B, B => C) == [0.0, 1.0, 0.0]
+
+
+        @test betweenness(@cl A => B, A => B, B => C, B => C) == [0.0, 1.0, 0.0]
+        
+        # Shortest paths of len > 2:
+        # A => B => C
+        # A => B => C => D
+        # B => C => D
+        # A => B′ => C′
+        # A => B′ => C′ => D
+        # B′ => C′ => D
+
+        # No shortest paths have A or D as non source or target
+        # EG: There is one shortest path from A => C, and 2 shortest paths A => D.
+        # These are the two paths with B as non source or target.
+        # bet(B) == 1 + 1/2 == 1.5
+
+        @test betweenness(@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D) == [0.0, 1.5, 1.5, 0.0, 1.5, 1.5]
+
+
+        # Shortest paths of len > 2 are the above, with the addition of duplicates of:
+        # A => B′ => C′ => D
+        # B′ => C′ => D
+
+        # EG: C′ is on both A => B′ => C′ => D, both B′ => C′ => D
+        # A has 3 shortest paths to D, B′ has 2 shortest paths to D.
+        # bet(C′) == 2/3 + 2/2 = 5/3
+        @test betweenness(@cl A => B, B => C, C => D, A => B′, B′ => C′, C′ => D, C′ => D) == [0, 4//3, 4//3, 0, 5//3, 5//3]
+
+    end
+
+
+end

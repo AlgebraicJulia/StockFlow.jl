@@ -53,6 +53,7 @@ makedocs(
     "Example" => Any[
       "generated/Covid19_composition_model_in_paper.md",
       "generated/full_fledged_schema_examples_new/CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram.md",
+      "generated/full_fledged_schema_examples_new/CasualLoopDiagrams/Causal_Loop_Operations.md",
       "generated/full_fledged_schema_examples_new/composition/composed_open_population_SIRV_model.md",
       "generated/full_fledged_schema_examples_new/composition/COVID_full_model.md",
       "generated/full_fledged_schema_examples_new/composition/curable_sexually_transmitted_diseases_model.md",

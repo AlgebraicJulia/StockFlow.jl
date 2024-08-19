@@ -32,7 +32,7 @@ end
 
 
 
-function interpret_composition_notation(statement::Expr)::Tuple{Vector{Symbol}, StockAndFlow0}
+function interpret_composition_notation(statement::Expr, create_foot_function)
     sf_symbols = nothing
     foot_expressions = nothing
 
@@ -53,13 +53,13 @@ function interpret_composition_notation(statement::Expr)::Tuple{Vector{Symbol}, 
         _ => error("Unknown composition syntax: $statement")
     end
 
-    sf_foot = create_foot(foot_expressions)
+    sf_foot = create_foot_function(foot_expressions)
     sf_vector = nothing
 
     @match sf_symbols begin
         ::Symbol => begin sf_vector = [sf_symbols] end
         ::Expr => begin sf_vector = collect(sf_symbols.args) end
-        _ => error("Unknown composition syntax in stockflow arguments: $sf_symbols")
+        _ => error("Unknown composition syntax in $K arguments: $sf_symbols")
     end
 
     return sf_vector, sf_foot
@@ -77,11 +77,11 @@ Cannot use () => () as a foot,
 the length of the first tuple must be the same as the number of stock flows
 given as argument, and every foot can only be used once.
 """
-function sfcompose(sfs::Vector{K}, block::Expr; RETURN_UWD = false) where {K <: AbstractStockAndFlowF} # (sf1, sf2, ..., block)
+function sfcompose(sfs::Vector, block::Expr, main_type, foot_type, create_foot_function; RETURN_UWD = false) # (sf1, sf2, ..., block)
 
     Base.remove_linenums!(block)
     if length(sfs) == 0
-        return StockAndFlowF()
+        return main_type()
     end
 
     if length(block.args) == 0 # equivalent to coproduct
@@ -101,18 +101,18 @@ function sfcompose(sfs::Vector{K}, block::Expr; RETURN_UWD = false) where {K <: 
     @assert allunique(sf_names) "Not all choices of names for stock flows \
     are unique!"
 
-    empty_foot =  (@foot () => ())
+    empty_foot =  foot_type()
 
 
     # symbol representation of sf => (sf itself, sf's feet)
     # Every sf has empty foot as first foot to get around being unable to create OpenStockAndFlowF without feet
-    sf_map::Dict{Symbol, Tuple{AbstractStockAndFlowF, Vector{StockAndFlow0}}} = 
+    sf_map::Dict{Symbol, Tuple{main_type, Vector{foot_type}}} = 
         Dict(sf_names[i] => (sfs[i], [empty_foot]) for i ∈ eachindex(sf_names)) # map the symbols to their corresponding stockflows
 
     # all feet
-    feet_index_dict::Dict{StockAndFlow0, Int} = Dict(empty_foot => 1)
+    feet_index_dict::Dict{foot_type, Int} = Dict(empty_foot => 1)
     for statement in block.args[2:end]
-        stockflows, foot = interpret_composition_notation(statement)
+        stockflows, foot = interpret_composition_notation(statement, create_foot_function)
         # adding new foot to list
         @assert (foot ∉ keys(feet_index_dict)) "Foot has already been used,\
          or you are using an empty foot!"
@@ -158,25 +158,63 @@ function sfcompose(sfs::Vector{K}, block::Expr; RETURN_UWD = false) where {K <: 
 
 end
 
+""" Composition function for StockAndFlowF """
+sfcompose(sfs::Vector{StockAndFlowF}, block::Expr) = sfcompose(sfs, block, StockAndFlowF, StockAndFlow0, create_foot)
+""" Composition function for CausalLoopPol """
+sfcompose(sfs::Vector{CausalLoopPol}, block::Expr) = sfcompose(sfs, block, CausalLoopPol, CausalLoopPol, x -> to_clp(cl_macro(x)))
+""" Composition function for CausalLoopPM """
+sfcompose(sfs::Vector{CausalLoopPM}, block::Expr) = sfcompose(sfs, block, CausalLoopPM, CausalLoopPM, cl_macro)
+""" Composition function for CausalLoop """
+sfcompose(sfs::Vector{CausalLoop}, block::Expr) = sfcompose(sfs, block, CausalLoop, CausalLoop, (x -> (cl_macro(x, true))))
+
+
+""" Error composition function """
+sfcompose(_::Vector, _::Expr) = MethodError("Unrecognized type to compose on.")
 
 """
-Compose models.
+Compose models.  Works with Stockflow and Causal Loop, but not together.
+
+Cannot use () => () as a foot.
+
+```julia
+# Stockflow
+sirv = @compose sir svi begin
+    (sr, sv)
+    (sr, sv) ^ S => N, I => N
+end
+
+# Causal Loop with polarities
+ABCD = @compose ABC BCD begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => -C
+end
+
+# Causal Loop without polarities
+ABCD2 = @compose ABC2 BCD2 begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B => C
+end
+```
+
 """
 macro compose(args...)
     if length(args) == 0
-        return :(MethodError("No arguments provided!  Please provide some \
+        return :(error("No arguments provided!  Please provide some \
         number of stockflows, then a quote block."))
     end
     escaped_block = Expr(:quote, args[end])
     sfs = esc.(args[1:end-1])
     quote
         if length($sfs) == 0
-            sfcompose(Vector{StockAndFlowF}(), $escaped_block)
+            :(error("Could not infer type given no arguments.  Please provide at \
+            least one stockflow or causal loop diagram"))
         else
             sfcompose([$(sfs...)], $escaped_block)
         end
     end
 end
+
+
 
 
 end
