@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Causal Loop Operations · StockFlow.jl</title><meta name="title" content="Causal Loop Operations · StockFlow.jl"/><meta property="og:title" content="Causal Loop Operations · StockFlow.jl"/><meta property="twitter:title" content="Causal Loop Operations · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../DSLs/">Domain Specific Languages</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li class="is-active"><a class="tocitem" href>Causal Loop Operations</a></li><li><a class="tocitem" href="../../composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../../composition/COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../../composition/curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../../composition/diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../../composition/SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../../stratification/sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../../stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>Causal Loop Operations</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Causal Loop Operations</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/CasualLoopDiagrams/Causal_Loop_Operations.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Causal-Loop-Operations"><a class="docs-heading-anchor" href="#Causal-Loop-Operations">Causal Loop Operations</a><a id="Causal-Loop-Operations-1"></a><a class="docs-heading-anchor-permalink" href="#Causal-Loop-Operations" title="Permalink"></a></h1><pre><code class="language-julia hljs">using StockFlow
+using StockFlow.Syntax
+using StockFlow.PremadeModels
+
+GraphCL(convertToCausalLoop(seir()))
+
+C2 = CausalLoopPM([:C2], [:C2 =&gt; :C2 for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE])
+
+C2′ = @causal_loop begin
+    :nodes
+    C2
+    :edges
+    C2 =&gt; -C2
+    C2 =&gt; +C2
+    C2 =&gt; -C2
+    C2 =&gt; +C2
+    C2 =&gt; -C2
+end;
+
+C2′′ = (@cl C2 =&gt; -C2, C2 =&gt; +C2, C2 =&gt; -C2, C2 =&gt; +C2, C2 =&gt; -C2);
+
+C2 == C2′ == C2′′
+
+GraphCL(C2)
+
+GraphRB(C2)
+
+CL_ABC = @cl A =&gt; +B, B =&gt; +C, C =&gt; -A, D
+
+GraphCL(CL_ABC)
+
+GraphRB(CL_ABC)
+
+nvert(CL_ABC)
+
+nedges(CL_ABC)
+
+np(CL_ABC)
+
+nm(CL_ABC)
+
+sedge(CL_ABC, 3) # Source node for edge 3, which is C =&gt; A, is C, which is index 3
+
+tedge(CL_ABC, 3) # C =&gt; A, target is A, with index 1
+
+vnames(CL_ABC)
+
+epol(CL_ABC, 1) # Polarity of edge 1, A =&gt; B, is positive
+
+epols(CL_ABC)
+
+outgoing_edges(CL_ABC, 1) # indices of all edges with src 1 (in this case, A)
+
+outgoing_edges(CL_ABC, 4) # D
+
+incoming_edges(CL_ABC, 1) # indices of all edges with src 1
+
+cl_cycles(CL_ABC)
+
+extract_loops(CL_ABC)
+
+is_walk(CL_ABC, [1,2,3,1,2])
+
+is_walk(CL_ABC, [3,2])
+
+is_walk(CL_ABC, Vector{Int}())
+
+is_circuit(CL_ABC, [1,2,3])
+
+is_circuit(CL_ABC, [1,2])
+
+walk_polarity(CL_ABC, [1,2,3,1,2,3])
+
+extract_all_nonduplicate_paths(CL_ABC)
+
+num_loops_var_on(CL_ABC, :D)
+
+num_loops_var_on(CL_ABC, :A)
+
+num_loops_var_on(C2, :C2)
+
+num_indep_loops_var_on(C2, :C2) # Treating each pair of nodes as if there is at most one edge between them
+
+to_graphs_graph(CL_ABC)
+
+betweenness(CL_ABC)
+
+to_graphs_graph(C2) # eliminates duplicate edges!
+
+betweenness(C2)
+
+num_inputs_outputs(C2) # in, out
+
+num_inputs_outputs_pols(C2) # pos in, pos out, neg in, neg out
+
+all_shortest_paths(C2)
+
+ all_shortest_paths(@cl((A =&gt; B, B =&gt; C, C =&gt; D, A =&gt; B′, B′ =&gt; C′, C′ =&gt; D)))
+
+shortest_paths( (@cl A =&gt; B, B =&gt; C, C =&gt; D, A =&gt; B′, B′ =&gt; C′, C′ =&gt; D), :A, :D )
+
+ betweenness(@cl((A =&gt; B, B =&gt; C, C =&gt; D, A =&gt; B′, B′ =&gt; C′, C′ =&gt; D)))
+
+all_shortest_paths(convertToCausalLoop(seir()))
+
+all_shortest_paths(CL_ABC)
+
+GraphCL(CL_ABC)
+
+shortest_paths(CL_ABC, :A, :C)
+
+cl = @causal_loop begin
+        :nodes
+        A
+        B
+        C
+        D
+        E
+        :edges
+        A =&gt; B
+        B =&gt; C
+        B =&gt; C
+        B =&gt; D
+        D =&gt; C
+    end;
+
+cl2 = @causal_loop begin
+        :nodes
+        A
+        B
+        C
+        D
+        E
+        :edges
+        A =&gt; B
+        B =&gt; C
+        B =&gt; D
+        D =&gt; C
+    end;
+
+GraphCL(cl)
+
+betweenness(cl)
+
+betweenness(cl2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{Rational{Int64}}:
+ 0
+ 2
+ 0
+ 0
+ 0</code></pre><h3 id="Note,-negative-polarities-always-come-after-positive!"><a class="docs-heading-anchor" href="#Note,-negative-polarities-always-come-after-positive!">Note, negative polarities always come after positive!</a><a id="Note,-negative-polarities-always-come-after-positive!-1"></a><a class="docs-heading-anchor-permalink" href="#Note,-negative-polarities-always-come-after-positive!" title="Permalink"></a></h3><pre><code class="language-julia hljs">cl_small = @cl A =&gt; -B, B =&gt; +C
+
+epols(cl_small)
+
+to_simple_cl(cl_small) == (@cl A, B =&gt; C, A =&gt; B) # Note the order!
+
+to_simple_cl(cl_small)
+
+using StockFlow.Syntax.Composition
+
+ABC = (@cl A =&gt; B, B =&gt; C)
+BCD = (@cl B =&gt; C, C =&gt; D)
+@compose ABC BCD begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B =&gt; C
+end
+
+ABC_pol = (@cl A =&gt; +B, B =&gt; -C)
+BCD_pol = (@cl B =&gt; -C, C =&gt; +D)
+@compose ABC_pol BCD_pol begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B =&gt; -C
+end</code></pre><div class="c-set">
+<span class="c-set-summary">CausalLoopPM {V:4, P:2, M:1, Name:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">vname</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">B</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">D</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">P</th>
+      <th style = "text-align: right;">sp</th>
+      <th style = "text-align: right;">tp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">M</th>
+      <th style = "text-align: right;">sm</th>
+      <th style = "text-align: right;">tm</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../convert_from_SEIR_stockFlowDiagram/">« Convert from SEIR Stock Flow Diagram</a><a class="docs-footer-nextpage" href="../../composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Monday 19 August 2024 20:17">Monday 19 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
