@@ -1,7 +1,5 @@
 # # Diabetes Diagnose
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 

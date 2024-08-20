@@ -1,7 +1,5 @@
 # # Curable Sexually-Transmitted Diseases Model
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 

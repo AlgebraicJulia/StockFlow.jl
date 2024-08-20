@@ -1,5 +1,3 @@
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 
