@@ -167,7 +167,7 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     vNotf=setdiff(1:nvb(p),flowVariableIndexs)
     vNotfns=[vname(p,v) for v in vNotf]
     
-    ns=vcat(sns,fns,svns,vNotfns)
+    ns=Vector{Symbol}(vcat(sns,fns,svns,vNotfns))
 
     lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
     lsvfes=[svname(p,subpart(p,lsv,:lsvsv))=>subpart(p,lsv,:lsvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lsv,:lsvv),:fv))) : vname(p,subpart(p,lsv,:lsvv)) for lsv in 1:nlsv(p)]
@@ -175,7 +175,7 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructure)
     fies=[fname(p,subpart(p,i,:ifn))=>sname(p,subpart(p,i,:is)) for i in 1:ni(p)]
     foes=[fname(p,subpart(p,o,:ofn))=>sname(p,subpart(p,o,:os)) for o in 1:no(p)]
 
-    es=vcat(lses,lsvfes,lfves,fies,foes)
+    es=Vector{Pair{Symbol, Symbol}}(vcat(lses,lsvfes,lfves,fies,foes))
 
     return CausalLoop(ns,es)
 end
@@ -220,7 +220,7 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     vNotf=setdiff(1:nvb(p),flowVariableIndexs)
     vNotfns=[vname(p,v) for v in vNotf]
     
-    ns=vcat(sns,fns,svns,vNotfns,pns)
+    ns=Vector{Symbol}(vcat(sns,fns,svns,vNotfns,pns))
 
     lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
     lsvfes=[svname(p,subpart(p,lsv,:lsvsv))=>subpart(p,lsv,:lsvv) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lsv,:lsvv),:fv))) : vname(p,subpart(p,lsv,:lsvv)) for lsv in 1:nlsv(p)]
@@ -231,7 +231,7 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     lvvs=[subpart(p,lv,:lvsrc) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvsrc),:fv))) : vname(p,subpart(p,lv,:lvsrc))=>subpart(p,lv,:lvtgt) in flowVariableIndexs ? fname(p,only(incident(p,subpart(p,lv,:lvtgt),:fv))) : vname(p,subpart(p,lv,:lvtgt)) for lv in 1:nlvv(p)]
 
 
-    es=vcat(lses,lsvfes,lfves,fies,foes,lpvs,lvvs)
+    es=Vector{Pair{Symbol, Symbol}}(vcat(lses,lsvfes,lfves,fies,foes,lpvs,lvvs))
 
     return CausalLoop(ns,es)
 end

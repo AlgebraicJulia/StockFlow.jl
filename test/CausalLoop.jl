@@ -298,3 +298,33 @@ end
 
 
 end
+
+@testset "Converting system structure and stockflow" begin
+    @test convertToCausalLoop(@stock_and_flow begin end) == CausalLoop()
+    @test convertToCausalLoop(StockAndFlowStructure()) == CausalLoop()
+
+    @test (convertToCausalLoop(@stock_and_flow begin
+                                :stocks
+                                A
+                                B
+
+                                :dynamic_variables
+                                v = A + B
+
+                                :flows
+                                A => f1(v) => B
+
+                                :sums
+                                N = [A, B]
+                            end) == @cl A, B, f1, N, A => N, B => N, A => f1, B => f1, f1 => B, f1 => A)
+
+    @test (convertToCausalLoop(StockAndFlowStructure(((:S)=>(:birth,(:inf,:deathS),(:v_inf,:v_deathS),:N)),
+    (:birth=>:v_birth,:inf=>:v_inf,:rec=>:v_rec,:deathS=>:v_deathS),
+    (:N=>(:v_birth,:v_inf)))) == (
+        @cl S, birth, inf, rec, deathS, N, S => N, N => birth, N => inf, S => inf, S => deathS, birth => S, inf => S, deathS => S
+    )) 
+
+
+end
+
+
