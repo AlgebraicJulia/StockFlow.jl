@@ -1,0 +1,25 @@
+name: Check notebook examples for regressions
+
+on: [push, pull_request]
+
+env:
+  JULIA_NUM_THREADS: 'auto'
+jobs:
+  notebooks-examples-regression-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: 1.9
+      - uses: julia-actions/cache@v1
+      - uses: julia-actions/julia-buildpkg@v1
+      - name: Create Julia files from Jupyter Notebook examples
+        run: |
+          mkdir ./jlexamples
+          ./ipynb-to-jl.sh "full_fledged_schema_examples"
+          ./ipynb-to-jl.sh "full_fledged_schema_examples_new"
+      - name: Validate notebook examples by running
+        run: julia -p auto --project="." -e 'include("./run_notebooks.jl")'
+      - name: Clean up Julia files from Jupyter Notebook examples
+        run: rm -rf jlexamples
