@@ -1,7 +1,5 @@
 # # SIR Standard Stratification
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 
