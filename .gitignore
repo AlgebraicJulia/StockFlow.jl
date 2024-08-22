@@ -2,35 +2,22 @@
 *.jl.cov
 *.jl.mem
 
-examples/.ipynb_checkpoints/
-
+.vscode
 .DS_Store
-
-examples/primitive schema examples/.ipynb_checkpoints/
-
-examples/primitive_schema_examples/.ipynb_checkpoints/
-
-
-
-examples/primitive_schema_examples/practises/.ipynb_checkpoints/SEIRVD model hard-checkpoint.ipynb
-
-examples/primitive_schema_examples/practises/.ipynb_checkpoints/SEIRVD model-checkpoint.ipynb
-
-examples/primitive_schema_examples/practises/.ipynb_checkpoints/SIRV composition model simple-checkpoint.ipynb
-
-examples/primitive_schema_examples/practises/.ipynb_checkpoints/SIRV composition model-checkpoint.ipynb
-
-examples/primitive_schema_examples/practises/solutions/.ipynb_checkpoints/SIRV composition model-checkpoint.ipynb
-
-examples/full_fledged_schema_examples/.ipynb_checkpoints/composed open population SIRV model-checkpoint.ipynb
-
-examples/full_fledged_schema_examples/.ipynb_checkpoints/
-
-examples/full_fledged_schema_examples/composition/.ipynb_checkpoints/
-
-examples/full_fledged_schema_examples/stratification/.ipynb_checkpoints/
-
-examples/full_fledged_schema_examples/CaulsalLoopDiagrams/.ipynb_checkpoints/
 
 Manifest.toml
 .#*
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints
+**/*.ipynb_checkpoints
+
+# Vim temporary files:
+*~
+*.swp
+*.swo
+
+# Emacs temporary files
+\#*\#
+.\#*
+

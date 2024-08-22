@@ -1,7 +1,5 @@
 # # COVID Full Model
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 

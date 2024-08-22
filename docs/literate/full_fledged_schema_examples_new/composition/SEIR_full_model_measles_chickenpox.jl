@@ -1,7 +1,5 @@
 # # SEIR Full Model Measles Chickenpox
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 

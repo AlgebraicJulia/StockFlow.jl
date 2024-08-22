@@ -2,7 +2,6 @@ export TheoryCausalLoop, AbstractCausalLoop, CausalLoopUntyped, CausalLoop,
 nvert, nedges, vname, np, nm,
 sedge, tedge, convertToCausalLoop, vnames, epol, epols,
 Polarity, POL_POSITIVE, POL_NEGATIVE,
-add_node!, add_nodes!, add_edge!, add_edges!,
 outgoing_edges, incoming_edges, extract_loops, is_walk, is_circuit, walk_polarity, cl_cycles,
 CausalLoopPol, to_clp, from_clp, CausalLoopPM, leg,
 extract_all_nonduplicate_paths, num_loops_var_on, num_indep_loops_var_on,
@@ -21,14 +20,14 @@ import Base: *
 
 
 """
-P - sp - >  
-  - tp - >  
+P - sp - >
+  - tp - >
             V
 M - sm - >
   - tm - >
 """
 @present TheoryCausalLoopNameless(FreeSchema) begin
-  
+
   V::Ob
   P::Ob
   M::Ob
@@ -43,14 +42,14 @@ end
 
 
 """
-P - sp - >    
-  - tp - >    
+P - sp - >
+  - tp - >
             V - vname - > Name
 M - sm - >
   - tm - >
 """
 @present TheoryCausalLoopPM <: TheoryCausalLoopNameless begin
-  
+
   Name::AttrType
   vname::Attr(V, Name)
 
@@ -80,9 +79,9 @@ const OpenCausalLoopPMOb, OpenCausalLoopPM = OpenACSetTypes(CausalLoopPMUntyped,
 end
 
 """
-  - src -> 
+  - src ->
 E           V - vname -> Name
-  - tgt -> 
+  - tgt ->
 """
 @present TheoryCausalLoop <: SchGraph begin
   Name::AttrType
@@ -90,9 +89,9 @@ E           V - vname -> Name
 end
 
 """
-                      - src -> 
+                      - src ->
 Polarity <- epol - E           V - vname -> Name
-                      - tgt -> 
+                      - tgt ->
 """
 @present TheoryCausalLoopPol <: TheoryCausalLoop begin
   Polarity::AttrType
@@ -139,7 +138,7 @@ end
 Create a CausalLoop (Graph with named vertices) with a vector of vertices, and
 a vector of pairs of vertices.
 
-CausalLoop([:A, :B], [:A => :B, :B => :B]) will create a CausalLoop with 
+CausalLoop([:A, :B], [:A => :B, :B => :B]) will create a CausalLoop with
 vertices A and B, an edge A => B and an edge B => B.
 """
 function CausalLoop(vs::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}})
@@ -159,14 +158,14 @@ end
 Construct a CausalLoop from a StockFlow.
 """
 function convertToCausalLoop(p::AbstractStockAndFlowStructure)
-    
+
     sns=snames(p)
     fns=fnames(p)
     svns=svnames(p)
     flowVariableIndexs=[flowVariableIndex(p,f) for f in 1:nf(p)]
     vNotf=setdiff(1:nvb(p),flowVariableIndexs)
     vNotfns=[vname(p,v) for v in vNotf]
-    
+
     ns=Vector{Symbol}(vcat(sns,fns,svns,vNotfns))
 
     lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
@@ -211,7 +210,7 @@ Nodes: stocks, flows, sum variables, parameters, nonflow dynamic variables
 Edges: morphisms in stock flow
 """
 function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
-    
+
     sns=snames(p)
     fns=fnames(p)
     svns=svnames(p)
@@ -219,7 +218,7 @@ function convertToCausalLoop(p::AbstractStockAndFlowStructureF)
     flowVariableIndexs=[flowVariableIndex(p,f) for f in 1:nf(p)]
     vNotf=setdiff(1:nvb(p),flowVariableIndexs)
     vNotfns=[vname(p,v) for v in vNotf]
-    
+
     ns=Vector{Symbol}(vcat(sns,fns,svns,vNotfns,pns))
 
     lses=[sname(p,subpart(p,ls,:lss))=>svname(p,subpart(p,ls,:lssv)) for ls in 1:nls(p)]
@@ -251,13 +250,13 @@ function from_clp(cl::CausalLoopPol)
 end
 
 """
-Create a CausalLoopPol from a vector of node names, and two vectors indicating 
+Create a CausalLoopPol from a vector of node names, and two vectors indicating
 which indices for vertices will act as edges.
 
-to_clp([:A, :B], [1 => 2], Vector{Pair{Int, Int}}()) will create a 
+to_clp([:A, :B], [1 => 2], Vector{Pair{Int, Int}}()) will create a
 CausalLoopPol with a positive polarity edge from A to B.
 """
-function to_clp(nodes::Vector{Symbol}, reinf::Vector{Pair{Int, Int}}, 
+function to_clp(nodes::Vector{Symbol}, reinf::Vector{Pair{Int, Int}},
   bal::Vector{Pair{Int, Int}})
 
   ne = length(reinf) + length(bal)
@@ -283,7 +282,7 @@ Convert CausalLoopPM to CausalLoopPol.
 """
 function to_clp(cl::CausalLoopPM)
   to_clp(
-    Vector{Symbol}(subpart(cl, :vname)), 
+    Vector{Symbol}(subpart(cl, :vname)),
     Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sp), subpart(cl, :tp)))),
     Vector{Pair{Int,Int}}(map(((x,y),) -> x => y, zip(subpart(cl, :sm), subpart(cl, :tm)))),
     )
@@ -326,13 +325,13 @@ vector of polarities.
 CausalLoopPM(ns::Vector{Symbol}, es::Vector{Pair{Symbol, Symbol}}, pols::Vector{Polarity}) = begin
   @assert length(pols) == length(es)
 
-  
+
   c = CausalLoopPM()
- 
+
 
   ns = vectorify(ns)
   es = vectorify(es)
-  
+
   ns_idx=state_dict(ns)
   add_vertices!(c, length(ns), vname=ns)
 
@@ -382,13 +381,13 @@ Return source vertex index of an edge of CausalLoopPM by index.
 Negative edges come after positive edges.
 
 ```julia-repl
-julia> using StockFlow; StockFlow.Syntax; 
+julia> using StockFlow; StockFlow.Syntax;
 julia> cl = (@cl A => +B, B => -C, C => +D);
 julia> sedge(cl, 3)
 2
 ````
 The nodes are ordered A, B, C.
-The edges are ordered A => +B, C => +D, B => -C; so, the source index of the 
+The edges are ordered A => +B, C => +D, B => -C; so, the source index of the
 third edge is B, which has index 2.
 """
 sedge(c::CausalLoopPM, e) = begin
@@ -476,8 +475,8 @@ function to_graphs_graph(cl::Union{CausalLoopPol, CausalLoop})
   g
 end
 
-""" 
-  CausalLoopPM, return all cycles of a causal loop as a vector of vectors of int, 
+"""
+  CausalLoopPM, return all cycles of a causal loop as a vector of vectors of int,
   where positive edges come before negative.
 
   Each cycle will include each edge at most once.
@@ -489,7 +488,7 @@ function cl_cycles(cl::AbstractCausalLoop)
 end
 
 
-""" 
+"""
   CausalLoopPol, return all cycles of a causal loop as a vector of vectors of int.
 
   Each cycle will include each edge at most once.
@@ -646,7 +645,7 @@ function betweenness(cl::CausalLoop)
 
   sp = all_shortest_paths(cl)
   # Technically, we should probably also be mapping empty lists to that particular node, but it doesn't affect betweenness
-  sp_nodes = map(paths -> (map(path -> (length(path) == 0 ? Vector{Int}() : vcat([sedge(cl, path[1])], (x -> tedge(cl, x)).(path))), paths)), sp) 
+  sp_nodes = map(paths -> (map(path -> (length(path) == 0 ? Vector{Int}() : vcat([sedge(cl, path[1])], (x -> tedge(cl, x)).(path))), paths)), sp)
 
   σₛₜ = Matrix{Int}(map(x -> length(x), sp))
 
@@ -664,7 +663,7 @@ function betweenness(cl::CausalLoop)
   end
 
   betweenness_cent
-  
+
 end
 
 """
@@ -746,14 +745,14 @@ function num_inputs_outputs_pols(cl::CausalLoopPol)
   @assert allunique(vnames(cl))
   ssvec = Dict{Symbol, Tuple{Int, Int, Int, Int}}() # name, pos in, pos out, neg in, neg out
   for i in 1:nvert(cl)
-    push!(ssvec, 
-    subpart(cl, i, :vname) => 
-    ((count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :tgt))), 
-    (count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :src))), 
-    (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :tgt))), 
+    push!(ssvec,
+    subpart(cl, i, :vname) =>
+    ((count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :tgt))),
+    (count(x -> epol(cl, x) == POL_POSITIVE, incident(cl, i, :src))),
+    (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :tgt))),
     (count(x -> epol(cl, x) == POL_NEGATIVE, incident(cl, i, :src))))
     )
-    
+
   end
   ssvec
 end
@@ -781,7 +780,7 @@ Return vector of all shortest paths between two nodes.  Takes node indices as ar
 function shortest_paths(cl::Union{CausalLoopPM, CausalLoopPol, CausalLoop}, s::Int, d::Int)
   paths = Vector{Vector{Int}}()
   minimum = Inf
- 
+
   function rec_search!(path, nodes)
     if length(path) >= minimum
       return
@@ -886,18 +885,18 @@ function all_shortest_paths(cl::CausalLoop)
     end
 
 
-    A′ = Matrix{Vector{Vector{Int}}}(undef, nvert(cl), nvert(cl)) 
+    A′ = Matrix{Vector{Vector{Int}}}(undef, nvert(cl), nvert(cl))
     for i in 1:nvert(cl)
       for j in 1:nvert(cl)
         A′[i,j] = Vector{Vector{Int}}()
       end
     end
     # empty matrix
-    
+
     for (s, t) in no_path_targets
       V₁ = [x for (x,targs) in enumerate(A[s,:]) if !isempty(targs)]
       V₂ = [x for (x,srcs) in enumerate(adj[:, t]) if !isempty(srcs)]
-      inter = intersect(V₁, V₂) # nonempty paths i -> k and k -> j 
+      inter = intersect(V₁, V₂) # nonempty paths i -> k and k -> j
 
       for k in inter
         for p1 in A[s, k]
@@ -923,7 +922,7 @@ function all_shortest_paths(cl::CausalLoop)
 
   B
 
-      
+
 end
 
 
@@ -951,7 +950,7 @@ end
 #     made_change = false
 #     for node in 1:nvert(cl)
 #       for target in 1:nvert(cl)
-#         if node == target || isempty(all_paths[node,target]) 
+#         if node == target || isempty(all_paths[node,target])
 #           continue
 #         end
 #         outgoing = outgoing_edges(cl, target)
@@ -1011,8 +1010,6 @@ end
 #     all_paths
 #   end
 
-  
+
 
 # # end
-
-    

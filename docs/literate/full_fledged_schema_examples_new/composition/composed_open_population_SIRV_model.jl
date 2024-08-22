@@ -1,7 +1,5 @@
 # # Composed Open Population SIRV Model
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 

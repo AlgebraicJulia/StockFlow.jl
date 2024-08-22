@@ -1,7 +1,5 @@
 # # SIR Linear Stratification
 
-using GraphViz
-
 using StockFlow
 using StockFlow.Syntax
 

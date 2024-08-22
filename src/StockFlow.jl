@@ -9,8 +9,8 @@ funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMa
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
 vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
 object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
-vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, recreate_stratified, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
-get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt, get_links,
+vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
+get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt,
 make_v_expr_nonrecursive, get_lpvpposition, get_lvsrcposition, get_lsvsvposition, get_lvsposition, ntcomponent
 
 
@@ -96,7 +96,7 @@ const StockAndFlow0 = StockAndFlowUntyped0{Symbol}
 
 """
     StockAndFlow0(s,sv,ssv)
-    
+
 for an instance of the sub-schema, the program supports only have stocks, or only have sum auxiliary variables, or both stocks
  and sum auxiliary variables, or have both """
 StockAndFlow0(s,sv,ssv) = begin
@@ -595,13 +595,13 @@ StockAndFlowF(s,p,v,f,sv) = begin
 end
 
 """ return the stocks name with index of s """
-sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname) 
+sname(p::AbstractStockAndFlow0,s) = subpart(p,s,:sname)
 """ return the flows name with index of f """
 fname(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fname)
 """ return the sum auxiliary variables name with index of sv """
-svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname) 
+svname(p::AbstractStockAndFlow0,sv) = subpart(p,sv,:svname)
 """ return the auxiliary variables name with index of v """
-vname(p::AbstractStockAndFlowStructure,v) = subpart(p,v,:vname) 
+vname(p::AbstractStockAndFlowStructure,v) = subpart(p,v,:vname)
 """ return the auxiliary variables name with index of v """
 pname(sf::AbstractStockAndFlowStructureF,p) = subpart(sf,p,:pname)
 
@@ -611,7 +611,7 @@ snames(p::AbstractStockAndFlow0) = [sname(p, s) for s in 1:ns(p)]
 fnames(p::AbstractStockAndFlowStructure) = [fname(p, f) for f in 1:nf(p)]
 """ return sum variable names """
 svnames(p::AbstractStockAndFlow0) = [svname(p, sv) for sv in 1:nsv(p)]
-""" return variable names """ 
+""" return variable names """
 vnames(p::AbstractStockAndFlowStructure) = [vname(p, v) for v in 1:nvb(p)]
 """ return parameter names """
 pnames(sf::AbstractStockAndFlowStructureF) = [pname(sf,p) for p in 1:np(sf)]
@@ -817,12 +817,12 @@ outflowsAll(p::AbstractStockAndFlowStructure) = [((outflows(p, s) for s in 1:ns(
 
 
 
-""" 
+"""
     funcDynam(p::AbstractStockAndFlow,v)
 return the functions of variables give index v """
 funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
 
-""" 
+"""
     funcDynam(sf::AbstractStockAndFlowF,v)
 return the functions of variables give index v """
 funcDynam(sf::AbstractStockAndFlowF,v) = begin
