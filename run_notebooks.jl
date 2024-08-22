@@ -1,9 +1,3 @@
-using Pkg
-using TestEnv
-
-Pkg.activate(".")
-TestEnv.activate("StockFlow")
-
 function modinclude(filename)
     modname = gensym()
     @eval module $modname
@@ -18,7 +12,7 @@ function main()
   exit_code = 0
   errors = []
   ok = []
-  Threads.@threads for f in ipynb_files
+  for f in ipynb_files
       try
         modinclude(f)
       catch e
