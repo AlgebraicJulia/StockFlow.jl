@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Curable Sexually-Transmitted Diseases Model · StockFlow.jl</title><meta name="title" content="Curable Sexually-Transmitted Diseases Model · StockFlow.jl"/><meta property="og:title" content="Curable Sexually-Transmitted Diseases Model · StockFlow.jl"/><meta property="twitter:title" content="Curable Sexually-Transmitted Diseases Model · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../DSLs/">Domain Specific Languages</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/Causal_Loop_Operations/">Causal Loop Operations</a></li><li><a class="tocitem" href="../composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../COVID_full_model/">COVID Full Model</a></li><li class="is-active"><a class="tocitem" href>Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../../stratification/sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../../stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>Curable Sexually-Transmitted Diseases Model</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Curable Sexually-Transmitted Diseases Model</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/composition/curable_sexually_transmitted_diseases_model.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Curable-Sexually-Transmitted-Diseases-Model"><a class="docs-heading-anchor" href="#Curable-Sexually-Transmitted-Diseases-Model">Curable Sexually-Transmitted Diseases Model</a><a id="Curable-Sexually-Transmitted-Diseases-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Curable-Sexually-Transmitted-Diseases-Model" title="Permalink"></a></h1><pre><code class="language-julia hljs">using StockFlow
+using StockFlow.Syntax
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.Theories
+using Catlab.WiringDiagrams
+
+openX = Open(
+    (@stock_and_flow begin
+
+        :stocks
+        X
+
+        :parameters
+        μ
+
+        :dynamic_variables
+        v_births = N * μ
+        v_deathX = X * μ
+
+        :flows
+        CLOUD =&gt; f_births(v_births) =&gt; X
+        X =&gt; f_deathX(v_deathX) =&gt; CLOUD
+
+        :sums
+        N = [X]
+
+        end
+    ),
+    # feet
+    foot(:X,:N,:X=&gt;:N)
+
+)
+
+GraphF(apex(openX))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="289pt" height="188pt"
+ viewBox="0.00 0.00 289.00 188.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 184)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-184 285,-184 285,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<polygon fill="%239aceeb" stroke="black" points="36,-149 0,-149 0,-113 36,-113 36,-149"/>
+<text text-anchor="middle" x="18" y="-127.3" font-family="Times,serif" font-size="14.00">X</text>
+</g>
+<!-- v2 -->
+<g id="node6" class="node">
+<title>v2</title>
+<text text-anchor="middle" x="100.5" y="-14.3" font-family="Times,serif" font-size="14.00">X * μ</text>
+</g>
+<!-- s1&%2345;&gt;v2 -->
+<g id="edge3" class="edge">
+<title>s1&%2345;&gt;v2</title>
+<path fill="none" stroke="black" d="M24.65,-112.05C36.97,-87.83 61.07,-47.9 71.43,-34.76 71.6,-34.55 71.76,-34.34 71.93,-34.13"/>
+<path fill="none" stroke="transparent" d="M26.43,-112.95C38.68,-88.86 62.78,-48.94 73,-36 73.16,-35.79 73.33,-35.59 73.49,-35.38"/>
+<path fill="none" stroke="black" d="M28.21,-113.86C40.39,-89.9 64.5,-49.97 74.57,-37.24 74.73,-37.04 74.89,-36.83 75.05,-36.63"/>
+</g>
+<!-- s1&%2345;&gt;v2 -->
+<g id="edge5" class="edge">
+<title>s1&%2345;&gt;v2</title>
+<path fill="none" stroke="black" d="M34.13,-112.66C46.99,-93.24 64.64,-64.58 73,-54 75.66,-50.64 78.68,-47.23 81.71,-43.88"/>
+<polygon fill="black" stroke="black" points="84.54,-45.97 88.63,-36.19 79.34,-41.28 84.54,-45.97"/>
+</g>
+<!-- sv1 -->
+<g id="node7" class="node">
+<title>sv1</title>
+<ellipse fill="cornflowerblue" stroke="black" cx="100.5" cy="-133" rx="18.7" ry="18.7"/>
+<text text-anchor="middle" x="100.5" y="-129.3" font-family="Times,serif" font-size="14.00">N</text>
+</g>
+<!-- s1&%2345;&gt;sv1 -->
+<g id="edge6" class="edge">
+<title>s1&%2345;&gt;sv1</title>
+<path fill="none" stroke="black" d="M36.28,-136.36C41.88,-137.85 48.15,-139.26 54,-140 59.85,-140.74 66.1,-140.47 72.04,-139.72"/>
+<polygon fill="black" stroke="black" points="72.99,-143.1 82.25,-137.94 71.79,-136.21 72.99,-143.1"/>
+</g>
+<!-- p1 -->
+<g id="node2" class="node">
+<title>p1</title>
+<ellipse fill="none" stroke="black" cx="18" cy="-75" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-71.3" font-family="Times,serif" font-size="14.00">μ</text>
+</g>
+<!-- v1 -->
+<g id="node5" class="node">
+<title>v1</title>
+<text text-anchor="middle" x="254" y="-100.3" font-family="Times,serif" font-size="14.00">N * μ</text>
+</g>
+<!-- p1&%2345;&gt;v1 -->
+<g id="edge9" class="edge">
+<title>p1&%2345;&gt;v1</title>
+<path fill="none" stroke="black" d="M36.21,-77.13C74.12,-81.83 165.56,-93.16 216.75,-99.51"/>
+<polygon fill="black" stroke="black" points="216.37,-102.99 226.73,-100.74 217.23,-96.04 216.37,-102.99"/>
+</g>
+<!-- p1&%2345;&gt;v2 -->
+<g id="edge8" class="edge">
+<title>p1&%2345;&gt;v2</title>
+<path fill="none" stroke="black" d="M33.02,-65.07C42.08,-58.65 54.29,-50.01 65.77,-41.89"/>
+<polygon fill="black" stroke="black" points="67.8,-44.73 73.94,-36.1 63.76,-39.02 67.8,-44.73"/>
+</g>
+<!-- fs_1u -->
+<g id="node3" class="node">
+<title>fs_1u</title>
+<ellipse fill="white" stroke="white" cx="100.5" cy="-56" rx="1.8" ry="1.8"/>
+</g>
+<!-- fs_1u&%2345;&gt;v1 -->
+<g id="edge1" class="edge">
+<title>fs_1u&%2345;&gt;v1</title>
+<path fill="none" stroke="black" d="M102.56,-53.97C111.18,-53.77 167.76,-53.14 209.76,-70.15 218.3,-73.68 226.41,-78.89 233.51,-84.21"/>
+<path fill="none" stroke="transparent" d="M102.61,-55.97C111.2,-55.77 167.78,-55.14 209,-72 217.22,-75.36 225.33,-80.57 232.31,-85.81"/>
+<path fill="none" stroke="black" d="M102.66,-57.97C111.22,-57.77 167.81,-57.14 208.24,-73.85 216.14,-77.04 224.25,-82.25 231.11,-87.41"/>
+</g>
+<!-- fs_2d -->
+<g id="node4" class="node">
+<title>fs_2d</title>
+<ellipse fill="white" stroke="white" cx="254" cy="-18" rx="1.8" ry="1.8"/>
+</g>
+<!-- v1&%2345;&gt;s1 -->
+<g id="edge2" class="edge">
+<title>v1&%2345;&gt;s1</title>
+<path fill="none" stroke="black" d="M228.67,-123.97C222.67,-127.84 216.26,-131.65 209.88,-134.79 175.76,-151.61 166.49,-156.46 128.33,-162.97 95.82,-168.43 83.89,-170.84 53.1,-155.79 50.04,-154.24 46.99,-152.53 43.96,-150.71"/>
+<path fill="none" stroke="transparent" d="M227.58,-122.29C221.65,-126.12 215.24,-129.93 209,-133 174.83,-149.83 165.56,-154.69 128,-161 95.42,-166.47 83.5,-168.88 54,-154 51.01,-152.49 47.97,-150.79 44.99,-149"/>
+<path fill="none" stroke="black" d="M226.5,-120.61C220.63,-124.4 214.22,-128.21 208.12,-131.21 173.9,-148.06 164.64,-152.92 127.67,-159.03 95.03,-164.51 83.1,-166.92 54.9,-152.21 51.99,-150.75 48.95,-149.04 46.02,-147.28"/>
+<polygon fill="black" stroke="black" points="46.66,-145.91 36.33,-143.51 42.91,-151.82 46.66,-145.91"/>
+<text text-anchor="middle" x="100.5" y="-168.8" font-family="Times,serif" font-size="14.00">f_births</text>
+</g>
+<!-- v2&%2345;&gt;fs_2d -->
+<g id="edge4" class="edge">
+<title>v2&%2345;&gt;fs_2d</title>
+<path fill="none" stroke="black" d="M127.54,-16C161.17,-16 218.2,-16 242.03,-16"/>
+<path fill="none" stroke="transparent" d="M127.54,-18C161.17,-18 218.2,-18 242.03,-18"/>
+<path fill="none" stroke="black" d="M127.54,-20C161.17,-20 218.2,-20 242.03,-20"/>
+<polygon fill="black" stroke="black" points="242.07,-21.5 252.07,-18 242.07,-14.5 242.07,-21.5"/>
+<text text-anchor="middle" x="177.5" y="-21.8" font-family="Times,serif" font-size="14.00">f_deathX</text>
+</g>
+<!-- sv1&%2345;&gt;v1 -->
+<g id="edge7" class="edge">
+<title>sv1&%2345;&gt;v1</title>
+<path fill="none" stroke="black" d="M119.18,-129.62C143.02,-125.05 186.05,-116.82 216.88,-110.91"/>
+<polygon fill="black" stroke="black" points="217.66,-114.33 226.82,-109.01 216.34,-107.45 217.66,-114.33"/>
+</g>
+</g>
+</svg>
+'/><p>going to compose all μ in Rewriting.  Shouldn&#39;t be necessary on params.</p><pre><code class="language-julia hljs">openSIS_A = Open(
+    (@stock_and_flow begin
+
+        :stocks
+        X
+        A
+
+        :parameters
+        μ_temp1
+        ϕ_complement
+        σ′
+        cβ
+
+        :dynamic_variables
+        v_inf₁ = cβ * NI
+        v_inf₂ = v_inf₁ / N
+        v_inf₃ = v_inf₂ * X
+        v_inf₄ = v_inf₃ * ϕ_complement
+
+        v_deathA = A * μ_temp1
+
+        :flows
+        X =&gt; f_newInfectiousA(v_inf₄) =&gt; A
+        A =&gt; f_deathA(v_deathA) =&gt; CLOUD
+        A =&gt; f_recoveryA(A * σ′) =&gt; X
+
+        :sums
+        N = [X, A]
+        NI = [A]
+
+    end
+    ),
+     # feet
+     foot(:X,:N,:X=&gt;:N),
+     foot((),:NI,())
+
+)
+
+GraphF(apex(openSIS_A))
+
+openSIS_Y = Open(
+    (@stock_and_flow begin
+
+    :stocks
+    X
+    Y
+
+    :parameters
+    μ_temp2
+    ϕ
+    σ
+    λ
+
+    :dynamic_variables
+    v_inf₄ = ϕ * λ
+    # at present, lambda needs to come second
+    # in algebraic rewriting, position of variables matters for homomorphisms.
+    # When we later have *(ϕ), phi comes first, because it&#39;s the only variable
+
+    v_deathY = Y * μ_temp2
+
+    :flows
+    X =&gt; f_newInfectiousY(v_inf₄) =&gt; Y
+    Y =&gt; f_deathY(v_deathY) =&gt; CLOUD
+    Y =&gt; f_recoveryY(Y * σ) =&gt; X
+
+    :sums
+    N = [X, Y]
+    NI = [Y]
+
+end
+        ),
+
+     # feet
+     foot(:X,:N,:X=&gt;:N),
+     foot((),:NI,())
+
+)
+
+GraphF(apex(openSIS_Y))</code></pre><img src="f656de39.svg" alt="Example block output"/><p>define the UWD-algebra</p><pre><code class="language-julia hljs">uwd = @relation (XN,NI) begin
+    X(XN)
+    XA(XN,NI)
+    XY(XN,NI)
+end;
+display_uwd(uwd)
+
+XAY_model = oapply(uwd,Dict(
+    :X=&gt;openX,
+    :XA=&gt;openSIS_A,
+    :XY=&gt;openSIS_Y
+    )) |&gt; apex
+GraphF(XAY_model)
+
+XAY_model
+
+L = @stock_and_flow begin
+    :stocks
+    X
+    Y
+    A
+
+    :parameters
+    μ
+    μ_temp1
+    μ_temp2
+    λ
+    cβ
+    ϕ
+
+    :dynamic_variables
+    v_inf₁ = cβ * NI
+    v_inf₂ = v_inf₁ / N
+    v_inf₃ = v_inf₂ * X
+    v_inf₄ = ϕ * λ
+
+    v_deathA = A * μ_temp1
+    v_deathY = Y * μ_temp2
+
+    v_births = N * μ
+    v_deathX = X * μ
+
+    :flows
+    X =&gt; f_newInfectiousY(v_inf₄) =&gt; Y
+    Y =&gt; f_deathY(v_deathY) =&gt; CLOUD
+    A =&gt; f_deathA(v_deathA) =&gt; CLOUD
+
+    CLOUD =&gt; f_births(v_births) =&gt; X
+    X =&gt; f_deathX(v_deathX) =&gt; CLOUD
+
+
+
+    :sums
+    N = [X,Y,A]
+    NI = [Y,A]
+    end;
+
+
+
+GraphF(L)
+
+I = @stock_and_flow begin
+    :stocks
+    A
+    X
+    Y
+
+    :parameters
+    μ
+    cβ
+    ϕ
+
+    :dynamic_variables
+    v_inf₁ = cβ * NI
+    v_inf₂ = v_inf₁ / N
+    v_inf₃ = v_inf₂ * X
+    v_inf₄ = *(ϕ)
+
+
+    v_deathA = *(A)
+    v_deathY = *(Y)
+
+    v_births = N * μ
+    v_deathX = X * μ
+
+
+
+
+
+
+    :flows
+    X =&gt; f_newInfectiousY(v_inf₄) =&gt; Y
+    Y =&gt; f_deathY(v_deathY) =&gt; CLOUD
+    A =&gt; f_deathA(v_deathA) =&gt; CLOUD
+
+    CLOUD =&gt; f_births(v_births) =&gt; X
+    X =&gt; f_deathX(v_deathX) =&gt; CLOUD
+
+
+
+    :sums
+    N = [X,Y,A]
+    NI = [Y,A]
+    end;
+
+
+
+
+GraphF(I)
+
+R = @stock_and_flow begin
+    :stocks
+    A
+    X
+    Y
+
+    :parameters
+    μ
+    cβ
+    ϕ
+
+    :dynamic_variables
+    v_inf₁ = cβ * NI
+    v_inf₂ = v_inf₁ / N
+    v_inf₃ = v_inf₂ * X
+    v_inf₄ = ϕ * v_inf₃
+
+    v_deathA = A * μ
+    v_deathY = Y * μ
+
+    v_births = N * μ
+    v_deathX = X * μ
+
+    :flows
+    X =&gt; f_newInfectiousY(v_inf₄) =&gt; Y
+
+    Y =&gt; f_deathY(v_deathY) =&gt; CLOUD
+    A =&gt; f_deathA(v_deathA) =&gt; CLOUD
+
+    CLOUD =&gt; f_births(v_births) =&gt; X
+    X =&gt; f_deathX(v_deathX) =&gt; CLOUD
+
+
+    :sums
+    N = [X,Y,A]
+    NI = [Y,A]
+    end;
+
+
+
+GraphF(R)
+
+using AlgebraicRewriting
+using AlgebraicRewriting: rewrite
+const hom = Catlab.CategoricalAlgebra.homomorphism
+rule = Rule(hom(I,L), hom(I,R))
+
+XAY_model_rewritten = rewrite(rule, XAY_model)
+
+GraphF(XAY_model_rewritten)
+
+GraphF(XAY_model_rewritten,type=&quot;SF&quot;)</code></pre><img src="e7e541bf.svg" alt="Example block output"/><p>define values of constant parameters unit: year</p><pre><code class="language-julia hljs">p = LVector(
+    cβ=15*0.7, μ=1/15,ϕ=(0.95+0.4)/2,σ=12/4,σ′=12/4,ϕ_complement=(1.0 - ((0.95+0.4)/2))
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:cβ, :μ, :ϕ, :σ, :σ′, :ϕ_complement)}:
+           :cβ =&gt; 10.5
+            :μ =&gt; 0.06666666666666667
+            :ϕ =&gt; 0.675
+            :σ =&gt; 3.0
+           :σ′ =&gt; 3.0
+ :ϕ_complement =&gt; 0.32499999999999996</code></pre><p>define initial values for stocks</p><pre><code class="language-julia hljs">u0 = LVector(
+    X=990, A=5, Y=5
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element LabelledArrays.LArray{Int64, 1, Vector{Int64}, (:X, :A, :Y)}:
+ :X =&gt; 990
+ :A =&gt; 5
+ :Y =&gt; 5</code></pre><p>results are tested the same as the Anylogic model</p><pre><code class="language-julia hljs">prob_XAY = ODEProblem(vectorfield(XAY_model_rewritten),u0,(0.0,2.0),p);
+sol = solve(prob_XAY,Tsit5(),abstol=1e-8);
+plot(sol)</code></pre><img src="2c6ee916.svg" alt="Example block output"/><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
+&lt;style&gt;
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+&lt;/style&gt;
+&quot;&quot;&quot;)</code></pre><style>
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../COVID_full_model/">« COVID Full Model</a><a class="docs-footer-nextpage" href="../diabetes_model/">Diabetes Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.6.0 on <span class="colophon-date" title="Friday 23 August 2024 00:18">Friday 23 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

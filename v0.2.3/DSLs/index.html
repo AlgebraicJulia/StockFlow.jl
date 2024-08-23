@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Domain Specific Languages · StockFlow.jl</title><meta name="title" content="Domain Specific Languages · StockFlow.jl"/><meta property="og:title" content="Domain Specific Languages · StockFlow.jl"/><meta property="twitter:title" content="Domain Specific Languages · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><script src="../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">StockFlow.jl</a></li><li class="is-active"><a class="tocitem" href>Domain Specific Languages</a><ul class="internal"><li class="toplevel"><a class="tocitem" href="#Syntax"><span>Syntax</span></a></li><li><a class="tocitem" href="#@stock_and_flow"><span>@stock_and_flow</span></a></li><li><a class="tocitem" href="#@foot"><span>@foot</span></a></li><li><a class="tocitem" href="#@feet"><span>@feet</span></a></li><li><a class="tocitem" href="#@causal_loop"><span>@causal_loop</span></a></li><li><a class="tocitem" href="#@cl"><span>@cl</span></a></li><li class="toplevel"><a class="tocitem" href="#Stratification"><span>Stratification</span></a></li><li><a class="tocitem" href="#@stratify"><span>@stratify</span></a></li><li class="toplevel"><a class="tocitem" href="#Composition"><span>Composition</span></a></li><li><a class="tocitem" href="#@compose"><span>@compose</span></a></li><li class="toplevel"><a class="tocitem" href="#Rewrite"><span>Rewrite</span></a></li><li><a class="tocitem" href="#@rewrite"><span>@rewrite</span></a></li></ul></li><li><a class="tocitem" href="../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../generated/Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/CasualLoopDiagrams/Causal_Loop_Operations/">Causal Loop Operations</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/diabetes_model/">Diabetes Model</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox/">SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/stratification/sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../generated/full_fledged_schema_examples_new/stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Domain Specific Languages</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Domain Specific Languages</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/src/DSLs.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Domain-Specific-Languages"><a class="docs-heading-anchor" href="#Domain-Specific-Languages">Domain Specific Languages</a><a id="Domain-Specific-Languages-1"></a><a class="docs-heading-anchor-permalink" href="#Domain-Specific-Languages" title="Permalink"></a></h1><pre><code class="language-julia hljs">using StockFlow
+using StockFlow.Syntax # stock_and_flow, foot, feet
+using StockFlow.Syntax.Stratification # stratify, n_stratify
+using StockFlow.Syntax.Composition # compose
+using StockFlow.Syntax.Rewrite # rewrite
+using StockFlow.Syntax.Homomorphism # hom</code></pre><h1 id="Syntax"><a class="docs-heading-anchor" href="#Syntax">Syntax</a><a id="Syntax-1"></a><a class="docs-heading-anchor-permalink" href="#Syntax" title="Permalink"></a></h1><h2 id="@stock_and_flow"><a class="docs-heading-anchor" href="#@stock_and_flow">@stock_and_flow</a><a id="@stock_and_flow-1"></a><a class="docs-heading-anchor-permalink" href="#@stock_and_flow" title="Permalink"></a></h2><p>Creates a StockAndFlowF based upon the provided block expression. Block has five headers you can use in it:</p><pre><code class="language-julia hljs">@stock_and_flow begin
+        # to specify stock names
+        :stocks
+        S
+        I
+        R
+
+        # to specify parameter names, which will be given values from outside
+        # the model when evaluated
+        :parameters
+        β
+        λ
+        δ
+
+        # to specify sum variables, which have at any given time have value
+        # equal to the sum of all their linked stocks
+        :sums
+        N = [S, I, R]
+        NI = [I]
+        None = [] # 0
+
+        # to specify how stocks, parameters, sums and other dynamic variables
+        # relate to each other.  We use these to determine flow rates.
+
+        # If we specify a dynamic variable with multiple operators, it&#39;ll
+        # automatically be split into multiple.
+        :dynamic_variables
+        v₁ = S + I / N # this will be split into two dyvars
+        v₂ = *(β, I)
+        v₃ = v₂ + 1
+        v₄ = log(S)
+
+        # to specify the rate at which members of one population will
+        # leave to become members of another population.
+        # Use CLOUD or ☁ (\:cloud:) to indicate entering or leaving model.
+
+        # You can also use the dynamic variable format inside a flow to create
+        # a dynamic variable
+        :flows
+        CLOUD =&gt; f1(v1) =&gt; S
+        S =&gt; Deaths_S(δ * S) =&gt; CLOUD
+        S =&gt; infections(+λ) =&gt; I
+        I =&gt; recoveries(v₄ + v₃ / v₂) =&gt; R
+
+    end</code></pre><p>The specific values in the above example are chosen to show the capabilities of the syntax.  For more realistic examples, see src/PremadeModels.jl.</p><p>At present, any julia function is allowed to act as an operator for a  dynamic variable, but in the future it&#39;ll be restricted to the below list:</p><p>Binary:  :+, :-, :*, :/, :÷, :^, :%, :log</p><p>Unary: :log, :exp, :sqrt, :+, :- :plus_one, :minus_one, :reciprocal, :one_minus, :plus_two, :minus_two</p><p>The unary functions can be expressed as plus_one(X), or how you&#39;d expect, as X + 1 or 1 + X.</p><hr/><h2 id="@foot"><a class="docs-heading-anchor" href="#@foot">@foot</a><a id="@foot-1"></a><a class="docs-heading-anchor-permalink" href="#@foot" title="Permalink"></a></h2><p>Creates a StockAndFlow0 with stocks, sums, and links between them. Takes the form @foot mystock =&gt; Y, B =&gt; Y, ..., where in each pair, the first symbol is a stock and the second is a sum.  Multiple occurences of the same symbol will be interpreted as the same instance of that sum or stock.  If you have the same link multiple times, it will not be deduplicated.  Use () =&gt; Y to indicate no stock, X =&gt; () to indicate no sum, or () =&gt; () to indicate an empty foot.</p><pre><code class="language-julia hljs">(@foot () =&gt; ()) == StockAndFlow0([],[],[])
+(@foot () =&gt; X) == StockAndFlow0([],[:X],[])
+(@foot Y =&gt; ()) == StockAndFlow0([:Y],[],[])
+(@foot Y =&gt; X) == StockAndFlow0([:Y],[:X],[:Y =&gt; :X])
+
+(@foot Y =&gt; X, () =&gt; ()) == StockAndFlow0([:Y],[:X],[:Y =&gt; :X])
+(@foot Y =&gt; X, Y =&gt; X) == StockAndFlow0([:Y],[:X],[:Y =&gt; :X, :Y =&gt; :X])
+(@foot Y =&gt; X, A =&gt; X) == StockAndFlow0([:Y, :A],[:X],[:Y =&gt; :X, :A =&gt; :X])
+(@foot Y =&gt; X, Y =&gt; Z) == StockAndFlow0([:Y],[:X, :Z],[:Y =&gt; :X, :Y =&gt; :Z])</code></pre><hr/><h2 id="@feet"><a class="docs-heading-anchor" href="#@feet">@feet</a><a id="@feet-1"></a><a class="docs-heading-anchor-permalink" href="#@feet" title="Permalink"></a></h2><p>Given a block expression, produces an array of feet for each line. An empty block produces an empty array.</p><pre><code class="language-julia hljs">(@feet begin end) == Vector{StockAndFlow0}()
+
+(@feet begin 
+() =&gt; ()
+end) == [StockAndFlow0([],[],[])]
+
+(@feet begin 
+A =&gt; B, AA =&gt; B
+X =&gt; Y, X =&gt; B, Z =&gt; ()
+end) == ([StockAndFlow0([:A, :AA],[:B],[:A =&gt; :B, :AA =&gt; :B]), 
+    StockAndFlow0([:X, :Z],[:Y, :B],[:X =&gt; :Y, :X =&gt; :B])])</code></pre><hr/><hr/><h2 id="@causal_loop"><a class="docs-heading-anchor" href="#@causal_loop">@causal_loop</a><a id="@causal_loop-1"></a><a class="docs-heading-anchor-permalink" href="#@causal_loop" title="Permalink"></a></h2><p>Create a causal loop, with or without polarities.  X =&gt; +Y indicates a positive polarity, X =&gt; -Y indicates a negative polarity, and if there are any edges X =&gt; Y without polarities, the ultimate causal loop diagram will be without polarities.</p><p>Use :nodes to indicate nodes, and :edges to indicate edges.</p><p>If there are no edges, will default to a causal loop with polarities.</p><p>Note, for functions which return indices for edges, negative edges come after positive edges.</p><p>Avoid using nodes with the same name.</p><pre><code class="language-julia hljs">
+# Triangle, without polarities.
+@causal_loop begin
+    :nodes
+    A
+    B
+    C
+    
+    :edges
+    A =&gt; B
+    B =&gt; C
+    C =&gt; A
+end
+
+# Triangle, with polarities, creating a balancing loop.
+@causal_loop begin
+    :nodes
+    A
+    B
+    C
+    
+    :edges
+    A =&gt; -B
+    B =&gt; +C
+    C =&gt; +A
+end
+
+# Causal loop with two nodes and three edges;
+# A has a positive self edge, and A has two edges to B, one positive, one negative.
+@causal_loop begin
+    :nodes
+    A
+    B
+    
+    :edges
+    A =&gt; +A
+    A =&gt; +B
+    A =&gt; -B
+end
+
+# Empty causal loop, treated with polarities.
+@causal_loop begin end 
+</code></pre><hr/><h2 id="@cl"><a class="docs-heading-anchor" href="#@cl">@cl</a><a id="@cl-1"></a><a class="docs-heading-anchor-permalink" href="#@cl" title="Permalink"></a></h2><p>Compressed syntax for creating a causal loop diagram.  Similar to above.</p><p>Separate statements with commas, and use a symbol on its own to indicate a node without an edge.  Nodes will be ordered in the order they&#39;re encountered.</p><pre><code class="language-julia hljs"># Triangle, without polarities.
+(@cl A =&gt; B, B =&gt; C, C =&gt; A)
+# Triangle, with polarities, creating a balancing loop.
+(@cl A =&gt; -B, B =&gt; +C C =&gt; +A)
+
+# No edges between nodes, treated as a causal loop with polarities.
+(@cl A, B, C)
+
+# Same as first, but now C is node 1, B is node 2, and A is node 3.
+(@cl C, B, A =&gt; B, B =&gt; C, C =&gt; A)
+
+# Empty causal loop, treated as with polarities.
+(@cl)
+</code></pre><hr/><h1 id="Stratification"><a class="docs-heading-anchor" href="#Stratification">Stratification</a><a id="Stratification-1"></a><a class="docs-heading-anchor-permalink" href="#Stratification" title="Permalink"></a></h1><h2 id="@stratify"><a class="docs-heading-anchor" href="#@stratify">@stratify</a><a id="@stratify-1"></a><a class="docs-heading-anchor-permalink" href="#@stratify" title="Permalink"></a></h2><p>Given three stockflows X, Z, Y and an expression block, create a new stockflow representing the pullback of X -&gt; Z and Y -&gt; Z.</p><p>Equivalent to explicitly defining the StockFlow homomorphisms X -&gt; Z and Y -&gt; Z and taking their pullback.</p><p>The particular morphisms can be inferred based on what each object in X and Z maps to in Y.</p><p>For :stocks, :flows, :dynamic_variables, :parameters and :sums in X and Y, indicate what each element of X maps to on the left and Y on the right.  So, if stocks x1, x2 in X and z in Z map to y in Y, you write  :stocks x1, x2 =&gt; y &lt;= z</p><p>Prefix ~ to indicate a substring match and _ to match everything else.</p><p>If there only exists one of a particular type of object which can be mapped to, the maps don&#39;t need to be made explicit.  EG, if there only exists one sum variable in Y, you don&#39;t need to have a :sums header.</p><p>If there exist multiple matches for an object (eg, you have A twice, or you match A then have an _), then only the first will be used.</p><p>Using stockflows with duplicate names could lead to unpredictable results and is strongly recommended against.</p><pre><code class="language-julia hljs">@stratify WeightModel l_type ageWeightModel begin
+
+    # Don&#39;t need stocks header, because there&#39;s only one
+    :stocks
+    _ =&gt; pop &lt;= _
+
+    :flows
+    ~Death =&gt; f_death &lt;= ~Death
+    ~id =&gt; f_aging &lt;= ~aging
+    ~Becoming =&gt; f_fstOrder &lt;= ~id
+    _ =&gt; f_birth &lt;= f_NB
+
+
+    :dynamic_variables
+    v_NewBorn =&gt; v_birth &lt;= v_NB
+    ~Death =&gt; v_death &lt;= ~Death
+    ~id  =&gt; v_aging &lt;= v_agingCA, v_agingAS
+    # Could match the right side with ~id
+    v_BecomingOverWeight, v_BecomingObese =&gt; v_fstOrder &lt;= v_idC, v_idA, v_idS
+
+    :parameters
+    μ =&gt; μ &lt;= μ
+    δw, δo =&gt; δ &lt;= δC, δA, δS
+    rw, ro =&gt; rFstOrder &lt;= r
+    rage =&gt; rage &lt;= rageCA, rageAS
+
+    # Similar to stocks, don&#39;t need a sums header.
+    :sums
+    N =&gt; N &lt;= N
+
+end </code></pre><hr/><p>Given n stockflows A_1, ..., A_{n-1}, Z and an expression block, create a  new stockflow representing the pullback of A_1 -&gt; Z, ..., A_{n-1} -&gt; Z.</p><p>Use an ordered list of tuples to indicate the ith stockflow.  If there is a single object in A_i mapping to an object in Z, the tuple isn&#39;t necessary. If 0 map to it, use an empty tuple (though, in that case, why does Z have it at all?)</p><p>_ still acts as a default match, and ~ as a subtring match.  They each act on their particular stockflow.</p><pre><code class="language-julia hljs">@n_stratify WeightModel ageWeightModel l_type begin
+
+    # Once again, stocks header isn&#39;t necessary
+    :stocks
+    [_, _] =&gt; pop
+
+    :flows
+    [~Death, ~Death] =&gt; f_death
+    [~id, ~aging] =&gt; f_aging 
+    [~Becoming, ~id] =&gt; f_fstOrder
+    [_, f_NB] =&gt; f_birth
+
+
+    :dynamic_variables
+    [v_NewBorn, v_NB] =&gt; v_birth
+    [~Death, ~Death] =&gt; v_death
+    [~id, (v_agingCA, v_agingAS)] =&gt; v_aging
+    [(v_BecomingOverWeight, v_BecomingObese), (v_idC, v_idA, v_idS)] =&gt; v_fstOrder
+
+    :parameters
+    [μ, μ] =&gt; μ
+    [(δw, δo), (δC, δA, δS)] =&gt; δ
+    [(rw, ro), r] =&gt; rFstOrder
+    [rage, (rageCA, rageAS)] =&gt; rage
+
+    # Nor is sums header necessary
+    :sums
+    [N,N] =&gt; N
+end</code></pre><hr/><h1 id="Composition"><a class="docs-heading-anchor" href="#Composition">Composition</a><a id="Composition-1"></a><a class="docs-heading-anchor-permalink" href="#Composition" title="Permalink"></a></h1><h2 id="@compose"><a class="docs-heading-anchor" href="#@compose">@compose</a><a id="@compose-1"></a><a class="docs-heading-anchor-permalink" href="#@compose" title="Permalink"></a></h2><p>Given n stockflows A_1, ..., A_n and an expression block, return a new stockflow such that specified shared stocks, sums and links between them are treated as the same.</p><p>First line of the expression block must be the aliases used for the corresponding stockflow in the block.  Every alias must be unique.</p><p>Use the same syntax for @foot to specify feet to be composed on.  Each line takes the form (X, Y) ^ A =&gt; B, C =&gt; (), where the left side of ^ are stockflows, the right are feet.  Right side feet can optionally be in a tuple.  If only one stockflow is on the left, it doesn&#39;t need to be in a tuple.</p><p>Cannot compose on an empty foot.  Cannot use a foot which has been used on a previous line.  Changing the order of stock-sum links - eg,  A =&gt; B, C =&gt; () and C =&gt; (), A =&gt; B - will be treated as different feet. Each stockflow involved in a particular composition must have all stocks and sums which are in the corresponding foot.</p><p>Composition with no stockflows given as argument returns an empty stockflow.</p><p>Composition also works with causal loop diagrams.  If using causal loop with polarities, the edges you compose on must have the same polarities; you cannot compose A =&gt; +B with A =&gt; -B.</p><pre><code class="language-julia hljs">(@compose begin 
+    ()
+end) == (@compose begin end) == StockAndFlow()
+
+sirv = @compose sir svi begin
+  (sir, svi)
+  (sir, svi) ^ S =&gt; N, I =&gt; N
+end
+
+XAY_model = @compose X SIS_A SIS_Y begin
+    (X, A, Y)
+    (X, A, Y) ^ X =&gt; N
+    (A, Y) ^ () =&gt; NI
+end
+
+Diabetes_Model = @compose Model_Normoglycemic Model_Hyperglycemic Model_Norm_Hyper begin
+    (Normo, Hyper, NH)
+
+    (Normo, NH) ^ NormalWeight =&gt; N
+    (Normo, NH) ^ OverWeight =&gt; N
+    (Normo, NH) ^ Obese =&gt; N
+
+    (Hyper, NH) ^ Prediabetic_U =&gt; N
+    (Hyper, NH) ^ Prediabetic_D =&gt; N
+end
+
+ABC = (@cl A =&gt; B, B =&gt; C)
+BCD = (@cl B =&gt; C, C =&gt; D)
+
+ABCD = @compose ABC BCD begin
+    (ABC, BCD)
+    (ABC, BCD) ^ B =&gt; C
+end
+</code></pre><hr/><h1 id="Rewrite"><a class="docs-heading-anchor" href="#Rewrite">Rewrite</a><a id="Rewrite-1"></a><a class="docs-heading-anchor-permalink" href="#Rewrite" title="Permalink"></a></h1><h2 id="@rewrite"><a class="docs-heading-anchor" href="#@rewrite">@rewrite</a><a id="@rewrite-1"></a><a class="docs-heading-anchor-permalink" href="#@rewrite" title="Permalink"></a></h2><p>Given a stockflow sf and an expression block, create a new stockflow with edits made based on the block.  The expression block will be used to create three stockflows L, I, R such that sf ⊇ L ⊇ I and R ⊇ I, then apply a rewrite rule to replace L with R in sf.</p><p>Every object in sf must have a unique name.</p><p>Rewrite has 8 headers, :stocks, :flows, :sums, :dynamic_variables, :redefs, :removes, and :dyvar_swaps</p><p>The first five are used to indicate if an instance of that type is being added.  Use the same definition syntax as in @stock_and_flow.</p><p>:redefs is used to change the definition of a dynamic variable, flow or sum.  Again, use the same syntax as in @stock_and_flow.</p><p>:removes indicates that an object should be deleted.  You just need the name of it in the original.</p><p>:dyvar_swaps is used to swap all instances of an object inside dynamic variables with another object.  Use the notation A =&gt; B to indicate every A in a dynamic variable should now instead be B.</p><p>For this to work, there must exist homomorphisms I =&gt; L and I =&gt; R, and every name in the original stockflow must be unique.</p><pre><code class="language-julia hljs">aged_sir_rewritten = @rewrite aged_sir begin
+
+    :redefs
+    v_meanInfectiousContactsPerSv_cINC = cc_C * v_prevalencev_INC_post
+    v_meanInfectiousContactsPerSv_cINA = cc_A * v_prevalencev_INA_post
+
+
+    :parameters
+    fcc
+    fca
+    fac
+    faa
+
+    :dynamic_variables
+
+    v_CCContacts = fcc * v_prevalencev_INC
+    v_CAContacts = fca * v_prevalencev_INA
+
+    v_ACContacts = fac * v_prevalencev_INC
+    v_AAContacts = faa * v_prevalencev_INA
+
+    v_prevalencev_INC_post = v_CCContacts + v_CAContacts
+    v_prevalencev_INA_post = v_ACContacts + v_AAContacts
+
+end
+
+
+Covid19_rewritten = @rewrite COVID19 begin
+  :dyvar_swaps
+  λ =&gt; v_NewIncidence₂
+  rw_v =&gt; rw
+
+  :removes
+  λ
+  rw_v
+end
+
+sirv_rewritten = @rewrite sirv begin
+  :dyvar_swaps
+  lambda =&gt; v_inf₂
+  rdeath_svi =&gt; rdeath
+
+  :removes
+  lambda
+  rdeath_svi
+end</code></pre><hr/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« StockFlow.jl</a><a class="docs-footer-nextpage" href="../json/">Serialization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.6.0 on <span class="colophon-date" title="Friday 23 August 2024 00:18">Friday 23 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

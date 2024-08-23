@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>SEIR Full Model Measles Chickenpox · StockFlow.jl</title><meta name="title" content="SEIR Full Model Measles Chickenpox · StockFlow.jl"/><meta property="og:title" content="SEIR Full Model Measles Chickenpox · StockFlow.jl"/><meta property="twitter:title" content="SEIR Full Model Measles Chickenpox · StockFlow.jl"/><meta name="description" content="Documentation for StockFlow.jl."/><meta property="og:description" content="Documentation for StockFlow.jl."/><meta property="twitter:description" content="Documentation for StockFlow.jl."/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><script src="../../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">StockFlow.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">StockFlow.jl</a></li><li><a class="tocitem" href="../../../../DSLs/">Domain Specific Languages</a></li><li><a class="tocitem" href="../../../../json/">Serialization</a></li><li><span class="tocitem">Example</span><ul><li><a class="tocitem" href="../../../Covid19_composition_model_in_paper/">COVID-19 Composition Model</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/convert_from_SEIR_stockFlowDiagram/">Convert from SEIR Stock Flow Diagram</a></li><li><a class="tocitem" href="../../CasualLoopDiagrams/Causal_Loop_Operations/">Causal Loop Operations</a></li><li><a class="tocitem" href="../composed_open_population_SIRV_model/">Composed Open Population SIRV Model</a></li><li><a class="tocitem" href="../COVID_full_model/">COVID Full Model</a></li><li><a class="tocitem" href="../curable_sexually_transmitted_diseases_model/">Curable Sexually-Transmitted Diseases Model</a></li><li><a class="tocitem" href="../diabetes_model/">Diabetes Model</a></li><li class="is-active"><a class="tocitem" href>SEIR Full Model Measles Chickenpox</a></li><li><a class="tocitem" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose</a></li><li><a class="tocitem" href="../../stratification/sir_linear_stratification/">SIR Linear Stratification</a></li><li><a class="tocitem" href="../../stratification/sir_standard_stratification/">SIR Standard Stratification</a></li></ul></li><li><span class="tocitem">Exercises</span><ul><li><a class="tocitem" href="../../../../practices/SEIRVD/SEIRVD_model_hard/">Problem: SEIRVD Model</a></li><li><a class="tocitem" href="../../../../practices/SIRV/SIRV_composition_model_simple/">Problem: SIRV Model</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Example</a></li><li class="is-active"><a href>SEIR Full Model Measles Chickenpox</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>SEIR Full Model Measles Chickenpox</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/StockFlow.jl/blob/main/docs/literate/full_fledged_schema_examples_new/composition/SEIR_full_model_measles_chickenpox.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="SEIR-Full-Model-Measles-Chickenpox"><a class="docs-heading-anchor" href="#SEIR-Full-Model-Measles-Chickenpox">SEIR Full Model Measles Chickenpox</a><a id="SEIR-Full-Model-Measles-Chickenpox-1"></a><a class="docs-heading-anchor-permalink" href="#SEIR-Full-Model-Measles-Chickenpox" title="Permalink"></a></h1><pre><code class="language-julia hljs">using StockFlow
+using StockFlow.Syntax
+
+using Catlab
+using Catlab.CategoricalAlgebra
+using LabelledArrays
+using OrdinaryDiffEq
+using Plots
+
+using Catlab.Graphics
+using Catlab.Programs
+using Catlab.Theories
+using Catlab.WiringDiagrams
+
+seir = @stock_and_flow begin
+    :stocks
+    S
+    E
+    I
+    R
+
+    :parameters
+    μ
+    β
+    tlatent
+    trecovery
+    δ
+
+    :flows
+    CLOUD =&gt; fbirth(μ * N) =&gt; S
+    S =&gt; fincid(β * S * I / N) =&gt; E
+    S =&gt; fdeathS(S * δ) =&gt; CLOUD
+    E =&gt; finf(E / tlatent) =&gt; I
+    E =&gt; fdeathE(E * δ) =&gt; CLOUD
+    I =&gt; frec(I / trecovery) =&gt; R
+    I =&gt; fdeathI(I * δ) =&gt; CLOUD
+    R =&gt; fdeathR(R * δ) =&gt; CLOUD
+
+    :sums
+    N = [S, E, I, R]
+
+end
+
+
+
+GraphF(seir)</code></pre><img src="651a8041.svg" alt="Example block output"/><p>define parameter values and initial values of stocks define constant parameters</p><pre><code class="language-julia hljs">p_measles = LVector(
+    β=49.598, μ=0.03/12, δ=0.03/12, tlatent=8.0/30, trecovery=5.0/30
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:β, :μ, :δ, :tlatent, :trecovery)}:
+         :β =&gt; 49.598
+         :μ =&gt; 0.0025
+         :δ =&gt; 0.0025
+   :tlatent =&gt; 0.26666666666666666
+ :trecovery =&gt; 0.16666666666666666</code></pre><p>define initial values for stocks</p><pre><code class="language-julia hljs">u0_measles = LVector(
+    S=90000.0-930.0, E=0.0, I=930.0, R=773545.0
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 89070.0
+ :E =&gt; 0.0
+ :I =&gt; 930.0
+ :R =&gt; 773545.0</code></pre><p>solve the ODEs The model results are compared with the same model built by Anylogic, and the resules are the same!</p><pre><code class="language-julia hljs">prob_measles = ODEProblem(vectorfield(seir),u0_measles,(0.0,120.0),p_measles);
+sol_measles = solve(prob_measles,Tsit5(),abstol=1e-8);
+plot(sol_measles)</code></pre><img src="2d9901b1.svg" alt="Example block output"/><p>define parameter values and initial values of stocks define constant parameters</p><pre><code class="language-julia hljs">p_chickenpox = LVector(
+    β=18.0, μ=0.03/12.0, δ=0.03/12.0, tlatent=14.0/30.0, trecovery=5.0/30.0
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:β, :μ, :δ, :tlatent, :trecovery)}:
+         :β =&gt; 18.0
+         :μ =&gt; 0.0025
+         :δ =&gt; 0.0025
+   :tlatent =&gt; 0.4666666666666667
+ :trecovery =&gt; 0.16666666666666666</code></pre><p>define initial values for stocks</p><pre><code class="language-julia hljs">u0_chickenpox = LVector(
+    S=295354.0, E=0.0, I=1000.0, R=567191.0
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295354.0
+ :E =&gt; 0.0
+ :I =&gt; 1000.0
+ :R =&gt; 567191.0</code></pre><p>solve the ODEs The model results are compared with the same model built by Anylogic, and the resules are the same!</p><pre><code class="language-julia hljs">prob_chickenpox = ODEProblem(vectorfield(seir),u0_chickenpox,(0.0,120.0),p_chickenpox);
+sol_chickenpox = solve(prob_chickenpox,Tsit5(),abstol=1e-8);
+plot(sol_chickenpox)
+
+sol_chickenpox</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+Interpolation: specialized 4th order &quot;free&quot; interpolation
+t: 298-element Vector{Float64}:
+   0.0
+   2.8133919327141074e-9
+   3.0947311259855185e-8
+   3.122865045312659e-7
+   3.125678437245373e-6
+   3.1259597764386445e-5
+   0.00031259879103579717
+   0.003125990723749904
+   0.015721220942788605
+   0.04026863845950178
+   ⋮
+ 116.95057564863274
+ 117.38101312924142
+ 117.81143080997383
+ 118.24182866323792
+ 118.67220671844858
+ 119.10256500501667
+ 119.53290360934692
+ 119.96322253233947
+ 120.0
+u: 298-element Vector{LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}}:
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295354.0
+ :E =&gt; 0.0
+ :I =&gt; 1000.0
+ :R =&gt; 567191.0
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295353.99998667586
+ :E =&gt; 1.7320507818745795e-5
+ :I =&gt; 999.9999831126152
+ :R =&gt; 567191.000012891
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295353.9998534344
+ :E =&gt; 0.00019052556412603002
+ :I =&gt; 999.9998142387877
+ :R =&gt; 567191.0001418012
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295353.9985210214
+ :E =&gt; 0.001922573939183367
+ :I =&gt; 999.9981255026566
+ :R =&gt; 567191.0014309019
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295353.9851970526
+ :E =&gt; 0.01924283889007708
+ :I =&gt; 999.9812383556265
+ :R =&gt; 567191.0143217528
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295353.8519734983
+ :E =&gt; 0.19242361030166427
+ :I =&gt; 999.8123883115076
+ :R =&gt; 567191.1432145798
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295352.5213499726
+ :E =&gt; 1.9220453840944718
+ :I =&gt; 998.126028662952
+ :R =&gt; 567192.4305759802
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295339.3749437633
+ :E =&gt; 19.00152652208452
+ :I =&gt; 981.4746974066799
+ :R =&gt; 567205.1488323078
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295283.93378345115
+ :E =&gt; 90.83469714947546
+ :I =&gt; 911.4633089972851
+ :R =&gt; 567258.768210402
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 295190.2782579937
+ :E =&gt; 211.30502569745465
+ :I =&gt; 794.1479113803771
+ :R =&gt; 567349.2688049284
+ ⋮
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 287359.5804751168
+ :E =&gt; 501.70782057138234
+ :I =&gt; 179.3896626730281
+ :R =&gt; 575504.3220416378
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 287517.62915419985
+ :E =&gt; 500.7023967219139
+ :I =&gt; 179.00426283902266
+ :R =&gt; 575347.6641862382
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 287676.1525249286
+ :E =&gt; 499.8859736702558
+ :I =&gt; 178.68645323719812
+ :R =&gt; 575190.2750481629
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 287834.97634195915
+ :E =&gt; 499.25801156995
+ :I =&gt; 178.43604045981994
+ :R =&gt; 575032.3296060101
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 287993.92708219076
+ :E =&gt; 498.81797644170433
+ :I =&gt; 178.25283293330756
+ :R =&gt; 574874.0021084333
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 288152.831914804
+ :E =&gt; 498.56534204109164
+ :I =&gt; 178.1366415972051
+ :R =&gt; 574715.4661015568
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 288311.5187129204
+ :E =&gt; 498.49959066221305
+ :I =&gt; 178.08728039535498
+ :R =&gt; 574556.8944160211
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 288469.815991747
+ :E =&gt; 498.62021348759237
+ :I =&gt; 178.10456626442195
+ :R =&gt; 574398.4592285
+ 4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
+ :S =&gt; 288483.3048635308
+ :E =&gt; 498.66202336617
+ :I =&gt; 178.0863051084874
+ :R =&gt; 574384.9468079936</code></pre><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
+&lt;style&gt;
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+&lt;/style&gt;
+&quot;&quot;&quot;)</code></pre><style>
+.output_svg div{
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diabetes_model/">« Diabetes Model</a><a class="docs-footer-nextpage" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.6.0 on <span class="colophon-date" title="Friday 23 August 2024 00:18">Friday 23 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
