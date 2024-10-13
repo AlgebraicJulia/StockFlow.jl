@@ -525,7 +525,6 @@ sir_StockAndFlow=StockAndFlowF((:S=>(:F_NONE,:inf,:N), :I=>(:inf,:F_NONE,:N)),
 ```
 """
 StockAndFlowF(s,p,v,f,sv) = begin
-  @show s, p, v, f, sv
   sf = StockAndFlowF()
 
   s = vectorify(s)
