@@ -39,6 +39,8 @@ vectorify(n) = [n]
 
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
 
+cond(c,t,f) = c ? t : f
+
 #= operators definition
 # Operators:
 
@@ -523,6 +525,7 @@ sir_StockAndFlow=StockAndFlowF((:S=>(:F_NONE,:inf,:N), :I=>(:inf,:F_NONE,:N)),
 ```
 """
 StockAndFlowF(s,p,v,f,sv) = begin
+  @show s, p, v, f, sv
   sf = StockAndFlowF()
 
   s = vectorify(s)

@@ -194,8 +194,13 @@ end
 struct Ref <: DyvarExprT
     ref::Pair{Symbol,Symbol}
 end
+struct Cond{C,T,F} <: DyvarExprT
+    cond::Tuple{C,T,F}
+end
+
 get(r::Ref) = r.ref
 get(b::Binop) = b.binop
+get(c::Cond) = (c.cond => :cond)
 struct StockAndFlowArguments
     stocks::Vector{
         Pair{
@@ -376,6 +381,12 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
 
  function parse_dyvar(dyvar::Expr)
      @match dyvar begin
+         :($dyvar_name = $(cond::Union{Symbol, Expr}) ? $(true_val::Union{Symbol, Expr}) : $(false_val::Union{Symbol, Expr})) =>
+             if !is_recursive_dyvar(dyvar_name, cond) && !is_recursive_dyvar(dyvar_name, true_val) && !is_recursive_dyvar(dyvar_name, false_val)
+                 return (dyvar_name, :($cond ? $true_val : $false_val))
+             else
+                 error("Recursive dyvar detected in " * String(dyvar_name))
+             end
          :($dyvar_name = $dyvar_def) =>
              if !is_recursive_dyvar(dyvar_name, dyvar_def)
                  return (dyvar_name, dyvar_def)
@@ -587,6 +598,9 @@ function dyvar_exprs_to_symbolic_repr(dyvars::Vector{Tuple{Symbol,Expr}})
                 Expr(:call, op, a) => push!(syms, (dyvar_name => Ref(a => op)))
                 Expr(:call, op, a, b) => begin
                     push!(syms, (dyvar_name => Binop((a, b) => op)))
+                end
+                Expr(:if, c, t, f) => begin
+                    push!(syms, (dyvar_name => Cond((c, t, f),)))
                 end
                 Expr(c, _, _) || Expr(c, _, _, _) => error(
                     "Unhandled expression in dynamic variable definition " * String(c),
@@ -846,9 +860,17 @@ function infix_expression_to_binops(
                 end
                 lastsym
             end
+            Expr(:if, c, t, f) => begin
+               csym = loop(c)
+               tsym = loop(t)
+               fsym = loop(f)
+               varname = gensym(gensymbase)
+               push!(exprs, (varname, :($csym ? $tsym : $fsym)))
+               varname
+            end
             Expr(en, _, _, _) || Expr(en, _, _) => begin
                 error(
-                    "Unhandled expression type " * String(en) * " cannot be converted into form f(a, b)",
+                    "Unhandled expression type " * String(en) * " cannot be converted into form f(a, b)"
                 )
             end
         end
@@ -887,7 +909,7 @@ Check if a Julia expression is a call of the form `op(a, b)` or `a op b`, where 
 - `e` -- a Julia expression
 
 ### Output
-A boolean indicating if the given julia expression is a function call of non-expression parameter(s).
+A boolean indicating if the given julia expression is a function call or if statement of non-expression parameter(s).
 
 ### Examples
 ```julia-repl
@@ -903,12 +925,17 @@ julia> is_simple_dyvar(:(f(a, b, c)))
 false
 julia> is_simple_dyvar(:f(a + b, c + d))
 false
+julia> is_simple_dyvar(:(A ? B : C))
+true
+julia> is_simple_dyvar(:(A < B ? X : Y))
+false
 ```
 """
 function is_simple_dyvar(e::Expr)
     @match e begin
         Expr(:call, f::Symbol, a) => !(typeof(a) <: Expr)
         Expr(:call, f::Symbol, a, b) => !(typeof(a) <: Expr) && !(typeof(b) <: Expr)
+        Expr(:if, c, t, f) => !(typeof(c) <: Expr) && !(typeof(t) <: Expr) && !(typeof(f) <: Expr)
         _ => false
     end
 end

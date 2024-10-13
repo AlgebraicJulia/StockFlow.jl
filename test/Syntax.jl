@@ -597,3 +597,17 @@ end
     end) == CausalLoopPM([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_POSITIVE])
 
 end
+
+
+
+@testset "Ternary" begin
+        @test ((@stock_and_flow begin
+                       :stocks
+                       A
+                       B
+                       C
+                       :dynamic_variables
+                       cond = A == B
+                       v = cond ? A : B
+              end) == StockAndFlowF([:A => (:F_NONE, :F_NONE, :SV_NONE), :B => (:F_NONE, :F_NONE, :SV_NONE)], [], [:cond => ((:A, :B) => :(==)), :v => ((:cond, :A, :B) => :cond)], [], []))
+end
