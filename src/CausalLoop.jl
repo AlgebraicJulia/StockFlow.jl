@@ -109,16 +109,16 @@ const OpenCausalLoopOb, OpenCausalLoop = OpenACSetTypes(CausalLoopUntyped, Causa
 
 
 vname(c::AbstractSimpleCausalLoop,n) = subpart(c,n,:vname)
-vnames(c::AbstractSimpleCausalLoop) = subpart(c, :vname)
+vnames(c::AbstractSimpleCausalLoop) = Vector{Symbol}(subpart(c, :vname))
 
 vname(c::CausalLoopPM, n) = subpart(c, n, :vname)
-vnames(c::CausalLoopPM) = subpart(c, :vname)
+vnames(c::CausalLoopPM) = Vector{Symbol}(subpart(c, :vname))
 
 ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
-enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
+enames(c::AbstractSimpleCausalLoop) = Vector{Tuple{Symbol, Symbol}}([ename(c,e) for e in 1:nedges(c)])
 
 ename(c::CausalLoop, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)))
-enames(c::CausalLoop) = [ename(c,e) for e in 1:nedges(c)]
+enames(c::CausalLoop) = Vector{Tuple{Symbol, Symbol}}([ename(c,e) for e in 1:nedges(c)])
 
 
 leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
