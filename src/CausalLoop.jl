@@ -109,25 +109,25 @@ const OpenCausalLoopOb, OpenCausalLoop = OpenACSetTypes(CausalLoopUntyped, Causa
 
 
 vname(c::AbstractSimpleCausalLoop,n) = subpart(c,n,:vname)
-vnames(c::AbstractSimpleCausalLoop) = subpart(c, :vname)
+vnames(c::AbstractSimpleCausalLoop) = Vector{Symbol}(subpart(c, :vname))
 
 vname(c::CausalLoopPM, n) = subpart(c, n, :vname)
-vnames(c::CausalLoopPM) = subpart(c, :vname)
+vnames(c::CausalLoopPM) = Vector{Symbol}(subpart(c, :vname))
 
 ename(c::CausalLoopPol, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)), epol(c,e))
-enames(c::AbstractSimpleCausalLoop) = [ename(c,e) for e in 1:nedges(c)]
+enames(c::AbstractSimpleCausalLoop) = Vector{Tuple{Symbol, Symbol}}([ename(c,e) for e in 1:nedges(c)])
 
 ename(c::CausalLoop, e) = (vname(c, sedge(c, e)), vname(c, tedge(c, e)))
-enames(c::CausalLoop) = [ename(c,e) for e in 1:nedges(c)]
+enames(c::CausalLoop) = Vector{Tuple{Symbol, Symbol}}([ename(c,e) for e in 1:nedges(c)])
 
 
-leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
+leg(a::CausalLoopPol, x::CausalLoopPol) = OpenACSetLeg(a, E=Vector{Int}(ntcomponent(enames(a), enames(x))), V=Vector{Int}(ntcomponent(vnames(a), vnames(x))))
 Open(p::CausalLoopPol, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenCausalLoopPol{Symbol,Polarity}(p, legs...)
 end
 
-leg(a::CausalLoop, x::CausalLoop) = OpenACSetLeg(a, E=ntcomponent(enames(a), enames(x)), V=ntcomponent(vnames(a), vnames(x)))
+leg(a::CausalLoop, x::CausalLoop) = OpenACSetLeg(a, E=Vector{Int}(ntcomponent(enames(a), enames(x))), V=Vector{Int}(ntcomponent(vnames(a), vnames(x))))
 Open(p::CausalLoop, feet...) = begin
   legs = map(x->leg(x, p), feet)
   OpenCausalLoop{Symbol}(p, legs...)
@@ -458,7 +458,7 @@ outgoing_edges(c::Union{CausalLoopPol, CausalLoopPM, CausalLoop}, n) = Vector{In
 incoming_edges(c::Union{CausalLoopPol,CausalLoopPM, CausalLoop}, n) = Vector{Int}(collect(filter(i -> tedge(c,i) == n, 1:nedges(c))))
 
 """ CausalLoopPM, used for composition. """
-leg(a::CausalLoopPM, x::CausalLoopPM) = OpenACSetLeg(a, P=ntcomponent(pnames(a), pnames(x)),  M=ntcomponent(mnames(a), mnames(x)), V=ntcomponent(vnames(a), vnames(x)))
+leg(a::CausalLoopPM, x::CausalLoopPM) = OpenACSetLeg(a, P=Vector{Int}(ntcomponent(pnames(a), pnames(x))),  M=Vector{Int}(ntcomponent(mnames(a), mnames(x))), V=Vector{Int}(ntcomponent(vnames(a), vnames(x))))
 
 """Construct an OpenCausalLoopPM with a CausalLoopPM, and any number of additional CausalLoopPM to act as feet. """
 Open(p::CausalLoopPM, feet...) = begin
