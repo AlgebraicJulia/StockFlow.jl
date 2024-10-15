@@ -148,7 +148,6 @@ function sfcompose(sfs::Vector, block::Expr, main_type, foot_type, create_foot_f
 
     uwd = create_uwd(Box=Box, Port=Port, Junction=Junction, OuterPort=OuterPort)
 
-    print(sf_map)
     open_stockflows::AbstractDict = Dict(sf_key => Open(sf_val[1], sf_val[2]...) for (sf_key, sf_val) ∈ sf_map)
 
     if RETURN_UWD
