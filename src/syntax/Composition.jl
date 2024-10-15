@@ -112,9 +112,9 @@ function sfcompose(sfs::Vector, block::Expr, main_type, foot_type, create_foot_f
     # all feet
     feet_index_dict::Dict{foot_type, Int} = Dict(empty_foot => 1)
     for statement in block.args[2:end]
-        stockflows, foot = interpret_composition_notation(statement, create_foot_function)
+        stockflows, foot = Tuple{Vector{Symbol}, foot_type}(interpret_composition_notation(statement, create_foot_function))
         # adding new foot to list
-        @assert (foot ∉ keys(feet_index_dict)) "Foot has already been used,\
+        @assert (foot ∉ keys(feet_index_dict)) "Foot has already been used, \
          or you are using an empty foot!"
         push!(feet_index_dict, foot => length(feet_index_dict) + 1)
         for stockflow in stockflows

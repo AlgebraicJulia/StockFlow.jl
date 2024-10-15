@@ -1317,7 +1317,7 @@ function cl_macro(block, force_nonpol=false)
 
     if block isa Symbol
         if force_nonpol
-            return CausalLoop()
+            return CausalLoop([block], Vector{Pair{Symbol, Symbol}}())
         else
             return CausalLoopPM(Vector{Symbol}([block]), Vector{Pair{Symbol, Symbol}}([]), Vector{Polarity}([]))
         end
