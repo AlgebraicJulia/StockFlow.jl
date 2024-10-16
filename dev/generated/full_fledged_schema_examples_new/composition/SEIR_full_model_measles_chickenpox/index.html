@@ -59,7 +59,7 @@ GraphF(seir)</code></pre><img src="651a8041.svg" alt="Example block output"/><p>
  :I =&gt; 930.0
  :R =&gt; 773545.0</code></pre><p>solve the ODEs The model results are compared with the same model built by Anylogic, and the resules are the same!</p><pre><code class="language-julia hljs">prob_measles = ODEProblem(vectorfield(seir),u0_measles,(0.0,120.0),p_measles);
 sol_measles = solve(prob_measles,Tsit5(),abstol=1e-8);
-plot(sol_measles)</code></pre><img src="f49d5248.svg" alt="Example block output"/><p>define parameter values and initial values of stocks define constant parameters</p><pre><code class="language-julia hljs">p_chickenpox = LVector(
+plot(sol_measles)</code></pre><img src="d244793d.svg" alt="Example block output"/><p>define parameter values and initial values of stocks define constant parameters</p><pre><code class="language-julia hljs">p_chickenpox = LVector(
     β=18.0, μ=0.03/12.0, δ=0.03/12.0, tlatent=14.0/30.0, trecovery=5.0/30.0
 )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:β, :μ, :δ, :tlatent, :trecovery)}:
          :β =&gt; 18.0
@@ -87,17 +87,17 @@ t: 298-element Vector{Float64}:
    3.1259597764386445e-5
    0.00031259879103579717
    0.003125990723749904
-   0.015721220942788605
-   0.04026863845950178
+   0.015721220859647802
+   0.0402686382370387
    ⋮
- 116.95057564863274
- 117.38101312924142
- 117.81143080997383
- 118.24182866323792
- 118.67220671844858
- 119.10256500501667
- 119.53290360934692
- 119.96322253233947
+ 116.950575671572
+ 117.38101317461913
+ 117.8114308319595
+ 118.24182866747205
+ 118.67220674110926
+ 119.1025650537785
+ 119.53290363918238
+ 119.96322253429699
  120.0
 u: 298-element Vector{LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}}:
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
@@ -141,61 +141,61 @@ u: 298-element Vector{LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E
  :I =&gt; 981.4746974066799
  :R =&gt; 567205.1488323078
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 295283.93378345115
- :E =&gt; 90.83469714947546
- :I =&gt; 911.4633089972851
- :R =&gt; 567258.768210402
+ :S =&gt; 295283.93378379947
+ :E =&gt; 90.83469669925346
+ :I =&gt; 911.4633094359704
+ :R =&gt; 567258.7682100652
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 295190.2782579937
- :E =&gt; 211.30502569745465
- :I =&gt; 794.1479113803771
- :R =&gt; 567349.2688049284
+ :S =&gt; 295190.27825876465
+ :E =&gt; 211.30502471125422
+ :I =&gt; 794.1479123400997
+ :R =&gt; 567349.2688041839
  ⋮
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 287359.5804751168
- :E =&gt; 501.70782057138234
- :I =&gt; 179.3896626730281
- :R =&gt; 575504.3220416378
+ :S =&gt; 287359.58048353554
+ :E =&gt; 501.7078204980839
+ :I =&gt; 179.3896626653466
+ :R =&gt; 575504.3220333005
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 287517.62915419985
- :E =&gt; 500.7023967219139
- :I =&gt; 179.00426283902266
- :R =&gt; 575347.6641862382
+ :S =&gt; 287517.62917092355
+ :E =&gt; 500.7023965820131
+ :I =&gt; 179.00426284583185
+ :R =&gt; 575347.6641696481
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 287676.1525249286
- :E =&gt; 499.8859736702558
- :I =&gt; 178.68645323719812
- :R =&gt; 575190.2750481629
+ :S =&gt; 287676.15253304626
+ :E =&gt; 499.88597361999837
+ :I =&gt; 178.68645323604025
+ :R =&gt; 575190.2750400972
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 287834.97634195915
- :E =&gt; 499.25801156995
- :I =&gt; 178.43604045981994
- :R =&gt; 575032.3296060101
+ :S =&gt; 287834.9763435165
+ :E =&gt; 499.2580115744032
+ :I =&gt; 178.43604044796925
+ :R =&gt; 575032.3296044606
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 287993.92708219076
- :E =&gt; 498.81797644170433
- :I =&gt; 178.25283293330756
- :R =&gt; 574874.0021084333
+ :S =&gt; 287993.927090572
+ :E =&gt; 498.8179764092579
+ :I =&gt; 178.25283293961613
+ :R =&gt; 574874.0021000786
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 288152.831914804
- :E =&gt; 498.56534204109164
- :I =&gt; 178.1366415972051
- :R =&gt; 574715.4661015568
+ :S =&gt; 288152.83193283656
+ :E =&gt; 498.56534197500775
+ :I =&gt; 178.13664163581396
+ :R =&gt; 574715.4660835521
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 288311.5187129204
- :E =&gt; 498.49959066221305
- :I =&gt; 178.08728039535498
- :R =&gt; 574556.8944160211
+ :S =&gt; 288311.5187239294
+ :E =&gt; 498.4995906406168
+ :I =&gt; 178.08728041770098
+ :R =&gt; 574556.8944050118
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 288469.815991747
- :E =&gt; 498.62021348759237
- :I =&gt; 178.10456626442195
- :R =&gt; 574398.4592285
+ :S =&gt; 288469.8159924578
+ :E =&gt; 498.62021350120733
+ :I =&gt; 178.1045662520264
+ :R =&gt; 574398.4592277885
  4-element LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E, :I, :R)}:
- :S =&gt; 288483.3048635308
- :E =&gt; 498.66202336617
- :I =&gt; 178.0863051084874
- :R =&gt; 574384.9468079936</code></pre><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
+ :S =&gt; 288483.3048635258
+ :E =&gt; 498.6620233744935
+ :I =&gt; 178.086305100173
+ :R =&gt; 574384.946807999</code></pre><p>to have the figures plotted fix to the wider of the cells</p><pre><code class="language-julia hljs">HTML(&quot;&quot;&quot;
 &lt;style&gt;
 .output_svg div{
   width: 100% !important;
@@ -208,4 +208,4 @@ u: 298-element Vector{LabelledArrays.LArray{Float64, 1, Vector{Float64}, (:S, :E
   height: 100% !important;
 }
 </style>
-</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diabetes_model/">« Diabetes Model</a><a class="docs-footer-nextpage" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.6.0 on <span class="colophon-date" title="Thursday 22 August 2024 23:49">Thursday 22 August 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diabetes_model/">« Diabetes Model</a><a class="docs-footer-nextpage" href="../../stratification/diabetes_diagnose/">Diabetes Diagnose »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Wednesday 16 October 2024 00:08">Wednesday 16 October 2024</span>. Using Julia version 1.11.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
