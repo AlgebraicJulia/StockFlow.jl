@@ -2,7 +2,7 @@ name = "StockFlow"
 uuid = "58c4a0e8-2944-4d18-9fa2-e17726aee9e5"
 license = "MIT"
 authors = ["Xiaoyan Li <xiaoyan.lyu.li@gmail.com>"]
-version = "0.2.3"
+version = "0.2.4"
 
 [deps]
 AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
