@@ -358,7 +358,7 @@ function is_recursive_dyvar(dyvar_name, dyvar_def)
     @match dyvar_def begin
         ::Symbol => dyvar_def == dyvar_name
         :($f()) => f == dyvar_name
-        Expr(:call, args...) => true in map(arg -> is_recursive_dyvar(dyvar_name, arg), args)
+        Expr(:call, args...) || Expr(:if, args...) || Expr(:||, args...) || Expr(:&&, args...)  => true in map(arg -> is_recursive_dyvar(dyvar_name, arg), args)
     end
 end
 """
@@ -386,6 +386,18 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
                  return (dyvar_name, :($cond ? $true_val : $false_val))
              else
                  error("Recursive dyvar detected in " * String(dyvar_name))
+             end
+         :($dyvar_name = $A || $B) => 
+             if !is_recursive_dyvar(dyvar_name, A) && !is_recursive_dyvar(dyvar_name, B)
+                 return (dyvar_name, :(or($A,$B)))
+             else
+                error("Recursive dyvar detected in " * String(dyvar_name))
+             end
+         :($dyvar_name = $A && $B) =>
+             if !is_recursive_dyvar(dyvar_name, A) && !is_recursive_dyvar(dyvar_name, B)
+                 return (dyvar_name, :(and($A,$B)))
+             else
+                error("Recursive dyvar detected in " * String(dyvar_name))
              end
          :($dyvar_name = $dyvar_def) =>
              if !is_recursive_dyvar(dyvar_name, dyvar_def)
@@ -830,6 +842,8 @@ function infix_expression_to_binops(
     function loop(e)
         @match e begin
             ::Symbol || ::Float32 || ::Float64 || ::Int || ::String => e
+            Expr(:||, args...) => loop(Expr(:call, :or, args...))
+            Expr(:&&, args...) => loop(Expr(:call, :and, args...))
             Expr(:call, f, a) => begin
                 asym = loop(a)
                 varname = gensym(gensymbase)

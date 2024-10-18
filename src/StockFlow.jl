@@ -40,6 +40,8 @@ vectorify(n) = [n]
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
 
 cond(c,t,f) = c ? t : f
+or(a,b) = a || b
+and(a,b) = a && b
 
 #= operators definition
 # Operators:
