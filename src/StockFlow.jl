@@ -39,6 +39,10 @@ vectorify(n) = [n]
 
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
 
+cond(c,t,f) = c ? t : f
+or(a,b) = Bool(a) || Bool(b)
+and(a,b) = Bool(a) && Bool(b)
+
 #= operators definition
 # Operators:
 
@@ -66,7 +70,7 @@ https://docs.julialang.org/en/v1/manual/mathematical-operations/
 Operators = Dict(2 => [:+, :-, :*, :/, :÷, :^, :%, :log, Symbol("")],
                  1 => [:log, :exp, :sqrt, Symbol("")]) #:NN is for NONE, which is used in create the special diagram using graph rewriting
 
-
+math_expr(op, op1, op2, op3) = Expr(:call, op, op1, op2, op3)
 math_expr(op, op1, op2) = Expr(:call, op, op1, op2)
 math_expr(op, op1) = Expr(:call, op, op1)
 #math_expr(op) = Expr(:call, op)
