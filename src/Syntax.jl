@@ -257,6 +257,8 @@ function parse_stock_and_flow_syntax(statements::Vector{Any})
         end
     end
 
+    @assert all(sv_stocks -> all(s -> s in stocks, sv_stocks), last.(sums)) "Not all stocks in sums were found under :stocks" 
+
     s = StockAndFlowBlock(stocks, params, dyvars, flows, sums)
     return s
 end
