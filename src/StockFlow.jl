@@ -800,12 +800,6 @@ generate_expr_args(expr) = begin
     ops=vcat(collect(values(Operators))...)
     return setdiff(unique(argsarray),ops)
 end
-# evaluate an expression to a function
-eval_function(expr,s,sv,p,us,uNs,ps) = begin
-    f=eval(Expr(:->, Expr(:tuple, s..., sv..., p...), Expr(:block,:(()),expr)))
-    return @eval $f($(us...), $(uNs...), $(ps...))
-end
-
 
 """ return sum auxiliary variables all stocks link (frequency) """
 svsstockAllF(p::AbstractStockAndFlowStructure) = [((svsstock(p, s) for s in 1:ns(p))...)...]
@@ -837,11 +831,13 @@ funcDynam(sf::AbstractStockAndFlowF,v) = begin
     args_sv=args[findall(in(svnames(sf)),args)]
     args_p=args[findall(in(pnames(sf)),args)]
 
+    generated_func = eval(Expr(:->, Expr(:tuple, args_s..., args_sv..., args_p...), Expr(:block,:(()),expr)))
+
     f(u,uN,p,t)=begin
         us=map(i->u[i],args_s)
         uNs=map(i->uN[i](u,t),args_sv)
         ps=map(i->p[i],args_p)
-        return eval_function(expr,args_s,args_sv,args_p,us,uNs,ps)
+        return generated_func(us..., uNs..., ps...)
     end
     return f
 end
