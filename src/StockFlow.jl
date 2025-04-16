@@ -37,6 +37,9 @@ vectorify(n::Tuple) = length(n) == 1 ? [n] : collect(n)
 vectorify(n::SubArray) = collect(n)
 vectorify(n) = [n]
 
+"""
+Convert a vector of unique elements to a dictionary with each element pointing to their original index.
+"""
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
 
 cond(c,t,f) = c ? t : f
