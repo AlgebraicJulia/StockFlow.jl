@@ -24,7 +24,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 AlgebraicRewriting = "0.2.1 - 0.3.2, 0.4"
-Catlab = "0.15.5 - 0.16.8, 0.16"
+Catlab = "0.15.5 - 0.16.8, 0.16, 0.17"
 Combinatorics = "1.0.2"
 CompTime = "0.1"
 Graphs = "1.9.0"
