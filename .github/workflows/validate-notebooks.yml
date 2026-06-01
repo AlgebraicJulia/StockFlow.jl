@@ -7,11 +7,14 @@ env:
 jobs:
   notebooks-examples-regression-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: ['1.11', '1.12'] # Current compat range in Project.toml
     steps:
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
-          version: 1.9
+          version: ${{ matrix.version }}
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - name: Create Julia files from Jupyter Notebook examples

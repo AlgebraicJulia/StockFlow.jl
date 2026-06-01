@@ -1,14 +1,14 @@
 module StockFlow
 
-export TheoryStockAndFlow0, TheoryStockAndFlow, TheoryStockAndFlowStructure, TheoryStockAndFlowStructureF, TheoryStockAndFlowF, AbstractStockAndFlow0, AbstractStockAndFlow, AbstractStockAndFlowStructure,
-AbstractStockAndFlowStructureF, AbstractStockAndFlowF, StockAndFlow0, StockAndFlow, StockAndFlowStructure, StockAndFlowStructureF, StockAndFlowF, add_flow!, add_flows!, add_stock!, add_stocks!,
+export TheoryStockAndFlow0, TheoryStockAndFlowStructure, TheoryStockAndFlowStructureF, TheoryStockAndFlowF, AbstractStockAndFlow0, AbstractStockAndFlowStructure,
+AbstractStockAndFlowStructureF, AbstractStockAndFlowF, StockAndFlow0, StockAndFlowStructure, StockAndFlowStructureF, StockAndFlowF, add_flow!, add_flows!, add_stock!, add_stocks!,
 add_variable!, add_variables!, add_svariable!, add_svariables!, add_parameter!, add_parameters!, add_VVlink!, add_VVlinks!,
 add_inflow!, add_inflows!, add_outflow!, add_outflows!, add_Vlink!, add_Vlinks!, add_Slink!, add_Slinks!, add_SVlink!, add_Plink!, add_Plinks!,
 add_SVlinks!, ns, nf, ni, no, nvb, nsv, nls, nlv, nlsv, np, nlpv, nlvv, sname, fname, svname, svnames, vname, inflows, outflows,
 funcDynam, flowVariableIndex, funcFlow, funcFlows, funcSV, funcSVs, TransitionMatrices,
 vectorfield, funcFlowsRaw, funcFlowRaw, inflowsAll, outflowsAll,instock,outstock, stockssv, stocksv, svsv, svsstock,
-vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowUntyped, StockAndFlowFUntyped, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
-object_shift_right, foot, leg, lsnames, OpenStockAndFlow, OpenStockAndFlowOb, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
+vsstock, vssv, svsstockAllF, vsstockAllF, vssvAllF, StockAndFlowStructureUntyped, StockAndFlowStructureFUntyped, StockAndFlowUntyped0, Open, snames, fnames, svnames, vnames,
+object_shift_right, foot, leg, lsnames, fv, fvs, nlvv, nlpv, vtgt, vsrc, vpsrc, vptgt, pname, pnames, make_v_expr,
 vop, lvvposition, lvtgtposition, lsvvposition, lpvvposition, set_snames!, set_fnames!, set_svnames!, set_vnames!, set_pnames!, set_sname!, set_fname!, set_svname!, set_vname!, set_pname!,
 get_lss, get_lssv, get_lsvsv, get_lsvv, get_lvs, get_lvv, get_is, get_ifn, get_os, get_ofn, get_lpvp, get_lpvv, get_lvsrc, get_lvtgt,
 make_v_expr_nonrecursive, get_lpvpposition, get_lvsrcposition, get_lsvsvposition, get_lvsposition, ntcomponent
@@ -16,8 +16,6 @@ make_v_expr_nonrecursive, get_lpvpposition, get_lvsrcposition, get_lsvsvposition
 
 using Catlab
 using LabelledArrays
-using LinearAlgebra: mul!
-import Base.+,Base.-
 
 # fake names for missed part for declaring the components of stock and flow diagrams
 const FK_FLOW_NAME=:F_NONE #fake name of inflows or outflows. e.g., if a stock does not have any inflow or any outflow
@@ -25,20 +23,12 @@ const FK_VARIABLE_NAME=:V_NONE #fake name of the auxiliary variables. e.g., if a
 const FK_SVARIABLE_NAME=:SV_NONE #fake name of the sum auxiliary variables. e.g., of a stock does not link to any sum auxiliary variable
 const FK_SVVARIABLE_NAME=:SVV_NONE #fake name of the auxiliary variables that links to sum auxiliary variables. e.g., a sum auxiliary variable does not link to any auxiliary variable
 
-+(f::Function, g::Function) = (x...) -> f(x...) + g(x...)
--(f::Function, g::Function) = (x...) -> f(x...) - g(x...)
-
-
 vectorify(n::Vector) = collect(n)
 vectorify(n::Tuple) = length(n) == 1 ? [n] : collect(n)
 vectorify(n::SubArray) = collect(n)
 vectorify(n) = [n]
 
 state_dict(n) = Dict(s=>i for (i, s) in enumerate(n))
-
-cond(c,t,f) = c ? t : f
-or(a,b) = Bool(a) || Bool(b)
-and(a,b) = Bool(a) && Bool(b)
 
 #= operators definition
 # Operators:
@@ -70,7 +60,6 @@ Operators = Dict(2 => [:+, :-, :*, :/, :÷, :^, :%, :log, Symbol("")],
 math_expr(op, op1, op2, op3) = Expr(:call, op, op1, op2, op3)
 math_expr(op, op1, op2) = Expr(:call, op, op1, op2)
 math_expr(op, op1) = Expr(:call, op, op1)
-#math_expr(op) = Expr(:call, op)
 
 
 """ define the sub-schema of c0, which includes the three objects: stocks(S), sum-auxiliary-variables(SV), and the linkages between them (LS) to be composed """
@@ -158,20 +147,6 @@ end
 # 2. Name: Symbol
 # Note: those three (or any subgroups) attributes' datatype can be defined by the users. See the example of the PetriNet which allows the Reactionrate and Concentration defined by the users
 const StockAndFlowStructure = StockAndFlowStructureUntyped{Symbol}
-
-
-###### TODO #### delete??
-# define the schema of a general stock and flow diagram
-@present TheoryStockAndFlow <: TheoryStockAndFlowStructure begin
-# Attributes:
-  FuncDynam::AttrType
-  funcDynam::Attr(V, FuncDynam)
-end
-
-@abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlowStructure
-@acset_type StockAndFlowUntyped(TheoryStockAndFlow, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlow
-const StockAndFlow = StockAndFlowUntyped{Symbol,Function}
-
 
 """ define the schema of a general stock and flow diagram """
 @present TheoryStockAndFlowStructureF <: TheoryStockAndFlowStructure begin
@@ -293,11 +268,6 @@ get_lvsrcposition(sf::AbstractStockAndFlowF) = subpart(sf, :lvsrcposition)
 get_lsvsvposition(sf::AbstractStockAndFlowF) = subpart(sf, :lsvsvposition)
 get_lvsposition(sf::AbstractStockAndFlowF) = subpart(sf, :lvsposition)
 
-#EXAMPLE:
-#sir_StockAndFlow=StockAndFlow(((:S, 990)=>(:birth,(:inf,:deathS),(:v_inf,:v_deathS),:N), (:I, 10)=>(:inf,(:rec,:deathI),(:v_rec,:v_deathI,:v_fractionNonS),:N),(:R, 0)=>(:rec,:deathR,(:v_deathR,:v_fractionNonS),:N)),
-#  (:birth=>:v_birth,:inf=>:v_inf,:rec=>:v_rec,:deathS=>:v_deathS,:deathI=>:v_deathI,:deathR=>:v_deathR),
-#  (:N=>(:v_birth,:v_inf))))
-
 StockAndFlowStructure(s,f,sv) = begin
 
     p = StockAndFlowStructure()
@@ -333,75 +303,6 @@ StockAndFlowStructure(s,f,sv) = begin
       vs = vs[vs .!= FK_VARIABLE_NAME]
       svs = svs[svs .!= FK_SVARIABLE_NAME]
 
-      if length(ins)>0
-        add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
-      end
-      if length(outs)>0
-        add_outflows!(p, length(outs), repeat([i], length(outs)), map(x->f_idx[x], outs)) # add objects :O (outflows)
-      end
-      if length(vs)>0
-        add_Vlinks!(p, length(vs), repeat([i], length(vs)), map(x->v_idx[x], vs)) # add objects :LV (links from Stock to dynamic variable)
-      end
-      if length(svs)>0
-        add_Slinks!(p, length(svs), repeat([i], length(svs)), map(x->sv_idx[x], svs)) # add objects :LS (links from Stock to sum dynamic variable)
-      end
-    end
-
-    # Parse the elements included in "sv" -- sum auxiliary vairables
-    for (i, (svname,vs)) in enumerate(sv)
-      vs=vectorify(vs)
-      vs = vs[vs .!= FK_SVVARIABLE_NAME]
-      if length(vs)>0
-        add_SVlinks!(p, length(vs), repeat(collect(sv_idx[svname]), length(vs)), map(x->v_idx[x], collect(vs)))
-      end
-    end
-    p
-end
-
-###### TODO #### delete??
-
-#EXAMPLE: Add a tuple with (auxiliary variable => function)
-#sir_StockAndFlow=StockAndFlow(((:S, 990)=>(:birth,(:inf,:deathS),(:v_inf,:v_deathS),:N), (:I, 10)=>(:inf,(:rec,:deathI),(:v_rec,:v_deathI,:v_fractionNonS),:N),(:R, 0)=>(:rec,:deathR,(:v_deathR,:v_fractionNonS),:N)),
-#  (:birth=>:v_birth,:inf=>:v_inf,:rec=>:v_rec,:deathS=>:v_deathS,:deathI=>:v_deathI,:deathR=>:v_deathR),
-#  (:v_birth=>f_birth,:v_inf=>f_inf,:v_rec=>f_rec,:v_deathS=>f_deathS,:v_deathI=>f_deathI,:v_deathR=>f_deathR),
-#--  (:N=>(:v_birth,:v_inf))))
-#  (:N)))
-
-StockAndFlow(s,f,v,sv) = begin
-
-    p = StockAndFlow()
-
-    s = vectorify(s)
-    f = vectorify(f)
-    v = vectorify(v)
-    sv = vectorify(sv)
-
-    sname = map(first,s)
-    fname = map(first, f)
-    vname = map(first, v)
-    svname = map(first, sv)
-    s_idx = state_dict(sname)
-    f_idx = state_dict(fname)
-    v_idx = state_dict(vname)
-    sv_idx = state_dict(svname)
-
-    # adding the objects that do not have out-morphisms firstly
-    add_variables!(p, length(vname), vname=vname, funcDynam=map(last, v))    # add objects :V (auxiliary variables)
-    add_svariables!(p, length(svname), svname=svname)    # add objects :SV (sum auxiliary variables)
-    add_flows!(p,map(x->v_idx[x], map(last,f)),length(fname),fname=fname)    # add objects :F (flows)
-
-    # Parse the elements included in "s" -- stocks
-    for (i, (name,(ins,outs,vs,svs))) in enumerate(s)
-      i = add_stock!(p,sname=name) # add objects :S (stocks)
-      ins=vectorify(ins) # inflows of each stock
-      outs=vectorify(outs) # outflows of each stock
-      vs=vectorify(vs) # auxiliary variables depends on the stock
-      svs=vectorify(svs) # sum auxiliary variables depends on the stock
-      # filter out the fake (empty) elements
-      ins = ins[ins .!= FK_FLOW_NAME]
-      outs = outs[outs .!= FK_FLOW_NAME]
-      vs = vs[vs .!= FK_VARIABLE_NAME]
-      svs = svs[svs .!= FK_SVARIABLE_NAME]
       if length(ins)>0
         add_inflows!(p, length(ins), repeat([i], length(ins)), map(x->f_idx[x], ins)) # add objects :I (inflows)
       end
@@ -623,7 +524,9 @@ set_snames!(p::AbstractStockAndFlow0, names) = set_subpart!(p, :sname, names)
 set_fnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :fname, names)
 """ set sum variable names to vector of symbols"""
 set_svnames!(p::AbstractStockAndFlow0, names) = set_subpart!(p, :svname, names)
-""" set dynamic variable names to vector of symbols"""
+""" set dynamic variable names to vector of
+
+symbols"""
 set_vnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :vname, names)
 """ set parameter names to vector of symbols"""
 set_pnames!(p::AbstractStockAndFlowStructure, names) = set_subpart!(p, :pname, names)
@@ -811,11 +714,11 @@ inflowsAll(p::AbstractStockAndFlowStructure) = [((inflows(p, s) for s in 1:ns(p)
 outflowsAll(p::AbstractStockAndFlowStructure) = [((outflows(p, s) for s in 1:ns(p))...)...]
 
 
-
-"""
-    funcDynam(p::AbstractStockAndFlow,v)
-return the functions of variables give index v """
-funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
+#
+# """
+#     funcDynam(p::AbstractStockAndFlow,v)
+# return the functions of variables give index v """
+# funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
 
 """
     funcDynam(sf::AbstractStockAndFlowF,v)
@@ -847,21 +750,21 @@ end
 """ return the auxiliary variable's index that related to the flow with index of f """
 flowVariableIndex(p::AbstractStockAndFlowStructure,f) = subpart(p,f,:fv)
 """ return the functions (not substitutes the function of sum variables yet) of flow index f """
-funcFlowRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF},f)=funcDynam(p,flowVariableIndex(p,f))
+funcFlowRaw(p::AbstractStockAndFlowF,f)=funcDynam(p,flowVariableIndex(p,f))
 """ return the LVector of pairs: fname => function (raw: not substitutes the function of sum variables yet) """
-funcFlowsRaw(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
+funcFlowsRaw(p::AbstractStockAndFlowF) = begin
   fnames = [fname(p, f) for f in 1:nf(p)]
   LVector(;[(fnames[f]=>funcFlowRaw(p, f)) for f in 1:nf(p)]...)
 end
 """ generate the function substituting sum variables in with flow index fn """
-funcFlow(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}, fn) = begin
+funcFlow(pn::AbstractStockAndFlowF, fn) = begin
     func=funcFlowRaw(pn,fn)
     uN=funcSVs(pn)
 
     f(u,p,t) = valueat(func,u,uN,p,t)
 end
 """ return the LVector of pairs: fname => function (with function of sum variables substitue in) """
-funcFlows(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF})=begin
+funcFlows(p::AbstractStockAndFlowF)=begin
     fnames = [fname(p, f) for f in 1:nf(p)]
     LVector(;[(fnames[f]=>funcFlow(p, f)) for f in 1:nf(p)]...)
 end
@@ -899,7 +802,7 @@ end
 
 # create open acset, as the structured cospan
 const OpenStockAndFlowStructureOb, OpenStockAndFlowStructure = OpenACSetTypes(StockAndFlowStructureUntyped,StockAndFlowUntyped0)
-const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
+# const OpenStockAndFlowOb, OpenStockAndFlow = OpenACSetTypes(StockAndFlowUntyped,StockAndFlowUntyped0)
 const OpenStockAndFlowStructureFOb, OpenStockAndFlowStructureF = OpenACSetTypes(StockAndFlowStructureFUntyped,StockAndFlowUntyped0)
 const OpenStockAndFlowFOb, OpenStockAndFlowF = OpenACSetTypes(StockAndFlowFUntyped,StockAndFlowUntyped0)
 
@@ -908,7 +811,7 @@ foot(s, sv, ssv) = StockAndFlow0(s, sv, ssv)
 
 ntcomponent(a, x0) = Vector{Int}(map(x->state_dict(x0)[x], a))
 
-leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowStructureF,StockAndFlowF}) = begin
+leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlowStructureF,StockAndFlowF}) = begin
     if ns(a)>0 # if have stocks
       ϕs = ntcomponent(snames(a), snames(x))
     else
@@ -932,10 +835,10 @@ leg(a::StockAndFlow0, x::Union{StockAndFlowStructure,StockAndFlow,StockAndFlowSt
     result
 end
 
-Open(p::StockAndFlow, feet...) = begin
-  legs = map(x->leg(x, p), feet)
-  OpenStockAndFlow{Symbol,Function}(p, legs...)
-end
+# Open(p::StockAndFlow, feet...) = begin
+#   legs = map(x->leg(x, p), feet)
+#   OpenStockAndFlow{Symbol,Any}(p, legs...)
+# end
 
 Open(p::StockAndFlowF, feet...) = begin
   legs = map(x->leg(x, p), feet)
@@ -1000,30 +903,7 @@ catch e
   end
 end
 
-# the parameters are the labelled vector of the functions of flows
-#vectorfield(pn::AbstractStockAndFlowStructure) = begin
-#  tm = TransitionMatrices(pn)
-#  f(du,u,p,t) = begin
-#    u_m = [u[sname(pn, i)] for i in 1:ns(pn)]
-#    ϕ_m = [p[fname(pn, i)] for i in 1:nf(pn)]
-#    for i in 1:ns(pn)
-#      du[sname(pn, i)] = 0
-#      for j in 1:nf(pn)
-#        if tm.inflow[j,i] == 1
-#          du[sname(pn, i)] = du[sname(pn, i)] + valueat(ϕ_m[j],u,p,t)
-#        end
-#        if tm.outflow[j,i] == 1
-#          du[sname(pn, i)] = du[sname(pn, i)] - valueat(ϕ_m[j],u,p,t)
-#        end
-#      end
-#    end
-#    return du
-#  end
-#  return f
-#end
-
-
-vectorfield(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}) = begin
+vectorfield(pn::AbstractStockAndFlowF) = begin
   ϕ=funcFlows(pn)
   tm = TransitionMatrices(pn)
   f(du,u,p,t) = begin
@@ -1052,8 +932,6 @@ include("Syntax.jl")
 include("SystemStructure.jl")
 
 include("visualization.jl")
-# The implementations in this file is specific for the Primitive schema of stock and flow diagram in the ACT paper
-include("PrimitiveStockFlowInPaper.jl")
 
 include("PremadeModels.jl")
 

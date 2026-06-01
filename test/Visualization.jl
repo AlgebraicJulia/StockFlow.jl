@@ -11,7 +11,7 @@
   @testset "Graphing standard Causal Loop F" begin
     ABA = CausalLoopPM([:A, :B], [:A => :B, :B => :A], [POL_NEGATIVE, POL_POSITIVE])
     ABA_graph = GraphCL(ABA)
-    
+
     n1 = node_info(ABA_graph.stmts[1])
     n2 = node_info(ABA_graph.stmts[2])
 
@@ -30,7 +30,7 @@
     c_e1 = edge_info(C_graph.stmts[2])
     c_e2 = edge_info(C_graph.stmts[3])
 
-    
+
     @test (c_n1 == ("n1", "C") && c_e2 == ("n1", "n1", "-") && c_e1 == ("n1", "n1", "+"))
 
     DE = CausalLoopPM([:D, :E], [:D => :E], [POL_POSITIVE])
@@ -49,7 +49,7 @@
 
 
   @testset "GraphRB for Causal Loop F" begin
-    
+
     @test isempty(GraphRB(CausalLoopPM()).stmts)
 
     C2 = CausalLoopPM([:C2], [:C2 => :C2 for _ in 1:5], [POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE, POL_POSITIVE, POL_NEGATIVE])
@@ -58,7 +58,7 @@
 
   #   # number nodes + 2 * number edges
      C_nodes = [node_info(C2_RB.stmts[i]) for i in 1:11]
-  #   # number edges * 3 
+  #   # number edges * 3
      C_edges = [(C2_RB.stmts[i].path[1].name, C2_RB.stmts[i].path[2].name) for i in 12:26]
 
      @test (C_nodes, C_edges) == ([("n1", "C2"), ("n2", "+"), ("n3", "+"), ("n4", "-"), ("n5", "-"), ("n6", "-"), ("n7", "B"), ("n8", "R"), ("n9", "B"), ("n10", "B"), ("n11", "R")], [("n1", "n2"), ("n2", "n1"), ("n1", "n3"), ("n3", "n1"), ("n1", "n4"), ("n4", "n1"), ("n1", "n5"), ("n5", "n1"), ("n1", "n6"), ("n6", "n1"), ("n4", "n7"), ("n2", "n8"), ("n6", "n9"), ("n5", "n10"), ("n3", "n11")])
@@ -68,5 +68,5 @@
   end
 
 
- 
+
 end
