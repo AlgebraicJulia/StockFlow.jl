@@ -7,22 +7,27 @@ end
 
 function main()
   println("Starting to run notebooks ...")
-  ipynb_files = filter(contains(r".jl$"), readdir("./jlexamples"; join=true))
-  println("Checking: $ipynb_files")
   exit_code = 0
   errors = []
   ok = []
-  for f in ipynb_files
-      try
-        modinclude(f)
-      catch e
-        push!(errors, (f, sprint(showerror, e)))
-        exit_code = 1
-      else
-        push!(ok, f)
+  for (root, dirs, files) in walkdir("./jlexamples")
+      if !isempty(files)
+          println("Checking examples in $root")
+          for f in files
+              try
+                  modinclude(root * "/" * f)
+              catch e
+                  push!(errors, (root * "/" * f, sprint(showerror, e)))
+                  exit_code = 1
+              else
+                  push!(ok, f)
+              end
+          end
       end
   end
   println("OK: $ok")
+  failed_files = [f for (f, _) in errors]
+  println("FAILED: $failed_files")
   for (f, err_msg) in errors
       println("FAILED: $f")
       println("Reason: $err_msg")

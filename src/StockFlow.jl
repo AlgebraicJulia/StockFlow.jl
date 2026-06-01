@@ -170,7 +170,7 @@ end
 
 @abstract_acset_type AbstractStockAndFlow <: AbstractStockAndFlowStructure
 @acset_type StockAndFlowUntyped(TheoryStockAndFlow, index=[:is,:os,:ifn,:ofn,:fv,:lvs,:lvv,:lsvsv,:lsvv,:lss,:lssv]) <: AbstractStockAndFlow
-const StockAndFlow = StockAndFlowUntyped{Symbol,Function}
+const StockAndFlow = StockAndFlowUntyped{Symbol,Any}
 
 
 """ define the schema of a general stock and flow diagram """
@@ -934,7 +934,7 @@ end
 
 Open(p::StockAndFlow, feet...) = begin
   legs = map(x->leg(x, p), feet)
-  OpenStockAndFlow{Symbol,Function}(p, legs...)
+  OpenStockAndFlow{Symbol,Any}(p, legs...)
 end
 
 Open(p::StockAndFlowF, feet...) = begin

@@ -387,7 +387,7 @@ function parse_dyvar!(dyvars::Vector{Tuple{Symbol,Expr}}, dyvar::Expr)
              else
                  error("Recursive dyvar detected in " * String(dyvar_name))
              end
-         :($dyvar_name = $A || $B) => 
+         :($dyvar_name = $A || $B) =>
              if !is_recursive_dyvar(dyvar_name, A) && !is_recursive_dyvar(dyvar_name, B)
                  return (dyvar_name, :(or($A,$B)))
              else
@@ -1344,7 +1344,7 @@ function match_cl_format(statement, nodes, edges, polarities)
         :($A) => begin
             push!(nodes, A)
         end
- 
+
     end
 end
 
@@ -1495,7 +1495,7 @@ CausalLoopPM {V:0, P:0, M:0, Name:0}
 """
 macro cl()
     quote
-        CausalLoopPM()  
+        CausalLoopPM()
     end
 end
 

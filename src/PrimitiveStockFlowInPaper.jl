@@ -19,7 +19,7 @@ using Combinatorics
 # Attributes:
   Name::AttrType
   FuncFlow::AttrType
-  
+
   sname::Attr(Stock, Name)
   fname::Attr(Flow, Name)
   ϕf::Attr(Flow, FuncFlow)
@@ -28,7 +28,7 @@ end
 @abstract_acset_type AbstractStockAndFlowp
 @acset_type StockAndFlowpUntyped(TheoryStockAndFlowp, index=[:u,:d,:s,:t]) <: AbstractStockAndFlowp
 
-const StockAndFlowp = StockAndFlowpUntyped{Symbol,Function} 
+const StockAndFlowp = StockAndFlowpUntyped{Symbol,Function}
 # open stock and flow diagram
 const OpenStockAndFlowpObUntyped, OpenStockAndFlowpUntyped = OpenACSetTypes(StockAndFlowpUntyped,:Stock)
 const OpenStockAndFlowpOb = OpenStockAndFlowpObUntyped{Symbol,Function}
@@ -65,11 +65,11 @@ end
 add_flow!(p::AbstractStockAndFlowp,su,sd;kw...) = add_part!(p,:Flow;u=su,d=sd,kw...)
 add_flows!(p::AbstractStockAndFlowp,su,sd,n;kw...) = add_parts!(p,:Flow,n;u=su,d=sd,kw...)
 
-add_stock!(p::AbstractStockAndFlowp;kw...) = add_part!(p,:Stock;kw...) 
+add_stock!(p::AbstractStockAndFlowp;kw...) = add_part!(p,:Stock;kw...)
 add_stocks!(p::AbstractStockAndFlowp,n;kw...) = add_parts!(p,:Stock,n;kw...)
 
 add_link!(p::AbstractStockAndFlowp,ss,ft;kw...) = add_part!(p,:Link;s=ss,t=ft,kw...)
-add_links!(p::AbstractStockAndFlowp,ss,ft,n;kw...) = add_parts!(p,:Link,n;s=ss,t=ft,kw...)  
+add_links!(p::AbstractStockAndFlowp,ss,ft,n;kw...) = add_parts!(p,:Link,n;s=ss,t=ft,kw...)
 
 ns(p::AbstractStockAndFlowp) = nparts(p,:Stock) #number of stocks
 nf(p::AbstractStockAndFlowp) = nparts(p,:Flow) #number of flows
@@ -160,7 +160,7 @@ vectorfield(ps::AbstractStockAndFlowp) = begin
       for n in 1:length(outflows(ps,i))
 #        println(fname(ps,outflows(ps,i)[n]))
         du[sname(ps, i)] = du[sname(ps, i)] - valueat(ϕ[fname(ps,outflows(ps,i)[n])],u,p,t)
-      end      
+      end
     end
     return du
   end
@@ -197,39 +197,3 @@ Graph(p::AbstractStockAndFlowp, rd::String="LR") = begin
   g = Graphviz.Digraph("G", stmts; graph_attrs=graph_attrs, edge_attrs=edge_attrs)
   return g
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
