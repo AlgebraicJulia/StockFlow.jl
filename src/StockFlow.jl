@@ -822,7 +822,7 @@ funcDynam(p::AbstractStockAndFlow,v) = subpart(p,v,:funcDynam)
 return the functions of variables give index v """
 funcDynam(sf::AbstractStockAndFlowF,v) = begin
     expr=make_v_expr(sf,v)
-    args=generate_expr_args(expr)
+    args = Symbol.(generate_expr_args(expr))
 
     args_s=args[findall(in(snames(sf)),args)]
     args_sv=args[findall(in(svnames(sf)),args)]
@@ -831,10 +831,15 @@ funcDynam(sf::AbstractStockAndFlowF,v) = begin
     generated_func = eval(Expr(:->, Expr(:tuple, args_s..., args_sv..., args_p...), Expr(:block,:(()),expr)))
 
     f(u,uN,p,t)=begin
-        us=map(i->u[i],args_s)
-        uNs=map(i->uN[i](u,t),args_sv)
-        ps=map(i->p[i],args_p)
-        return generated_func(us..., uNs..., ps...)
+        us = tuple((u[i] for i in args_s)...)
+        uNs = tuple((uN[i](u,t) for i in args_sv)...)
+        ps = tuple((p[i] for i in args_p)...)
+        return Base.invokelatest(
+          generated_func,
+          us...,
+          uNs...,
+          ps...
+          )
     end
     return f
 end
@@ -851,10 +856,9 @@ end
 """ generate the function substituting sum variables in with flow index fn """
 funcFlow(pn::Union{AbstractStockAndFlow,AbstractStockAndFlowF}, fn) = begin
     func=funcFlowRaw(pn,fn)
-    f(u,p,t) = begin
-        uN=funcSVs(pn)
-        return valueat(func,u,uN,p,t)
-    end
+    uN=funcSVs(pn)
+
+    f(u,p,t) = valueat(func,u,uN,p,t)
 end
 """ return the LVector of pairs: fname => function (with function of sum variables substitue in) """
 funcFlows(p::Union{AbstractStockAndFlow,AbstractStockAndFlowF})=begin
