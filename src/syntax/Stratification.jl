@@ -163,7 +163,7 @@ end
 Print all symbols such that the corresponding int is 0, representing an unmapped object.
 """
 function print_unmapped(SFNames, name="STOCKFLOW")
-    for (indices, names) ∈ zip(SFNames.get_mapped_vectors, SFNames.get_names)
+    for (indices, names) ∈ zip(get_mapped_vectors(SFNames), get_names(SFNames))
         for (i, val) ∈ enumerate(indices)
             if val == 0
                 println("UNMAPPED IN $(name):")
